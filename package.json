@@ -17,7 +17,9 @@
   },
   "homepage": "https://github.com/INTEND-Project/inTrust#readme",
   "dependencies": {
+    "@extism/extism": "^2.0.0-rc11",
     "express": "^4.21.2",
-    "intrust": "file:"
+    "intrust": "file:",
+    "wasi-js": "^1.7.3"
   }
 }
