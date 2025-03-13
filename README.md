@@ -9,7 +9,6 @@ To achieve this, **inTrust** collects various trustworthiness metrics from multi
 ## Key Features
 
 - **Trustworthiness Assessment**: Evaluates intents based on security, privacy, and trust considerations.
-- **Natural Language Reports**: Generates human-readable trustworthiness reports based on collected metrics.
 - **REST API**: Provides an interface for external tools to trigger assessments.
 - **Message Bus Integration**: Publishes assessment results via a pub-sub mechanism for interested parties.
 
