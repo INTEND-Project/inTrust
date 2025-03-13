@@ -1,0 +1,23 @@
+{
+  "name": "intrust",
+  "version": "1.0.0",
+  "description": "InTrust tool of the INTEND project",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/INTEND-Project/inTrust.git"
+  },
+  "author": "",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/INTEND-Project/inTrust/issues"
+  },
+  "homepage": "https://github.com/INTEND-Project/inTrust#readme",
+  "dependencies": {
+    "express": "^4.21.2",
+    "intrust": "file:"
+  }
+}
