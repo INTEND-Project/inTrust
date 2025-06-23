@@ -40,7 +40,7 @@ app.get("/test", (req, res) => {
   // Call extism
   (async () => {    
 
-    let resp = await extism.testFunction("Hellow rold from inTrust and the INTEND project");
+    let resp = await extism.testFunction("Hello world from inTrust and the INTEND project");
 
     console.log(resp);
 
