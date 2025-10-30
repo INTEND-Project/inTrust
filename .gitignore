@@ -1,4 +1,5 @@
 /bin/trivy
 /bin/trivy.exe
 /.env
-/.venv
+/venv
+/tools/__pycache__
