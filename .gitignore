@@ -1,1 +1,4 @@
-/node_modules
+/bin/trivy
+/bin/trivy.exe
+/.env
+/.venv

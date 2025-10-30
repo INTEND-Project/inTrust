@@ -1,0 +1,55 @@
+{
+  "intentId": "intent-sec-analysis-001",
+  "intentType": "SecurityAssessmentIntent",
+  "version": "1.0.0",
+  "description": "Perform static code analysis on a Python source file to identify security vulnerabilities using Bandit.",
+  "target": {
+    "entityType": "SoftwareComponent",
+    "entityId": "python-module-analytics-v2"
+  },
+  "state": {
+    "lifecycleState": "requested",
+    "priority": "medium",
+    "timestamp": "2025-10-24T14:35:00Z"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "tool": "bandit",
+    "codeReference": {
+      "path": "./agent.py",
+      "language": "python",
+      "repository": "https://gitlab.company.com/analytics/analytics_module.git",
+      "branch": "main"
+    },
+    "severityThreshold": ["HIGH", "MEDIUM"],
+    "reportFormat": "json",
+    "output": {
+      "destination": "/reports/security/analytics_module_bandit_report.json",
+      "notify": {
+        "onCompletion": true,
+        "channels": ["email", "webhook"],
+        "recipients": [
+          "security_team@company.com",
+          "mlops_lead@company.com"
+        ]
+      }
+    }
+  },
+  "expectedOutcome": {
+    "goal": "Identify and report all high- and medium-severity security vulnerabilities in the Python codebase.",
+    "successCriteria": [
+      "Analysis completes without runtime errors",
+      "Report includes vulnerability counts and severity levels",
+      "TMForum-compliant structured output generated"
+    ]
+  },
+  "responseParameters": {
+    "status": "pending",
+    "expectedResponseFormat": "TMFIntentReport",
+    "includes": [
+      "assessment_summary",
+      "issue_breakdown",
+      "recommendations"
+    ]
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "intentId": "intent-fs-scan-002",
+  "name": "Filesystem Security and Compliance Scan",
+  "description": "Run a Trivy scan on the local file system to detect vulnerabilities, secrets, and misconfigurations.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "."
+  },
+  "parameters": {
+    "fsPath": "."
+  },
+  "reporting": {
+    "expectedOutput": "Consolidated JSON report of detected issues and severity levels",
+    "format": "application/json",
+    "delivery": "https://https://intendproject.eu/reports/fs-scans/"
+  }
+}
