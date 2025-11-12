@@ -1,7 +1,3 @@
-Perfect — here’s the expanded and finalized **README.md** for the agentic version of the **InTrust** tool, now including **Project Structure** and **How to Run** sections with clear instructions for both command-line and web execution using **Google ADK**.
-
----
-
 # 🧠 InTrust: Agentic Trustworthiness Assessment Framework
 
 ## 1. Overview
