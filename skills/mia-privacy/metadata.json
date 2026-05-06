@@ -1,0 +1,10 @@
+{
+  "id": "mia-privacy",
+  "name": "Membership Inference Privacy Assessment",
+  "description": "Evaluates machine learning model privacy resilience against membership inference attacks.",
+  "assessment_types": ["membership_inference", "privacy", "model_privacy", "mia"],
+  "required_parameters": ["model", "shadowData"],
+  "tool_module": "tools.mia_assessment",
+  "tool_function": "run_mia_assessment",
+  "output_key": "mia_assessment"
+}

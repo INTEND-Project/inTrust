@@ -1,0 +1,10 @@
+{
+  "id": "bandit-static-code",
+  "name": "Bandit Static Code Security Assessment",
+  "description": "Evaluates Python source code for security vulnerabilities using Bandit.",
+  "assessment_types": ["static_code_analysis", "python_security", "code_vulnerability"],
+  "required_parameters": ["codeReference.path"],
+  "tool_module": "tools.bandit_assessment",
+  "tool_function": "run_bandit_assessment",
+  "output_key": "bandit_assessment"
+}

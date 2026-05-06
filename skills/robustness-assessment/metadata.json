@@ -1,0 +1,10 @@
+{
+  "id": "robustness-assessment",
+  "name": "Model Robustness Assessment",
+  "description": "Assesses resistance of a trained machine learning model to perturbations, adversarial noise, or operational anomalies.",
+  "assessment_types": ["robustness", "adversarial_robustness", "model_reliability"],
+  "required_parameters": ["model"],
+  "tool_module": null,
+  "tool_function": null,
+  "output_key": "robustness_assessment"
+}

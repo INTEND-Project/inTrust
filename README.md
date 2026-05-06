@@ -5,7 +5,7 @@
 **InTrust** is a modular, AI-powered framework for performing **trustworthiness, security, and privacy assessments** of data pipelines, AI models, and infrastructure components in the **computing continuum**.
 It combines a **plugin-based architecture**, **LLM-driven agents**, and **WebAssembly sandboxing** to enable secure, flexible, and cross-organizational evaluations.
 
-Each assessment is triggered by a **TM Forum Intent** — a high-level declarative request — which the **InTrust Orchestrator** interprets and delegates to specialized downstream agents.
+Each assessment is triggered by a **TM Forum Intent** — a high-level declarative request — which the **InTrust skill agent** interprets and maps to a file-backed assessment skill.
 This architecture enables intent-driven management of trustworthy AI systems.
 
 ---
@@ -23,9 +23,9 @@ This architecture enables intent-driven management of trustworthy AI systems.
 
 ### 🧩 Agentic Approach (Powered by Google ADK)
 
-* Implemented as a **multi-agent system** using the **Google Agent Development Kit (ADK)**.
-* A central **Orchestrator Agent** receives TM Forum Intents, interprets them, and routes requests to suitable **Downstream Agents**.
-* Each downstream agent specializes in a particular aspect of trustworthiness (e.g., privacy, vulnerability scanning, code analysis).
+* Implemented as a **skills-based agent system** using the **Google Agent Development Kit (ADK)**.
+* A central **InTrust skill agent** receives TM Forum Intents, interprets them, and activates a suitable assessment skill.
+* Each skill specializes in a particular aspect of trustworthiness (e.g., privacy, vulnerability scanning, code analysis).
 * **LLMs** enable intelligent orchestration, dynamic plugin selection, and reasoning about user intents.
 * Supports **long-running function tools** for handling resource-intensive operations asynchronously.
 
@@ -142,6 +142,37 @@ intrust/
 
 ---
 
+## 4.1 Skills-Based Architecture
+
+InTrust now uses one high-level ADK agent instead of an orchestrator that wraps
+multiple downstream agents.
+
+When `google-adk>=1.25.0` is installed, the agent loads `skills/` through ADK's
+native `SkillToolset`. Older ADK environments fall back to the local
+skill-management tools exposed by `skill_runtime.py`.
+
+The root agent has four skill-management tools:
+
+* `list_assessment_skills` - discover available assessment skills.
+* `inspect_assessment_skill` - read a skill's metadata and `SKILL.md` instructions.
+* `execute_assessment_skill` - execute the selected skill against the original TM Forum Intent.
+* `create_assessment_skill` - draft a new file-backed skill skeleton when no existing skill matches.
+
+Each skill lives in:
+
+```text
+skills/<skill_id>/
+├── SKILL.md
+└── metadata.json
+```
+
+Executable skills point to an implementation in `tools/` through
+`metadata.json` fields such as `tool_module` and `tool_function`. Skills without
+an implementation can still be selected, but they return a
+`PENDING_IMPLEMENTATION` report.
+
+---
+
 ## 5. How to Run the Application
 
 You can run **InTrust** using the **Google ADK CLI** in two main modes: interactive **CLI mode** or **Web UI** mode.
@@ -154,7 +185,7 @@ Run:
 adk run .
 ```
 
-You will enter an **interactive chat interface** with the orchestrator agent.
+You will enter an **interactive chat interface** with the InTrust skill agent.
 You can start with simple prompts such as:
 
 ```
@@ -193,7 +224,7 @@ You can:
 * Chat naturally to explore InTrust capabilities, or
 * Paste full TM Forum Intents to perform real assessments.
 
-The orchestrator agent will automatically interpret your intent, select the right downstream agent, and return a structured TM Forum report.
+The InTrust skill agent will automatically interpret your intent, select the right assessment skill, and return a structured TM Forum report.
 
 ---
 

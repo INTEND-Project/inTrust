@@ -1,0 +1,10 @@
+{
+  "id": "trivy-filesystem",
+  "name": "Trivy File System Security Assessment",
+  "description": "Scans a local directory for vulnerabilities, secrets, and misconfigurations using Trivy.",
+  "assessment_types": ["filesystem_security", "fs_scan", "dependency_security", "secret_scan", "misconfiguration"],
+  "required_parameters": ["fsPath"],
+  "tool_module": "tools.trivy_scan",
+  "tool_function": "scan_fs",
+  "output_key": "fs_scan"
+}
