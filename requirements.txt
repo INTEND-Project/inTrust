@@ -1,2 +1,7 @@
 google-adk>=1.25.0
 bandit>=1.8.6
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+sqlalchemy>=2.0
+pydantic>=2.0
+python-dotenv>=1.0.0

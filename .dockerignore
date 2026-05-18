@@ -1,0 +1,12 @@
+.git
+.adk
+venv
+__pycache__
+**/__pycache__
+*.pyc
+.env
+storage
+logs
+cache
+scan-*.json
+trivy-*.json

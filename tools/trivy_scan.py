@@ -60,6 +60,29 @@ def _run_trivy_command(cmd: list, output_file: str) -> Dict[str, Any]:
     return data, elapsed_time
 
 
+def _summarize_trivy_results(data: Dict[str, Any]) -> Dict[str, int]:
+    """Count concrete Trivy findings across all result targets."""
+    summary = {
+        "vulnerabilities": 0,
+        "secrets": 0,
+        "misconfigurations": 0,
+        "licenses": 0,
+        "targets": len(data.get("Results", [])),
+    }
+    for result in data.get("Results", []):
+        summary["vulnerabilities"] += len(result.get("Vulnerabilities", []) or [])
+        summary["secrets"] += len(result.get("Secrets", []) or [])
+        summary["misconfigurations"] += len(result.get("Misconfigurations", []) or [])
+        summary["licenses"] += len(result.get("Licenses", []) or [])
+    summary["total_findings"] = (
+        summary["vulnerabilities"]
+        + summary["secrets"]
+        + summary["misconfigurations"]
+        + summary["licenses"]
+    )
+    return summary
+
+
 def scan_docker_image(intent_request: Dict[str, Any]) -> Dict[str, Any]:
     """
     Handles a TMForum intent for scanning Docker images.
@@ -94,8 +117,9 @@ def scan_docker_image(intent_request: Dict[str, Any]) -> Dict[str, Any]:
 
         data, elapsed_time = _run_trivy_command(cmd, output_file)
 
-        # Simple summary extraction
-        vuln_count = len(data.get("Results", []))
+        # Summary extraction
+        summary = _summarize_trivy_results(data)
+        vuln_count = summary["vulnerabilities"]
         assessment = "secure" if vuln_count == 0 else "vulnerable"
 
         return {
@@ -106,7 +130,7 @@ def scan_docker_image(intent_request: Dict[str, Any]) -> Dict[str, Any]:
             "version": TRIVY_VERSION,
             "execution_time_sec": elapsed_time,
             "target": docker_image,
-            "metrics": {"vulnerabilities_detected": vuln_count},
+            "metrics": summary,
             "assessment": assessment,
             "explanation": (
                 f"Detected {vuln_count} vulnerable components in image {docker_image}."
@@ -154,7 +178,8 @@ def scan_fs(intent_request: Dict[str, Any]) -> Dict[str, Any]:
 
         data, elapsed_time = _run_trivy_command(cmd, output_file)
 
-        issue_count = len(data.get("Results", []))
+        summary = _summarize_trivy_results(data)
+        issue_count = summary["total_findings"]
         assessment = "secure" if issue_count == 0 else "vulnerable"
 
         return {
@@ -165,7 +190,7 @@ def scan_fs(intent_request: Dict[str, Any]) -> Dict[str, Any]:
             "version": TRIVY_VERSION,
             "execution_time_sec": elapsed_time,
             "target": fs_path,
-            "metrics": {"issues_detected": issue_count},
+            "metrics": summary,
             "assessment": assessment,
             "explanation": (
                 f"Detected {issue_count} potential issues in {fs_path}."
@@ -213,7 +238,8 @@ def scan_k8_cluster(intent_request: Dict[str, Any]) -> Dict[str, Any]:
 
         data, elapsed_time = _run_trivy_command(cmd, output_file)
 
-        issue_count = len(data.get("Results", []))
+        summary = _summarize_trivy_results(data)
+        issue_count = summary["total_findings"]
         assessment = "secure" if issue_count == 0 else "vulnerable"
 
         return {
@@ -224,7 +250,7 @@ def scan_k8_cluster(intent_request: Dict[str, Any]) -> Dict[str, Any]:
             "version": TRIVY_VERSION,
             "execution_time_sec": elapsed_time,
             "target": cluster_name,
-            "metrics": {"issues_detected": issue_count},
+            "metrics": summary,
             "assessment": assessment,
             "explanation": (
                 f"Detected {issue_count} security findings in cluster {cluster_name}."

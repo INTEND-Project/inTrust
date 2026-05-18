@@ -3,7 +3,7 @@
 ## 1. Overview
 
 **InTrust** is a modular, AI-powered framework for performing **trustworthiness, security, and privacy assessments** of data pipelines, AI models, and infrastructure components in the **computing continuum**.
-It combines a **plugin-based architecture**, **LLM-driven agents**, and **WebAssembly sandboxing** to enable secure, flexible, and cross-organizational evaluations.
+It combines a **plugin-based architecture**, **LLM-driven agents**, and **Agent Skills** to enable secure, flexible, and cross-organizational evaluations.
 
 Each assessment is triggered by a **TM Forum Intent** — a high-level declarative request — which the **InTrust skill agent** interprets and maps to a file-backed assessment skill.
 This architecture enables intent-driven management of trustworthy AI systems.
@@ -175,7 +175,53 @@ an implementation can still be selected, but they return a
 
 ## 5. How to Run the Application
 
-You can run **InTrust** using the **Google ADK CLI** in two main modes: interactive **CLI mode** or **Web UI** mode.
+You can run **InTrust** as an asynchronous HTTP runtime service or through the
+Google ADK CLI.
+
+### Runtime Service
+
+Start locally:
+
+```bash
+uvicorn main:app --host 0.0.0.0 --port 8000
+```
+
+Submit an intent:
+
+```bash
+curl -X POST http://localhost:8000/intent \
+  -H "Content-Type: application/json" \
+  -d @intents/sample_intent_python_scan.json
+```
+
+Poll status or result:
+
+```bash
+curl http://localhost:8000/result/<job-id>
+```
+
+List jobs:
+
+```bash
+curl http://localhost:8000/jobs
+```
+
+Inspect logs and technical metadata:
+
+```bash
+curl http://localhost:8000/logs/<job-id>
+```
+
+Run with Docker:
+
+```bash
+docker build -t intrust-runtime .
+docker run --env-file .env -p 8000:8000 -v intrust-storage:/app/storage intrust-runtime
+```
+
+The runtime stores SQLite data in `storage/intrust.db` by default, so persisted
+jobs and reports survive service restarts when the storage directory or Docker
+volume is retained.
 
 ### ▶️ Option 1: Command-Line (Interactive)
 

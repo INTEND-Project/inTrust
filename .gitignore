@@ -3,7 +3,12 @@
 /.env
 /venv
 /tools/__pycache__
+/__pycache__
+**/__pycache__/
 /cache
+/storage
+/logs
+/scan-*.json
 /scan-fs-intent-002.json
 /trivy-compliance-report.json
 /trivy-report.json
