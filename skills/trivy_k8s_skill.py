@@ -5,8 +5,14 @@ from tools.trivy_scan import scan_k8_cluster
 
 
 def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
-    logger.info("skill.trivy_k8s", "Starting Trivy Kubernetes cluster scan")
-    result = scan_k8_cluster(intent)
+    target = intent.get("parameters", {}).get("clusterName")
+    logger.info(
+        "skill.trivy_k8s",
+        "[Skill Execution]\n"
+        "Starting Trivy Kubernetes cluster scan...\n"
+        f"target={target}",
+    )
+    result = scan_k8_cluster(intent, logger)
     if result.get("status") == "FAILED":
         logger.error("skill.trivy_k8s", result.get("error", "Trivy Kubernetes scan failed"))
     else:

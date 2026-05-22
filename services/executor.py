@@ -101,12 +101,28 @@ async def execute_job(job_id: str) -> None:
         job.updated_at = _now()
         db.commit()
 
-        logger.info("executor", "Job started")
+        logger.info(
+            "intent",
+            "[Intent Received]\n"
+            f"intent_id={job.intent_id}\n"
+            f"assessment_type={job.assessment_type}\n"
+            f"timestamp={_now().isoformat()}",
+        )
+        logger.info("executor", f"Job started: job_id={job_id}")
         registry = load_skills()
-        logger.info("skill_loader", f"Loaded {len(registry.list())} assessment skills")
+        logger.info(
+            "skill_loader",
+            "Loaded assessment skills: "
+            + ", ".join(skill.name for skill in registry.list()),
+        )
         orchestrator = RuntimeOrchestrator(registry)
         selected_skill = orchestrator.select_skill(intent)
-        logger.info("orchestrator", f"Assessment routed to {selected_skill.name}")
+        logger.info(
+            "orchestrator",
+            "[Orchestrator]\n"
+            f"Selected skill: {selected_skill.name}\n"
+            f"Reason: assessmentType={job.assessment_type}",
+        )
 
         report = await asyncio.to_thread(
             _execute_with_captured_output, orchestrator, intent, logger
@@ -128,10 +144,17 @@ async def execute_job(job_id: str) -> None:
                 recommendation=_recommendation_from_report(report),
             )
         )
-        logger.info("executor", f"Job finished with status {job.status}")
+        duration_ms = int((time.perf_counter() - started) * 1000)
+        logger.info(
+            "executor",
+            "[Assessment Completed]\n"
+            f"job_id={job_id}\n"
+            f"duration_ms={duration_ms}\n"
+            f"status={job.status}",
+        )
 
     except Exception as exc:
-        logger.error("executor", f"Job failed: {exc}")
+        logger.exception("executor", f"Job failed: {exc}", exc)
         job = db.get(JobRecord, job_id)
         if job:
             job.status = JobStatus.FAILED.value

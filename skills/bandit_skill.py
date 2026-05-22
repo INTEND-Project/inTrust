@@ -5,8 +5,14 @@ from tools.bandit_assessment import run_bandit_assessment
 
 
 def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
-    logger.info("skill.bandit", "Starting Bandit static code analysis")
-    result = run_bandit_assessment(intent)
+    target = intent.get("parameters", {}).get("codeReference", {}).get("path")
+    logger.info(
+        "skill.bandit",
+        "[Skill Execution]\n"
+        "Starting Bandit static code analysis\n"
+        f"target={target}",
+    )
+    result = run_bandit_assessment(intent, logger)
     if result.get("status") == "FAILED":
         logger.error("skill.bandit", result.get("error", "Bandit assessment failed"))
     else:

@@ -33,7 +33,17 @@ class RuntimeOrchestrator:
 
     def execute(self, intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
         skill = self.select_skill(intent)
-        logger.info("orchestrator", f"Selected skill: {skill.name}")
+        assessment_type = (
+            intent.get("parameters", {}).get("assessmentType")
+            or intent.get("assessmentType")
+            or intent.get("type")
+        )
+        logger.info(
+            "orchestrator",
+            "[Orchestrator]\n"
+            f"Selected skill: {skill.name}\n"
+            f"Reason: assessmentType={assessment_type}",
+        )
         result = skill.execute(intent, logger)
         return self._standardize_report(intent, skill, result)
 

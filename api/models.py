@@ -48,3 +48,16 @@ class LogsResponse(BaseModel):
     metadata: Optional[Dict[str, Any]] = None
     errors: List[str] = Field(default_factory=list)
     warnings: List[str] = Field(default_factory=list)
+
+
+class HealthResponse(BaseModel):
+    status: str
+    database: str
+    loaded_skills: int
+
+
+class SkillResponse(BaseModel):
+    name: str
+    description: str
+    accepted_parameters: List[str]
+    supported_assessment_types: List[str]

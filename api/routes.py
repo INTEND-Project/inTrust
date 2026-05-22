@@ -11,17 +11,22 @@ from .database import (
     IntentRecord,
     JobRecord,
     ResultRecord,
+    check_database_connection,
     get_db,
 )
 from .models import (
     ExecutionLog,
+    HealthResponse,
     IntentSubmissionResponse,
     JobStatus,
     JobSummary,
     LogsResponse,
     ResultResponse,
+    SkillResponse,
 )
+from orchestrator.skill_loader import load_skills
 from services.executor import execute_job
+from services.logging_service import app_logger
 
 
 router = APIRouter()
@@ -82,8 +87,50 @@ async def submit_intent(
     )
     db.commit()
 
+    app_logger().info(
+        "[Intent Received]\n"
+        f"intent_id={intent_id}\n"
+        f"assessment_type={assessment_type}",
+        extra={"job_id": job_id, "component": "api.intent"},
+    )
     asyncio.create_task(execute_job(job_id))
     return IntentSubmissionResponse(jobId=job_id, status=JobStatus.QUEUED)
+
+
+@router.get("/health", response_model=HealthResponse)
+async def health() -> HealthResponse:
+    try:
+        check_database_connection()
+        database_status = "connected"
+        status = "healthy"
+    except Exception as exc:
+        app_logger().error(
+            f"Health check database failure: {exc}",
+            exc_info=True,
+            extra={"component": "api.health"},
+        )
+        database_status = "disconnected"
+        status = "unhealthy"
+
+    loaded_skills = len(load_skills().list())
+    return HealthResponse(
+        status=status,
+        database=database_status,
+        loaded_skills=loaded_skills,
+    )
+
+
+@router.get("/skills", response_model=List[SkillResponse])
+async def list_skills() -> List[SkillResponse]:
+    return [
+        SkillResponse(
+            name=skill.name,
+            description=skill.description,
+            accepted_parameters=skill.accepted_parameters,
+            supported_assessment_types=skill.assessment_types,
+        )
+        for skill in load_skills().list()
+    ]
 
 
 @router.get("/result/{job_id}", response_model=ResultResponse)

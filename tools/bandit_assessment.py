@@ -4,7 +4,18 @@ import os
 import time
 from typing import Dict, Any
 
-def run_bandit_assessment(intent_request: Dict[str, Any]) -> Dict[str, Any]:
+
+def _log_subprocess(logger: Any, command: list[str]) -> None:
+    if logger:
+        logger.info(
+            "subprocess",
+            "[Subprocess]\nExecuting command:\n" + " ".join(command),
+        )
+
+
+def run_bandit_assessment(
+    intent_request: Dict[str, Any], logger: Any | None = None
+) -> Dict[str, Any]:
     """
     Handles a TMForum intent requesting security vulnerability assessment
     for a Python code artifact using Bandit.
@@ -32,9 +43,11 @@ def run_bandit_assessment(intent_request: Dict[str, Any]) -> Dict[str, Any]:
 
         # --- Step 1: Run Bandit ---
         # Run Bandit as a subprocess to analyze the code
+        command = ["bandit", "-r", code_path, "-f", "json", "-q"]
+        _log_subprocess(logger, command)
         start_time = time.time()
         process = subprocess.run(
-            ["bandit", "-r", code_path, "-f", "json", "-q"],
+            command,
             capture_output=True,
             text=True,
             check=False

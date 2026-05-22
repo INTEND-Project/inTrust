@@ -8,6 +8,10 @@ from typing import Dict, Any
 
 TRIVY_BIN = os.path.join(Path(__file__).parent.parent, "bin", "trivy.exe")
 TRIVY_VERSION = "0.59.1"
+OUTPUT_DIR = Path(__file__).resolve().parent.parent / os.getenv(
+    "INTRUST_STORAGE_DIR", "storage"
+)
+OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
 #def get_bin():
 #    """Ensure the Trivy binary exists."""
@@ -42,8 +46,15 @@ def get_bin():
     return str(trivy_bin)
 
 
-def _run_trivy_command(cmd: list, output_file: str) -> Dict[str, Any]:
+def _run_trivy_command(
+    cmd: list, output_file: str, logger: Any | None = None
+) -> Dict[str, Any]:
     """Run a Trivy command and return parsed JSON results."""
+    if logger:
+        logger.info(
+            "subprocess",
+            "[Subprocess]\nExecuting command:\n" + " ".join(str(part) for part in cmd),
+        )
     start_time = time.time()
     process = subprocess.run(cmd, capture_output=True, text=True, check=False)
     elapsed_time = round(time.time() - start_time, 2)
@@ -83,7 +94,9 @@ def _summarize_trivy_results(data: Dict[str, Any]) -> Dict[str, int]:
     return summary
 
 
-def scan_docker_image(intent_request: Dict[str, Any]) -> Dict[str, Any]:
+def scan_docker_image(
+    intent_request: Dict[str, Any], logger: Any | None = None
+) -> Dict[str, Any]:
     """
     Handles a TMForum intent for scanning Docker images.
     Expected input:
@@ -103,7 +116,7 @@ def scan_docker_image(intent_request: Dict[str, Any]) -> Dict[str, Any]:
         print(f"[Trivy] Scanning Docker image: {docker_image}")
         trivy_path = get_bin()
 
-        output_file = f"scan-image-{intent_id}.json"
+        output_file = str(OUTPUT_DIR / f"scan-image-{intent_id}.json")
         cmd = [
             trivy_path, "image",
             "--exit-code", "0",
@@ -115,7 +128,7 @@ def scan_docker_image(intent_request: Dict[str, Any]) -> Dict[str, Any]:
             docker_image
         ]
 
-        data, elapsed_time = _run_trivy_command(cmd, output_file)
+        data, elapsed_time = _run_trivy_command(cmd, output_file, logger)
 
         # Summary extraction
         summary = _summarize_trivy_results(data)
@@ -143,7 +156,7 @@ def scan_docker_image(intent_request: Dict[str, Any]) -> Dict[str, Any]:
         return {"status": "FAILED", "error": str(e)}
 
 
-def scan_fs(intent_request: Dict[str, Any]) -> Dict[str, Any]:
+def scan_fs(intent_request: Dict[str, Any], logger: Any | None = None) -> Dict[str, Any]:
     """
     Handles a TMForum intent for scanning local filesystem paths.
     Expected input:
@@ -163,7 +176,7 @@ def scan_fs(intent_request: Dict[str, Any]) -> Dict[str, Any]:
         print(f"[Trivy] Scanning filesystem path: {fs_path}")
         trivy_path = get_bin()
 
-        output_file = f"scan-fs-{intent_id}.json"
+        output_file = str(OUTPUT_DIR / f"scan-fs-{intent_id}.json")
         cmd = [
             trivy_path, "fs",
             "--exit-code", "0",
@@ -176,7 +189,7 @@ def scan_fs(intent_request: Dict[str, Any]) -> Dict[str, Any]:
             fs_path
         ]
 
-        data, elapsed_time = _run_trivy_command(cmd, output_file)
+        data, elapsed_time = _run_trivy_command(cmd, output_file, logger)
 
         summary = _summarize_trivy_results(data)
         issue_count = summary["total_findings"]
@@ -203,7 +216,9 @@ def scan_fs(intent_request: Dict[str, Any]) -> Dict[str, Any]:
         return {"status": "FAILED", "error": str(e)}
 
 
-def scan_k8_cluster(intent_request: Dict[str, Any]) -> Dict[str, Any]:
+def scan_k8_cluster(
+    intent_request: Dict[str, Any], logger: Any | None = None
+) -> Dict[str, Any]:
     """
     Handles a TMForum intent for scanning Kubernetes clusters.
     Expected input:
@@ -223,7 +238,7 @@ def scan_k8_cluster(intent_request: Dict[str, Any]) -> Dict[str, Any]:
         print(f"[Trivy] Scanning Kubernetes cluster: {cluster_name}")
         trivy_path = get_bin()
 
-        output_file = f"scan-k8s-{intent_id}.json"
+        output_file = str(OUTPUT_DIR / f"scan-k8s-{intent_id}.json")
         cmd = [
             trivy_path, "k8s",
             "--exit-code", "0",
@@ -236,7 +251,7 @@ def scan_k8_cluster(intent_request: Dict[str, Any]) -> Dict[str, Any]:
             cluster_name
         ]
 
-        data, elapsed_time = _run_trivy_command(cmd, output_file)
+        data, elapsed_time = _run_trivy_command(cmd, output_file, logger)
 
         summary = _summarize_trivy_results(data)
         issue_count = summary["total_findings"]

@@ -5,8 +5,14 @@ from tools.trivy_scan import scan_fs
 
 
 def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
-    logger.info("skill.trivy_fs", "Starting Trivy filesystem scan")
-    result = scan_fs(intent)
+    target = intent.get("parameters", {}).get("fsPath")
+    logger.info(
+        "skill.trivy_fs",
+        "[Skill Execution]\n"
+        "Starting Trivy filesystem scan...\n"
+        f"target={target}",
+    )
+    result = scan_fs(intent, logger)
     if result.get("status") == "FAILED":
         logger.error("skill.trivy_fs", result.get("error", "Trivy filesystem scan failed"))
     else:

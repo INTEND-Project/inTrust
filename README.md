@@ -1,192 +1,168 @@
-# 🧠 InTrust: Agentic Trustworthiness Assessment Framework
+# InTrust Runtime Service
 
-## 1. Overview
+InTrust is an asynchronous trustworthiness assessment microservice for TM Forum
+intents. It accepts intent payloads over HTTP, selects an assessment skill,
+executes the relevant security or trustworthiness tool, stores results, and
+exposes logs and metadata for external orchestration systems.
 
-**InTrust** is a modular, AI-powered framework for performing **trustworthiness, security, and privacy assessments** of data pipelines, AI models, and infrastructure components in the **computing continuum**.
-It combines a **plugin-based architecture**, **LLM-driven agents**, and **Agent Skills** to enable secure, flexible, and cross-organizational evaluations.
+## Capabilities
 
-Each assessment is triggered by a **TM Forum Intent** — a high-level declarative request — which the **InTrust skill agent** interprets and maps to a file-backed assessment skill.
-This architecture enables intent-driven management of trustworthy AI systems.
+- Accept TM Forum style intents with `POST /intent`.
+- Route assessments dynamically to loaded skills.
+- Run supported security assessments asynchronously.
+- Persist jobs, intents, results, metadata, and execution logs.
+- Support lightweight SQLite development and Dockerized MySQL deployment.
+- Expose health, result, log, and skill discovery APIs.
 
----
+## Database Modes
 
-## 2. Key Features
+InTrust chooses its database backend from environment variables.
 
-### 🔌 Plugin Architecture
+### Mode A: Local Development
 
-* Enables **extensibility and modularity**: each trustworthiness or security assessment is implemented as an independent plugin.
-* Plugins can be written in any programming language and compiled into **WebAssembly (Wasm)** binaries.
-* The core engine dynamically loads and executes plugins at runtime, based on incoming TM Forum intents.
-* Promotes **interoperability and secure collaboration** between different organizations without sharing source code.
-
----
-
-### 🧩 Agentic Approach (Powered by Google ADK)
-
-* Implemented as a **skills-based agent system** using the **Google Agent Development Kit (ADK)**.
-* A central **InTrust skill agent** receives TM Forum Intents, interprets them, and activates a suitable assessment skill.
-* Each skill specializes in a particular aspect of trustworthiness (e.g., privacy, vulnerability scanning, code analysis).
-* **LLMs** enable intelligent orchestration, dynamic plugin selection, and reasoning about user intents.
-* Supports **long-running function tools** for handling resource-intensive operations asynchronously.
-
----
-
-### 🧱 Extism for Secure, Sandboxed Execution
-
-* Uses **Extism** to execute plugins safely inside **WebAssembly sandboxes**.
-* Allows untrusted third-party code to be executed securely and in isolation.
-* Provides **cross-language interoperability**, enabling contributors to add trust assessment tools in Python, Rust, Go, or C++.
-* Ensures platform portability and runtime consistency.
-
----
-
-## 3. Installation Prerequisites
-
-Before running InTrust, ensure your environment is properly set up.
-
-### 🐍 Step 1: Install Python
-
-Install **Python 3.9 or higher** from [python.org](https://www.python.org/downloads/).
-Verify installation:
-
-```bash
-python --version
-```
-
----
-
-### 🧰 Step 2: Create and Activate a Virtual Environment
-
-```bash
-python -m venv venv
-source venv/bin/activate   # On Windows: venv\Scripts\activate
-```
-
----
-
-### 📦 Step 3: Install Dependencies
-
-Install **Google ADK** and other required Python libraries:
+Use this mode for quick local debugging without Docker Compose.
 
 ```bash
 pip install -r requirements.txt
+uvicorn main:app --reload
 ```
 
----
+Default environment:
 
-### 🔑 Step 4: Create a .env File for API Access
-
-In the project root, create a file named .env and add your Google Gemini API credentials.
-These environment variables are required for LLM-powered orchestration via the Google ADK.
-
-Example .env:
-
-```bash
-GOOGLE_API_KEY=<your_google_api_key_here>
-GOOGLE_GENAI_USE_VERTEXAI=FALSE
+```env
+DATABASE_TYPE=sqlite
+INTRUST_STORAGE_DIR=storage
+INTRUST_LOG_DIR=logs
+SQLITE_DATABASE_FILE=intrust.db
 ```
 
-💡 Replace <your_google_api_key_here> with your actual API key from the Google AI Studio.
-
----
-
-### 🧮 Step 5: Install Bandit
-
-Used by the **static code analysis agent**:
-
-```bash
-pip install bandit
-```
-
----
-
-### 🧱 Step 6: Prepare Trivy Binaries
-
-Required for agents performing **Docker image**, **file system**, or **Kubernetes** scans.
-
-1. Download **Trivy** from [https://github.com/aquasecurity/trivy/releases](https://github.com/aquasecurity/trivy/releases).
-2. Extract it into the `bin/` folder:
-
-   * On Linux/macOS → `bin/trivy`
-   * On Windows → `bin/trivy.exe`
-
----
-
-### ⚙️ Step 7: Install Extism PDK
-
-Required for compiling and running Wasm-based plugins.
-Follow the official instructions here:
-👉 [Extism Python PDK](https://github.com/extism/python-pdk)
-
----
-
-## 4. Project Structure
-
-```
-intrust/
-│
-├── agent_descriptions/ # textual descriptions of agents   
-│
-├── tools/ # Python code for tools to be used by agents   
-│
-├── plugins/ # wasm-based plugins
-│
-├── bin/ Linux and Windows executbales of various third-party tools (e.g. Trivy)
-│   
-├── intents/ # sample intent definitions to play with inTrust
-│
-├── requirements.txt
-├── README.md
-└── agent.py                         # Entry point for starting InTrust system
-```
-
----
-
-## 4.1 Skills-Based Architecture
-
-InTrust now uses one high-level ADK agent instead of an orchestrator that wraps
-multiple downstream agents.
-
-When `google-adk>=1.25.0` is installed, the agent loads `skills/` through ADK's
-native `SkillToolset`. Older ADK environments fall back to the local
-skill-management tools exposed by `skill_runtime.py`.
-
-The root agent has four skill-management tools:
-
-* `list_assessment_skills` - discover available assessment skills.
-* `inspect_assessment_skill` - read a skill's metadata and `SKILL.md` instructions.
-* `execute_assessment_skill` - execute the selected skill against the original TM Forum Intent.
-* `create_assessment_skill` - draft a new file-backed skill skeleton when no existing skill matches.
-
-Each skill lives in:
+The application automatically creates:
 
 ```text
-skills/<skill_id>/
-├── SKILL.md
-└── metadata.json
+storage/intrust.db
 ```
 
-Executable skills point to an implementation in `tools/` through
-`metadata.json` fields such as `tool_module` and `tool_function`. Skills without
-an implementation can still be selected, but they return a
-`PENDING_IMPLEMENTATION` report.
+Tables are initialized automatically at application startup with SQLAlchemy
+metadata. No manual migration step is required for the initial runtime schema.
 
----
+### Mode B: Full Docker Deployment
 
-## 5. How to Run the Application
-
-You can run **InTrust** as an asynchronous HTTP runtime service or through the
-Google ADK CLI.
-
-### Runtime Service
-
-Start locally:
+Use this mode for a production-style local deployment with an API container and
+MySQL 8 database container.
 
 ```bash
-uvicorn main:app --host 0.0.0.0 --port 8000
+docker compose up --build
 ```
 
-Submit an intent:
+The Compose stack includes:
+
+- `intrust-api`: FastAPI runtime exposed on port `8000`.
+- `intrust-db`: MySQL 8 with a persistent volume.
+- `intrust-mysql-data`: database persistence.
+- `intrust-logs`: persistent application logs.
+- `intrust-storage`: runtime storage for generated artifacts.
+
+Default MySQL configuration:
+
+```env
+MYSQL_DATABASE=intrust
+MYSQL_USER=intrust
+MYSQL_PASSWORD=intrustpass
+MYSQL_ROOT_PASSWORD=rootpass
+```
+
+The API connects to MySQL using:
+
+```text
+mysql+pymysql://intrust:intrustpass@intrust-db:3306/intrust
+```
+
+You can override any of these values in `.env`.
+
+## Configuration
+
+Common environment variables:
+
+```env
+GOOGLE_API_KEY=replace-with-your-google-api-key
+GOOGLE_GENAI_USE_VERTEXAI=FALSE
+DATABASE_TYPE=sqlite
+INTRUST_STORAGE_DIR=storage
+INTRUST_LOG_DIR=logs
+SQLITE_DATABASE_FILE=intrust.db
+MYSQL_DATABASE=intrust
+MYSQL_USER=intrust
+MYSQL_PASSWORD=intrustpass
+MYSQL_ROOT_PASSWORD=rootpass
+```
+
+`DATABASE_URL` may also be set explicitly when an orchestrator needs to provide
+the full SQLAlchemy connection string. If it is set, it takes precedence over
+the generated SQLite or MySQL URL.
+
+## Startup Diagnostics
+
+On startup, the service prints a structured diagnostic banner to the console and
+to `logs/intrust.log`:
+
+```text
+===================================
+InTrust Runtime Initialized
+Database backend: MySQL
+Loaded skills:
+ - bandit-static-code
+ - trivy-docker-image
+ - trivy-filesystem
+ - trivy-kubernetes
+API endpoint: http://0.0.0.0:8000
+===================================
+```
+
+## Logging
+
+Logs are written simultaneously to:
+
+- Console
+- `logs/intrust.log`
+- `logs/errors.log`
+
+Runtime logs include:
+
+- Intent reception
+- Orchestrator skill decisions
+- Skill execution start
+- Subprocess command invocation
+- Assessment completion
+- Exceptions with timestamp, component, job ID, and stack trace
+
+## API Examples
+
+### Health
+
+```bash
+curl http://localhost:8000/health
+```
+
+Example response:
+
+```json
+{
+  "status": "healthy",
+  "database": "connected",
+  "loaded_skills": 4
+}
+```
+
+### Skill Discovery
+
+```bash
+curl http://localhost:8000/skills
+```
+
+Returns each skill name, description, accepted parameters, and supported
+assessment types.
+
+### Submit Intent
 
 ```bash
 curl -X POST http://localhost:8000/intent \
@@ -194,96 +170,43 @@ curl -X POST http://localhost:8000/intent \
   -d @intents/sample_intent_python_scan.json
 ```
 
-Poll status or result:
+Example response:
+
+```json
+{
+  "jobId": "job-...",
+  "status": "QUEUED"
+}
+```
+
+### Get Result
 
 ```bash
 curl http://localhost:8000/result/<job-id>
 ```
 
-List jobs:
-
-```bash
-curl http://localhost:8000/jobs
-```
-
-Inspect logs and technical metadata:
+### Get Logs
 
 ```bash
 curl http://localhost:8000/logs/<job-id>
 ```
 
-Run with Docker:
+### List Jobs
 
 ```bash
-docker build -t intrust-runtime .
-docker run --env-file .env -p 8000:8000 -v intrust-storage:/app/storage intrust-runtime
+curl http://localhost:8000/jobs
 ```
 
-The runtime stores SQLite data in `storage/intrust.db` by default, so persisted
-jobs and reports survive service restarts when the storage directory or Docker
-volume is retained.
+## Current Skills
 
-### ▶️ Option 1: Command-Line (Interactive)
+- `bandit-static-code`: Python static security analysis with Bandit.
+- `trivy-docker-image`: Docker image vulnerability scanning with Trivy.
+- `trivy-filesystem`: Filesystem vulnerability, secret, and misconfiguration scanning.
+- `trivy-kubernetes`: Kubernetes cluster scanning with Trivy.
 
-Run:
+## Portability Notes
 
-```bash
-adk run .
-```
-
-You will enter an **interactive chat interface** with the InTrust skill agent.
-You can start with simple prompts such as:
-
-```
-What is InTrust?
-What tools can InTrust use for trustworthiness assessments?
-```
-
-Then, to trigger an actual assessment, provide a **TM Forum Intent** in JSON format:
-
-```json
-{
-  "intentId": "intent-001",
-  "name": "Security Assessment",
-  "parameters": {
-    "codeReference": {
-      "path": "./src/app.py"
-    },
-    "assessmentType": "static_code_analysis"
-  }
-}
-```
-
----
-
-### 🌐 Option 2: Web Interface
-
-Run:
-
-```bash
-adk web ..
-```
-
-This will launch a **local web server** with an interactive chatbot interface powered by LLMs.
-You can:
-
-* Chat naturally to explore InTrust capabilities, or
-* Paste full TM Forum Intents to perform real assessments.
-
-The InTrust skill agent will automatically interpret your intent, select the right assessment skill, and return a structured TM Forum report.
-
----
-
-## 6. Example Use Cases
-
-* 🧠 **ML Privacy Auditing** → Run MIA assessment on machine learning models before deployment.
-* 🧾 **Code Security Review** → Static vulnerability scanning of Python projects using Bandit.
-* 🧱 **Infrastructure Hardening** → Scan Docker images, file systems, or Kubernetes clusters using Trivy.
-
----
-
-## 7. License
-
-This project is released under the **MIT License**.
-© 2025 SINTEF Digital, Ericsson AB.
-
+InTrust keeps runtime state in database and log/storage volumes. Configuration
+is environment-variable driven so the same service can run locally, under Docker
+Compose, or later in Kubernetes with externally managed database and volume
+resources.

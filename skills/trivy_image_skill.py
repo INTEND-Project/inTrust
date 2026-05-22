@@ -5,8 +5,14 @@ from tools.trivy_scan import scan_docker_image
 
 
 def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
-    logger.info("skill.trivy_image", "Starting Trivy Docker image scan")
-    result = scan_docker_image(intent)
+    target = intent.get("parameters", {}).get("dockerImage")
+    logger.info(
+        "skill.trivy_image",
+        "[Skill Execution]\n"
+        "Starting Docker image scan...\n"
+        f"target={target}",
+    )
+    result = scan_docker_image(intent, logger)
     if result.get("status") == "FAILED":
         logger.error("skill.trivy_image", result.get("error", "Trivy image scan failed"))
     else:

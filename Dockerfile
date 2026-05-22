@@ -1,11 +1,11 @@
 FROM python:3.11-slim
 
-ARG TRIVY_VERSION=0.59.1
+ARG TRIVY_VERSION=0.70.0
 
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
 ENV INTRUST_STORAGE_DIR=storage
-ENV DATABASE_URL=sqlite:///storage/intrust.db
+ENV DATABASE_TYPE=sqlite
 ENV PATH="/app/bin:${PATH}"
 
 WORKDIR /app
@@ -18,7 +18,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 RUN mkdir -p /app/bin \
-    && curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz" \
+    && curl -fsSL "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-32bit.tar.gz" \
     | tar -xz -C /app/bin trivy \
     && chmod +x /app/bin/trivy
 

@@ -1,0 +1,50 @@
+services:
+  intrust-api:
+    build: .
+    container_name: intrust-api
+    env_file:
+      - .env
+    environment:
+      DATABASE_TYPE: mysql
+      DATABASE_URL: mysql+pymysql://${MYSQL_USER:-intrust}:${MYSQL_PASSWORD:-intrustpass}@intrust-db:3306/${MYSQL_DATABASE:-intrust}
+      MYSQL_HOST: intrust-db
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-intrust}
+      MYSQL_USER: ${MYSQL_USER:-intrust}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-intrustpass}
+      INTRUST_STORAGE_DIR: storage
+      INTRUST_LOG_DIR: logs
+    ports:
+      - "8000:8000"
+    volumes:
+      - intrust-logs:/app/logs
+      - intrust-storage:/app/storage
+    depends_on:
+      intrust-db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  intrust-db:
+    image: mysql:8
+    container_name: intrust-db
+    environment:
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-intrust}
+      MYSQL_USER: ${MYSQL_USER:-intrust}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-intrustpass}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-rootpass}
+    ports:
+      - "3306:3306"
+    volumes:
+      - intrust-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h localhost -u$${MYSQL_USER} -p$${MYSQL_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+volumes:
+  intrust-mysql-data:
+  intrust-logs:
+  intrust-storage:
