@@ -84,8 +84,6 @@ You can override any of these values in `.env`.
 Common environment variables:
 
 ```env
-GOOGLE_API_KEY=replace-with-your-google-api-key
-GOOGLE_GENAI_USE_VERTEXAI=FALSE
 DATABASE_TYPE=sqlite
 INTRUST_STORAGE_DIR=storage
 INTRUST_LOG_DIR=logs
@@ -203,6 +201,8 @@ curl http://localhost:8000/jobs
 - `trivy-docker-image`: Docker image vulnerability scanning with Trivy.
 - `trivy-filesystem`: Filesystem vulnerability, secret, and misconfiguration scanning.
 - `trivy-kubernetes`: Kubernetes cluster scanning with Trivy.
+
+Detailed skill notes are available in `docs/skills/`.
 
 ## Portability Notes
 
