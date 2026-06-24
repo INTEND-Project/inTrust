@@ -16,7 +16,7 @@
     "assessmentType": "static_code_analysis",
     "tool": "bandit",
     "codeReference": {
-      "path": "./agent.py",
+      "path": "./orchestrator/agent.py",
       "language": "python",
       "repository": "https://gitlab.company.com/analytics/analytics_module.git",
       "branch": "main"

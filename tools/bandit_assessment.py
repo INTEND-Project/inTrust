@@ -115,7 +115,7 @@ if __name__ == "__main__":
     test_request = {
         "intentId": "intent-demo-789",
         "parameters": {
-            "codeReference": {"path": "./agent.py"}
+            "codeReference": {"path": "./orchestrator/agent.py"}
         }
     }
 
