@@ -149,7 +149,7 @@ if __name__ == "__main__":
         "intentId": "intent-demo-789",
         "parameters": {
             "codeReference": {"path": "./orchestrator/agent.py"}
-        },
+        }
     }
     report = run_bandit_assessment(test_request)
     print(json.dumps(report, indent=2))
