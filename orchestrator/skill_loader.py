@@ -5,8 +5,8 @@ This module defines the core building blocks of the skill system:
 
 - ``AssessmentSkill``: a dataclass describing one assessment capability
   (e.g. Bandit static analysis, Trivy image scan).
-- ``SkillRegistry``: a container that holds all loaded skills and uses an
-  LLM to decide which skill best matches an incoming request.
+- ``SkillRegistry``: a container that holds all loaded skills and can expose
+  them as ADK FunctionTools for use by the LlmAgent.
 - ``load_skills()``: a factory function that discovers and imports every
   ``*_skill.py`` file in the ``skills/`` directory and registers them.
 
@@ -14,19 +14,34 @@ Adding a new skill to the system requires only two things:
 1. Create ``skills/<name>_skill.py`` that exposes a ``SKILL`` constant of
    type ``AssessmentSkill``.
 2. Create ``docs/skills/<name>.md`` that describes the skill in plain
-   English (this file is what the LLM reads to understand the skill).
+   English (this text is embedded in the LLM agent's tool descriptions
+   so the model knows when to use the skill).
 No changes to the orchestrator or any other file are needed.
 """
 
 import importlib
 import inspect
-import json
-import os
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
 
-from google import genai
+from google.adk.tools import FunctionTool
+
+
+class NullLogger:
+    """Fallback logger used when no job context is available (e.g. adk web)."""
+
+    def info(self, component: str, message: str) -> None:
+        print(f"[{component}] {message}")
+
+    def warning(self, component: str, message: str) -> None:
+        print(f"[WARNING][{component}] {message}")
+
+    def error(self, component: str, message: str) -> None:
+        print(f"[ERROR][{component}] {message}")
+
+    def exception(self, component: str, message: str, exc: BaseException) -> None:
+        print(f"[ERROR][{component}] {message}: {exc}")
 
 
 # Type alias for the skill execution function signature.
@@ -35,7 +50,8 @@ from google import genai
 SkillExecuteFn = Callable[[Dict[str, Any], Any], Dict[str, Any]]
 
 # Path to the directory that contains per-skill Markdown description files.
-# These files are read at startup and fed to the LLM during skill selection.
+# These files are read at startup and used to build tool descriptions for the
+# LLM, so it understands when to invoke each skill.
 _DOCS_DIR = Path(__file__).resolve().parent.parent / "docs" / "skills"
 
 
@@ -53,8 +69,8 @@ class AssessmentSkill:
     description : str
         Short, one-sentence description shown in the ``/skills`` API endpoint.
     assessment_types : list of str
-        Keywords that characterise this skill's domain (used only for display
-        and documentation — skill *selection* is done by the LLM).
+        Keywords that characterise this skill's domain (used for display
+        and documentation).
     accepted_parameters : list of str
         Top-level keys inside the intent's ``parameters`` object that this
         skill expects (e.g. ``["codeReference"]``).
@@ -63,10 +79,9 @@ class AssessmentSkill:
         ``execute(intent: dict, logger: JobLogger) -> dict``.
     docs_content : str
         Full text of the ``docs/skills/<name>.md`` file.  Loaded at startup
-        by ``load_skills()`` and embedded in the LLM prompt so the model can
-        reason about when to use this skill.  Skill files themselves do not
-        need to set this — ``load_skills()`` fills it in automatically from
-        the corresponding ``docs/skills/<name>.md`` file.
+        by ``load_skills()`` and embedded in ADK tool descriptions so the
+        model understands when to use this skill.  Skill files themselves do
+        not need to set this — ``load_skills()`` fills it in automatically.
     """
 
     name: str
@@ -74,19 +89,18 @@ class AssessmentSkill:
     assessment_types: List[str]
     accepted_parameters: List[str]
     execute: SkillExecuteFn
-    # Defaults to empty string so that skill files can define SKILL without
-    # specifying docs_content directly.  load_skills() always overwrites this
-    # with the real file content before registering the skill.
+    # Defaults to empty string so skill files can define SKILL without
+    # specifying docs_content directly.  load_skills() always overwrites this.
     docs_content: str = ""
 
 
 class SkillRegistry:
     """
-    Holds all registered skills and selects the best one for an incoming
-    request using an LLM.
+    Holds all registered skills and exposes them as ADK FunctionTools.
 
     The registry is populated once at startup by ``load_skills()`` and then
-    passed to the ``RuntimeOrchestrator``.
+    passed to the ``RuntimeOrchestrator``.  The orchestrator uses
+    ``to_adk_tools()`` to get callable tool wrappers for the LLM agent.
     """
 
     def __init__(self, skills: List[AssessmentSkill]) -> None:
@@ -103,125 +117,125 @@ class SkillRegistry:
         """Return a skill by its exact name, or ``None`` if not found."""
         return self._skills.get(name)
 
-    def select(self, request: Any) -> AssessmentSkill:
+    def to_adk_tools(
+        self,
+        intent_id: str,
+        logger: Any = None,
+    ) -> List[FunctionTool]:
         """
-        Use the LLM to choose the most appropriate skill for ``request``.
+        Build a list of ADK FunctionTool objects from the registered skills.
 
-        ``request`` can be either:
-        - A TM Forum Intent dictionary (the normal case), or
-        - A plain string expressing the user's intent in natural language.
+        Each tool wraps one skill's execute function.  The ``intent_id`` and
+        ``logger`` are captured in the closure so the tool can reconstruct the
+        minimal intent dict and route log messages to the correct job.
 
-        The LLM is given a description of every registered skill and asked to
-        return the name of the single best-matching skill, or ``"none"`` if
-        the request does not match any skill.
+        When called from the ``adk web`` chatbot (where no job exists and no
+        logger is available), pass ``logger=None`` — the tools will still run
+        but will not write to the job database.
 
-        Raises
-        ------
-        ValueError
-            If the LLM returns ``"none"`` (no skill is appropriate) or if the
-            returned name does not match any registered skill.
-        RuntimeError
-            If the LLM API call fails entirely.
+        Parameters
+        ----------
+        intent_id : str
+            The intent/job identifier to embed in the skill's result.
+        logger : JobLogger, optional
+            Bound logger for this job.  ``None`` is safe (disables DB logging).
+
+        Returns
+        -------
+        list of FunctionTool
+            One ADK tool per registered skill, ready to pass to an LlmAgent.
         """
-        prompt = self._build_selection_prompt(request)
-
-        # Configure and call the Gemini API.
-        api_key = os.getenv("GEMINI_API_KEY")
-        if not api_key:
-            raise RuntimeError(
-                "GEMINI_API_KEY is not set. "
-                "Please add it to your .env file before starting the service."
-            )
-        client = genai.Client(api_key=api_key)
-
-        try:
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=prompt,
-            )
-            raw_answer = response.text.strip()
-        except Exception as exc:
-            raise RuntimeError(
-                f"LLM skill selection failed: {exc}"
-            ) from exc
-
-        # The model is instructed to respond with just a skill name or "none".
-        # We strip extra punctuation/whitespace that the model might add.
-        chosen_name = raw_answer.strip().strip('"').strip("'").lower()
-
-        if chosen_name == "none":
-            raise ValueError(
-                "No suitable assessment skill found for the given request. "
-                "InTrust currently supports Python static code analysis "
-                "(Bandit) and filesystem, Docker image, and Kubernetes "
-                "cluster scanning (Trivy). "
-                "Please revise your request to match one of these capabilities."
-            )
-
-        # Try to find the chosen skill by name (case-insensitive).
-        matched_skill = next(
-            (s for s in self.list() if s.name.lower() == chosen_name),
-            None,
-        )
-        if matched_skill is None:
-            raise ValueError(
-                f"The LLM selected skill '{chosen_name}', but no skill with "
-                f"that name is registered. "
-                f"Available skills: {[s.name for s in self.list()]}"
-            )
-
-        return matched_skill
-
-    def _build_selection_prompt(self, request: Any) -> str:
-        """
-        Build the prompt that is sent to the LLM for skill selection.
-
-        The prompt contains:
-        - A description of the task (choose a skill).
-        - A serialised representation of the incoming request.
-        - A detailed description of every available skill, including its
-          full Markdown documentation so the LLM has rich context.
-        - Strict output instructions (respond with exactly one skill name
-          or the word "none").
-        """
-        # Serialise the request so the LLM can read it regardless of type.
-        if isinstance(request, dict):
-            request_text = json.dumps(request, indent=2)
-        else:
-            request_text = str(request)
-
-        # Build a section for each skill with all available metadata.
-        skill_sections = []
+        tools = []
         for skill in self.list():
-            section = (
-                f"### Skill: {skill.name}\n"
-                f"Short description: {skill.description}\n"
-                f"Accepted intent parameters: {', '.join(skill.accepted_parameters)}\n"
-                f"Associated assessment keywords: {', '.join(skill.assessment_types)}\n"
-                f"\nFull skill documentation:\n{skill.docs_content}"
+            tools.append(_make_skill_tool(skill, intent_id, logger))
+        return tools
+
+
+def _make_skill_tool(
+    skill: AssessmentSkill,
+    intent_id: str,
+    logger: Any,
+) -> FunctionTool:
+    """
+    Create an ADK FunctionTool that wraps a single assessment skill.
+
+    The returned function's docstring is what the LLM reads to decide whether
+    to call this tool.  It combines the skill's description with the full
+    content of its Markdown documentation file.
+
+    The function accepts only the skill-specific parameters (e.g. ``code_path``
+    for Bandit, ``docker_image`` for Trivy image scan) so the LLM knows
+    exactly what it needs to supply.
+
+    Parameters
+    ----------
+    skill : AssessmentSkill
+        The skill to wrap.
+    intent_id : str
+        Injected into the reconstructed intent dict passed to the skill.
+    logger : JobLogger or None
+        Injected logger; ``None`` when running via ``adk web``.
+    """
+    # Each skill type has a different parameter name.  We build the tool
+    # dynamically based on the skill's accepted_parameters list.
+    param_name = skill.accepted_parameters[0] if skill.accepted_parameters else "target"
+
+    # The docstring is the primary mechanism by which the LLM learns about
+    # this tool.  We combine the skill's description with the full Markdown
+    # documentation so the model has rich context.
+    tool_docstring = (
+        f"{skill.description}\n\n"
+        f"Use this tool when the request matches the following description:\n\n"
+        f"{skill.docs_content}\n\n"
+        f"Args:\n"
+        f"    {param_name}: The target for this assessment "
+        f"(see documentation above for the expected format).\n\n"
+        f"Returns:\n"
+        f"    A structured security assessment report."
+    )
+
+    # Create a closure capturing skill, intent_id, logger, and param_name.
+    # The closure reconstructs the minimal intent dict that the existing tool
+    # wrappers (bandit_assessment.py, trivy_scan.py) expect.
+    def _tool_fn(**kwargs: Any) -> Dict[str, Any]:
+        target_value = kwargs.get(param_name)
+        # Reconstruct a minimal intent dict from the parameter the LLM provided.
+        mini_intent = {
+            "intentId": intent_id,
+            "parameters": {param_name: target_value},
+        }
+        # The bandit skill uses a nested parameter: codeReference.path
+        # Translate to the format the tool wrapper expects.
+        if param_name == "codeReference":
+            mini_intent["parameters"] = {
+                "codeReference": {"path": target_value}
+            }
+        # Use NullLogger when no real job logger is available (adk web context).
+        effective_logger = logger if logger is not None else NullLogger()
+        return skill.execute(mini_intent, effective_logger)
+
+    # Give the function a name and docstring that ADK will use for the tool.
+    # Python's function name becomes the tool's name in the LLM's tool calls.
+    _tool_fn.__name__ = skill.name.replace("-", "_")
+    _tool_fn.__doc__ = tool_docstring
+
+    # ADK uses inspect.signature() — not __annotations__ — to build the JSON
+    # schema it sends to the LLM.  With a **kwargs signature, ADK sees no named
+    # parameters and the LLM never receives the right argument name.
+    # Setting __signature__ overrides what inspect.signature() returns so ADK
+    # generates a schema with exactly one named string parameter for this skill.
+    _tool_fn.__signature__ = inspect.Signature(
+        parameters=[
+            inspect.Parameter(
+                param_name,
+                inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                annotation=str,
             )
-            skill_sections.append(section)
+        ],
+        return_annotation=dict,
+    )
 
-        skills_text = "\n\n---\n\n".join(skill_sections)
-
-        return (
-            "You are a security assessment routing system. "
-            "Your only job is to read an incoming assessment request and "
-            "decide which of the available skills should handle it.\n\n"
-            "# Incoming Request\n\n"
-            f"{request_text}\n\n"
-            "# Available Skills\n\n"
-            f"{skills_text}\n\n"
-            "# Instructions\n\n"
-            "Think step by step:\n"
-            "1. What kind of assessment is being requested?\n"
-            "2. Which skill's documentation best matches that request?\n"
-            "3. If no skill is suitable, respond with the word: none\n\n"
-            "Respond with ONLY the skill name (exactly as shown above) "
-            "or the word 'none'. "
-            "Do not include any explanation, punctuation, or extra text in "
-            "your final answer — just the skill name or 'none'."
-        )
+    return FunctionTool(_tool_fn)
 
 
 def load_skills(skills_dir: Optional[Path] = None) -> SkillRegistry:
@@ -232,10 +246,10 @@ def load_skills(skills_dir: Optional[Path] = None) -> SkillRegistry:
     pattern ``*_skill.py``.  Each such file must expose a module-level
     constant named ``SKILL`` of type ``AssessmentSkill``.
 
-    For every discovered skill, the function also looks for a corresponding
+    For every discovered skill, the function also loads the corresponding
     Markdown description file at ``docs/skills/<skill-name>.md``.  If that
     file is missing, startup is aborted with a clear error message, because
-    the LLM relies on those files to understand what each skill does.
+    the LLM agent relies on those files to understand what each skill does.
 
     Parameters
     ----------
