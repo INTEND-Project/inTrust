@@ -1,11 +1,29 @@
-import subprocess
+"""
+Bandit tool wrapper.
+
+This module provides the low-level interface for running the Bandit security
+linter as a subprocess.  It is called by the ``bandit-static-code`` skill.
+
+Bandit analyses Python source code for common security issues such as use of
+dangerous functions, hardcoded passwords, SQL injection patterns, and insecure
+use of cryptographic primitives.  It returns findings categorised by severity
+(HIGH, MEDIUM, LOW) and confidence.
+
+The assessment verdict logic is:
+- ``"vulnerable"`` if there is at least one HIGH severity issue, or more
+  than two MEDIUM severity issues.
+- ``"secure"`` otherwise.
+"""
+
 import json
 import os
+import subprocess
 import time
-from typing import Dict, Any
+from typing import Any, Dict
 
 
 def _log_subprocess(logger: Any, command: list[str]) -> None:
+    """Log the command that is about to be executed, if a logger is provided."""
     if logger:
         logger.info(
             "subprocess",
@@ -17,18 +35,23 @@ def run_bandit_assessment(
     intent_request: Dict[str, Any], logger: Any | None = None
 ) -> Dict[str, Any]:
     """
-    Handles a TMForum intent requesting security vulnerability assessment
-    for a Python code artifact using Bandit.
-    
-    Expected input example:
-        {
-            "intentId": "intent-456",
-            "parameters": {
-                "codeReference": { "path": "/path/to/codebase" }
-            }
-        }
-    """
+    Run Bandit against a Python source tree and return a structured report.
 
+    Parameters
+    ----------
+    intent_request : dict
+        TM Forum Intent.  The code path is read from
+        ``parameters.codeReference.path``.
+    logger : JobLogger, optional
+        If provided, progress and subprocess commands are logged through it.
+
+    Returns
+    -------
+    dict
+        On success: a report with ``status="SUCCESS"``, severity counts,
+        assessment verdict, explanation, and recommendations.
+        On failure: ``{"status": "FAILED", "error": "<message>"}``.
+    """
     try:
         intent_id = intent_request.get("intentId", "unknown")
         params = intent_request.get("parameters", {})
@@ -36,13 +59,20 @@ def run_bandit_assessment(
         code_path = code_ref.get("path")
 
         if not code_path or not os.path.exists(code_path):
-            raise FileNotFoundError(f"Code path not found: {code_path}")
+            raise FileNotFoundError(f"Code path not found: {code_path!r}")
 
-        print(f"Running Bandit assessment for intent: {intent_id}")
-        print(f"Target code path: {code_path}")
+        if logger:
+            logger.info(
+                "tool.bandit",
+                f"Running Bandit assessment for intent: {intent_id}\n"
+                f"Target code path: {code_path}",
+            )
 
-        # --- Step 1: Run Bandit ---
-        # Run Bandit as a subprocess to analyze the code
+        # Run Bandit recursively on the target directory.
+        # -f json: machine-readable output.
+        # -q: suppress the progress bar so stdout is clean JSON.
+        # Return code 0 means no issues; 1 means issues were found.
+        # Any other return code indicates a Bandit execution error.
         command = ["bandit", "-r", code_path, "-f", "json", "-q"]
         _log_subprocess(logger, command)
         start_time = time.time()
@@ -50,24 +80,26 @@ def run_bandit_assessment(
             command,
             capture_output=True,
             text=True,
-            check=False
+            check=False,
         )
         elapsed_time = time.time() - start_time
 
-        if process.returncode not in [0, 1]:  # 0: no issues, 1: found issues
+        if process.returncode not in [0, 1]:
             raise RuntimeError(f"Bandit execution failed: {process.stderr}")
 
-        # --- Step 2: Parse results ---
+        # Parse the JSON output.  Bandit always writes valid JSON when
+        # invoked with -f json, even if no issues are found.
         bandit_output = json.loads(process.stdout or "{}")
         results = bandit_output.get("results", [])
-        metrics = bandit_output.get("metrics", {})
 
         issue_count = len(results)
         high_severity = sum(1 for r in results if r["issue_severity"] == "HIGH")
         medium_severity = sum(1 for r in results if r["issue_severity"] == "MEDIUM")
         low_severity = sum(1 for r in results if r["issue_severity"] == "LOW")
 
-        # --- Step 3: Determine assessment ---
+        # Determine the overall security verdict.
+        # The threshold (>2 MEDIUM issues) is intentionally lenient to reduce
+        # false positives in research codebases with low-risk patterns.
         assessment = "secure"
         if high_severity > 0 or medium_severity > 2:
             assessment = "vulnerable"
@@ -77,8 +109,7 @@ def run_bandit_assessment(
             f"({high_severity} high, {medium_severity} medium, {low_severity} low)."
         )
 
-        # --- Step 4: Build structured report ---
-        result = {
+        return {
             "intentId": intent_id,
             "status": "SUCCESS",
             "assessment_type": "static_code_analysis",
@@ -100,24 +131,25 @@ def run_bandit_assessment(
             ),
         }
 
-        return result
-
-    except Exception as e:
-        print("Error while running Bandit assessment:", str(e))
+    except Exception as exc:
+        if logger:
+            logger.error("tool.bandit", f"Bandit assessment error: {exc}")
         return {
             "status": "FAILED",
-            "error": str(e),
+            "error": str(exc),
         }
 
 
-# Example usage for debugging:
+# ---------------------------------------------------------------------------
+# Quick manual test — run this file directly to test without the HTTP server:
+#   python tools/bandit_assessment.py
+# ---------------------------------------------------------------------------
 if __name__ == "__main__":
     test_request = {
         "intentId": "intent-demo-789",
         "parameters": {
-            "codeReference": {"path": "./agent.py"}
-        }
+            "codeReference": {"path": "./orchestrator/agent.py"}
+        },
     }
-
     report = run_bandit_assessment(test_request)
     print(json.dumps(report, indent=2))
