@@ -67,9 +67,23 @@ def get_bin() -> str:
             "(the Dockerfile downloads it automatically)."
         )
 
-    # Ensure the binary is executable on Unix-like systems.
+    # Ensure the binary is executable on Unix-like systems.  Only attempt the
+    # chmod when the executable bit is actually missing: the binary may be a
+    # symlink to a system-owned file (e.g. /usr/bin/trivy) that we are not
+    # permitted to chmod.  Following such a symlink would raise EPERM
+    # ("Operation not permitted"), so we skip the chmod when it is unnecessary
+    # and tolerate failures when it is already runnable.
     if platform.system().lower() != "windows":
-        trivy_bin.chmod(0o755)
+        # stat() follows symlinks, so this reflects the real target's mode.
+        if not os.access(trivy_bin, os.X_OK):
+            try:
+                trivy_bin.chmod(0o755)
+            except PermissionError as exc:
+                raise PermissionError(
+                    f"Trivy binary at {trivy_bin} is not executable and its "
+                    "permissions could not be changed. Make it executable "
+                    "(chmod +x) or point it at a runnable binary."
+                ) from exc
 
     return str(trivy_bin)
 

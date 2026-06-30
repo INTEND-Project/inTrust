@@ -1,0 +1,1645 @@
+@prefix spa:      <https://intend-project.eu/ontology/spa#> .
+@prefix owl:      <http://www.w3.org/2002/07/owl#> .
+@prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs:     <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix xsd:      <http://www.w3.org/2001/XMLSchema#> .
+@prefix skos:     <http://www.w3.org/2004/02/skos/core#> .
+@prefix dcterms:  <http://purl.org/dc/terms/> .
+@prefix prov:     <http://www.w3.org/ns/prov#> .
+@prefix sh:       <http://www.w3.org/ns/shacl#> .
+
+#################################################################
+# Ontology metadata
+#################################################################
+
+spa:
+    rdf:type owl:Ontology ;
+    rdfs:label "SPA Ontology"@en ;
+    rdfs:comment "Security and Privacy Assessment Ontology for assessment, evidence, controls, risks, findings, metrics, baselines, regulatory traceability, LINDDUN privacy threats, TM Forum-inspired security properties, and declarative intent-driven closed-loop management."@en ;
+    dcterms:title "Security and Privacy Assessment Ontology"@en ;
+    dcterms:creator "Christian Schaefer" ;
+    dcterms:issued "2025-01-01"^^xsd:date ;
+    dcterms:modified "2026-05-27"^^xsd:date ;
+    dcterms:license <https://creativecommons.org/licenses/by/4.0/> ;
+    owl:versionIRI <https://intend-project.eu/ontology/spa/2.1.0> ;
+    owl:versionInfo "2.1.0" ;
+    dcterms:publisher "INTEND Project" ;
+    dcterms:description "An OWL/Turtle ontology for autonomous security and privacy assessment, integrating TM Forum-aligned security property concepts, LINDDUN privacy threat categories, assessment roles and methods, evidence metadata, metric definitions and observations, SHACL validation, and TMF921-compatible declarative intents."@en .
+
+#################################################################
+# Core classes
+#################################################################
+
+spa:Assessment
+    rdf:type owl:Class ;
+    rdfs:label "Assessment"@en ;
+    rdfs:comment "A structured activity that evaluates assets, controls, risks, requirements, metrics, findings, or compliance posture."@en .
+
+spa:SecurityAssessment
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Assessment ;
+    rdfs:label "Security Assessment"@en ;
+    rdfs:comment "An assessment focused on security properties, risks, controls, threats, vulnerabilities, and related requirements."@en .
+
+spa:PrivacyAssessment
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Assessment ;
+    rdfs:label "Privacy Assessment"@en ;
+    rdfs:comment "An assessment focused on privacy risks, personal data processing, data protection principles, and privacy threat categories."@en .
+
+spa:ComplianceAssessment
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Assessment ;
+    rdfs:label "Compliance Assessment"@en ;
+    rdfs:comment "An assessment focused on conformance with legal, regulatory, contractual, or organizational requirements."@en .
+
+spa:AssessmentMethod
+    rdf:type owl:Class ;
+    rdfs:label "Assessment Method"@en ;
+    rdfs:comment "A method or technique used to conduct an assessment."@en .
+
+spa:AssessmentState
+    rdf:type owl:Class ;
+    rdfs:label "Assessment State"@en ;
+    rdfs:comment "A controlled lifecycle state of an assessment."@en .
+
+spa:Role
+    rdf:type owl:Class ;
+    rdfs:label "Role"@en ;
+    rdfs:comment "A responsibility or function performed by an actor in the assessment or remediation lifecycle."@en .
+
+spa:Actor
+    rdf:type owl:Class ;
+    rdfs:label "Actor"@en ;
+    rdfs:comment "A person, organization, system, or component involved in assessment, evidence collection, control operation, or intent fulfillment."@en .
+
+spa:Asset
+    rdf:type owl:Class ;
+    rdfs:label "Asset"@en ;
+    rdfs:comment "An entity of value that may be assessed, protected, monitored, or affected by risks, threats, controls, and intents."@en .
+
+spa:System
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Asset ;
+    rdfs:label "System"@en ;
+    rdfs:comment "A technical system, application, platform, or service that may be assessed."@en .
+
+spa:DataAsset
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Asset ;
+    rdfs:label "Data Asset"@en ;
+    rdfs:comment "A data set, database, data flow, or information object relevant for security or privacy assessment."@en .
+
+spa:PersonalData
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:DataAsset ;
+    rdfs:label "Personal Data"@en ;
+    rdfs:comment "Data relating to an identified or identifiable natural person."@en .
+
+spa:ProcessingActivity
+    rdf:type owl:Class ;
+    rdfs:label "Processing Activity"@en ;
+    rdfs:comment "An activity involving the collection, storage, use, disclosure, transfer, deletion, or other processing of data."@en .
+
+spa:Property
+    rdf:type owl:Class ;
+    rdfs:label "Property"@en ;
+    rdfs:comment "A security, privacy, compliance, or operational property that may be assessed, monitored, protected, or targeted by an intent."@en .
+
+spa:SecurityProperty
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Property ;
+    rdfs:label "Security Property"@en ;
+    rdfs:comment "A property relevant to security, such as confidentiality, integrity, availability, accountability, authentication, authorization, or non-repudiation."@en .
+
+spa:PrivacyProperty
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Property ;
+    rdfs:label "Privacy Property"@en ;
+    rdfs:comment "A property relevant to privacy or data protection, such as purpose limitation, data minimization, transparency, consent, or storage limitation."@en .
+
+spa:Threat
+    rdf:type owl:Class ;
+    rdfs:label "Threat"@en ;
+    rdfs:comment "A potential cause of unwanted impact on assets, properties, requirements, or stakeholders."@en .
+
+spa:SecurityThreat
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Threat ;
+    rdfs:label "Security Threat"@en ;
+    rdfs:comment "A threat affecting security properties or security-relevant assets."@en .
+
+spa:PrivacyThreat
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Threat ;
+    rdfs:label "Privacy Threat"@en ;
+    rdfs:comment "A threat affecting privacy properties, personal data, data subjects, or lawful processing."@en .
+
+spa:PrivacyThreatCategory
+    rdf:type owl:Class ;
+    rdfs:label "Privacy Threat Category"@en ;
+    rdfs:comment "A controlled category of privacy threat, including LINDDUN categories."@en .
+
+spa:Vulnerability
+    rdf:type owl:Class ;
+    rdfs:label "Vulnerability"@en ;
+    rdfs:comment "A weakness that may be exploited by a threat and may give rise to risk."@en .
+
+spa:Risk
+    rdf:type owl:Class ;
+    rdfs:label "Risk"@en ;
+    rdfs:comment "The effect of uncertainty on objectives, commonly associated with threats, vulnerabilities, assets, likelihood, and impact."@en .
+
+spa:RiskLevel
+    rdf:type owl:Class ;
+    rdfs:label "Risk Level"@en ;
+    rdfs:comment "A controlled qualitative classification of risk magnitude."@en .
+
+spa:Severity
+    rdf:type owl:Class ;
+    rdfs:label "Severity"@en ;
+    rdfs:comment "A controlled qualitative classification of finding or issue severity."@en .
+
+spa:Likelihood
+    rdf:type owl:Class ;
+    rdfs:label "Likelihood"@en ;
+    rdfs:comment "A controlled qualitative classification of the probability or frequency of risk occurrence."@en .
+
+spa:Impact
+    rdf:type owl:Class ;
+    rdfs:label "Impact"@en ;
+    rdfs:comment "A controlled qualitative classification of adverse consequence magnitude."@en .
+
+spa:Control
+    rdf:type owl:Class ;
+    rdfs:label "Control"@en ;
+    rdfs:comment "A safeguard, countermeasure, process, policy, or technical capability used to satisfy requirements or mitigate risks."@en .
+
+spa:ControlType
+    rdf:type owl:Class ;
+    rdfs:label "Control Type"@en ;
+    rdfs:comment "A controlled classification of controls, such as preventive, detective, corrective, compensating, or deterrent."@en .
+
+spa:ControlStatus
+    rdf:type owl:Class ;
+    rdfs:label "Control Status"@en ;
+    rdfs:comment "A controlled implementation or operational state of a control."@en .
+
+spa:Requirement
+    rdf:type owl:Class ;
+    rdfs:label "Requirement"@en ;
+    rdfs:comment "A statement of expected behavior, obligation, property, or constraint."@en .
+
+spa:SecurityRequirement
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Requirement ;
+    rdfs:label "Security Requirement"@en ;
+    rdfs:comment "A requirement addressing security objectives or security properties."@en .
+
+spa:PrivacyRequirement
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Requirement ;
+    rdfs:label "Privacy Requirement"@en ;
+    rdfs:comment "A requirement addressing privacy, data protection, or lawful processing objectives."@en .
+
+spa:ComplianceRequirement
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Requirement ;
+    rdfs:label "Compliance Requirement"@en ;
+    rdfs:comment "A requirement derived from a regulation, standard, policy, contract, or framework."@en .
+
+spa:BaselineRequirement
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Requirement ;
+    rdfs:label "Baseline Requirement"@en ;
+    rdfs:comment "A requirement that belongs to or operationalizes a baseline."@en .
+
+spa:Baseline
+    rdf:type owl:Class ;
+    rdfs:label "Baseline"@en ;
+    rdfs:comment "A set of expected controls, requirements, thresholds, or configurations used as an assessment reference."@en .
+
+spa:RegulatorySource
+    rdf:type owl:Class ;
+    rdfs:label "Regulatory Source"@en ;
+    rdfs:comment "A regulation, standard, framework, policy, or source document from which requirements may be derived."@en .
+
+spa:Regulation
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:RegulatorySource ;
+    rdfs:label "Regulation"@en ;
+    rdfs:comment "A legally binding regulatory source."@en .
+
+spa:Standard
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:RegulatorySource ;
+    rdfs:label "Standard"@en ;
+    rdfs:comment "A standard, guideline, or best-practice framework used as a source of requirements or controls."@en .
+
+spa:Finding
+    rdf:type owl:Class ;
+    rdfs:label "Finding"@en ;
+    rdfs:comment "A statement resulting from an assessment, such as a conformity result, non-conformity, observation, weakness, or gap."@en .
+
+spa:FindingItem
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Finding ;
+    rdfs:label "Finding Item"@en ;
+    rdfs:comment "An individual finding or assessment result item."@en .
+
+spa:Gap
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Finding ;
+    rdfs:label "Gap"@en ;
+    rdfs:comment "A finding indicating a difference between the current state and a required, expected, or baseline state."@en .
+
+spa:FindingStatus
+    rdf:type owl:Class ;
+    rdfs:label "Finding Status"@en ;
+    rdfs:comment "A controlled lifecycle state of a finding."@en .
+
+spa:Evidence
+    rdf:type owl:Class ;
+    rdfs:label "Evidence"@en ;
+    rdfs:comment "Information used to substantiate assessments, findings, control evaluations, risk ratings, or compliance conclusions."@en .
+
+spa:Metric
+    rdf:type owl:Class ;
+    rdfs:label "Metric"@en ;
+    rdfs:comment "A measurable quantity, indicator, KPI, KQI, or observation used in assessments, baselines, controls, findings, or intents."@en .
+
+spa:MetricDefinition
+    rdf:type owl:Class ;
+    rdfs:label "Metric Definition"@en ;
+    rdfs:comment "A reusable definition of a metric, including its meaning, unit, aggregation semantics, and expected interpretation."@en .
+
+spa:MetricObservation
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Metric ;
+    rdfs:label "Metric Observation"@en ;
+    rdfs:comment "A concrete observed or calculated metric value at a given time or over a given aggregation period."@en .
+
+spa:Threshold
+    rdf:type owl:Class ;
+    rdfs:label "Threshold"@en ;
+    rdfs:comment "A limit, boundary, or target value used to evaluate a metric, control, baseline, requirement, or fulfillment condition."@en .
+
+spa:Intent
+    rdf:type owl:Class ;
+    rdfs:label "Intent"@en ;
+    rdfs:comment "A declarative statement of desired outcome, expectation, or constraint to be fulfilled by a management system."@en .
+
+spa:HighLevelIntent
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Intent ;
+    rdfs:label "High-Level Intent"@en ;
+    rdfs:comment "A business-level or stakeholder-level declarative statement of desired security, privacy, compliance, or operational outcome."@en .
+
+spa:DerivedIntent
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:Intent ;
+    rdfs:label "Derived Intent"@en ;
+    rdfs:comment "A declarative intent derived from a higher-level intent. It expresses a desired outcome or constraint without prescribing procedural implementation steps, remaining compatible with TMF921-style intent management."@en .
+
+spa:FulfillmentCondition
+    rdf:type owl:Class ;
+    rdfs:label "Fulfillment Condition"@en ;
+    rdfs:comment "A condition that determines whether an intent, requirement, control, or target state is satisfied."@en .
+
+spa:IntentState
+    rdf:type owl:Class ;
+    rdfs:label "Intent State"@en ;
+    rdfs:comment "A controlled lifecycle state of an intent."@en .
+
+spa:Trigger
+    rdf:type owl:Class ;
+    rdfs:label "Trigger"@en ;
+    rdfs:comment "An event, condition, schedule, finding, risk, or metric change that may initiate assessment, reassessment, remediation, or intent handling."@en .
+
+spa:RemediationAction
+    rdf:type owl:Class ;
+    rdfs:label "Remediation Action"@en ;
+    rdfs:comment "An action, change, recommendation, or activity intended to address a finding, risk, gap, or non-compliance."@en .
+
+spa:AssessmentReport
+    rdf:type owl:Class ;
+    rdfs:label "Assessment Report"@en ;
+    rdfs:comment "A formal report document communicating the outcome of an assessment, aligned with TM Forum intent reporting (e.g. tmfIntentReport.v1). It carries the report type, terminal status, a human-readable summary, the findings produced, recommended remediations, and provenance back to the originating intent."@en .
+
+#################################################################
+# Object properties
+#################################################################
+
+spa:assessesAsset
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "assesses asset"@en ;
+    rdfs:domain spa:Assessment ;
+    rdfs:range spa:Asset ;
+    rdfs:comment "Links an assessment to an asset being assessed."@en .
+
+spa:assessesProperty
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "assesses property"@en ;
+    rdfs:domain spa:Assessment ;
+    rdfs:range spa:Property ;
+    rdfs:comment "Links an assessment to a property that is being assessed."@en .
+
+spa:usesAssessmentMethod
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "uses assessment method"@en ;
+    rdfs:domain spa:Assessment ;
+    rdfs:range spa:AssessmentMethod ;
+    rdfs:comment "Links an assessment to the method used to perform it."@en .
+
+spa:hasAssessmentState
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has assessment state"@en ;
+    rdfs:domain spa:Assessment ;
+    rdfs:range spa:AssessmentState ;
+    rdfs:comment "Links an assessment to its lifecycle state."@en .
+
+spa:performedBy
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "performed by"@en ;
+    rdfs:domain spa:Assessment ;
+    rdfs:range spa:Actor ;
+    rdfs:comment "Links an assessment to the actor that performs it."@en .
+
+spa:hasRole
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has role"@en ;
+    rdfs:domain spa:Actor ;
+    rdfs:range spa:Role ;
+    rdfs:comment "Links an actor to a role."@en .
+
+spa:hasFinding
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has finding"@en ;
+    rdfs:domain spa:Assessment ;
+    rdfs:range spa:Finding ;
+    rdfs:comment "Links an assessment to a resulting finding."@en .
+
+spa:isFindingOf
+    rdf:type owl:ObjectProperty ;
+    owl:inverseOf spa:hasFinding ;
+    rdfs:label "is finding of"@en ;
+    rdfs:domain spa:Finding ;
+    rdfs:range spa:Assessment ;
+    rdfs:comment "Links a finding to the assessment that produced it."@en .
+
+spa:hasFindingStatus
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has finding status"@en ;
+    rdfs:domain spa:Finding ;
+    rdfs:range spa:FindingStatus ;
+    rdfs:comment "Links a finding to its lifecycle status."@en .
+
+spa:hasSeverity
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has severity"@en ;
+    rdfs:domain spa:Finding ;
+    rdfs:range spa:Severity ;
+    rdfs:comment "Links a finding to a severity classification."@en .
+
+spa:hasEvidence
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has evidence"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Evidence ;
+    rdfs:comment "Links an assessment, finding, control, risk, requirement, or metric to supporting evidence."@en .
+
+spa:supportsFinding
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "supports finding"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range spa:Finding ;
+    rdfs:comment "Links evidence to a finding it supports."@en .
+
+spa:producedByAssessment
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "produced by assessment"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range spa:Assessment ;
+    rdfs:comment "Links evidence to the assessment activity that produced or collected it."@en .
+
+spa:collectedBy
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "collected by"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range spa:Actor ;
+    rdfs:comment "Links evidence to the actor that collected it."@en .
+
+spa:relatesToAsset
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "relates to asset"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Asset ;
+    rdfs:comment "Links a finding, risk, evidence item, metric, threat, vulnerability, control, or intent to an asset."@en .
+
+spa:affectsProperty
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "affects property"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Property ;
+    rdfs:comment "Links a threat, risk, finding, vulnerability, or control to an affected property."@en .
+
+spa:hasThreat
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has threat"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Threat ;
+    rdfs:comment "Links an asset, assessment, risk, or model element to a relevant threat."@en .
+
+spa:hasPrivacyThreatCategory
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has privacy threat category"@en ;
+    rdfs:domain spa:PrivacyThreat ;
+    rdfs:range spa:PrivacyThreatCategory ;
+    rdfs:comment "Classifies a privacy threat using a privacy threat category, including LINDDUN categories."@en .
+
+spa:hasVulnerability
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has vulnerability"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Vulnerability ;
+    rdfs:comment "Links an asset, risk, finding, or assessment to a vulnerability."@en .
+
+spa:exploitsVulnerability
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "exploits vulnerability"@en ;
+    rdfs:domain spa:Threat ;
+    rdfs:range spa:Vulnerability ;
+    rdfs:comment "Links a threat to a vulnerability it may exploit."@en .
+
+spa:hasRisk
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has risk"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Risk ;
+    rdfs:comment "Links an assessment, asset, finding, threat, vulnerability, or requirement to a risk."@en .
+
+spa:hasRiskLevel
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has risk level"@en ;
+    rdfs:domain spa:Risk ;
+    rdfs:range spa:RiskLevel ;
+    rdfs:comment "Links a risk to a risk level classification."@en .
+
+spa:hasLikelihood
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has likelihood"@en ;
+    rdfs:domain spa:Risk ;
+    rdfs:range spa:Likelihood ;
+    rdfs:comment "Links a risk to a likelihood classification."@en .
+
+spa:hasImpact
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has impact"@en ;
+    rdfs:domain spa:Risk ;
+    rdfs:range spa:Impact ;
+    rdfs:comment "Links a risk to an impact classification."@en .
+
+spa:mitigatesRisk
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "mitigates risk"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Risk ;
+    rdfs:comment "Links a control, remediation action, or intent to a risk it mitigates."@en .
+
+spa:hasControl
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has control"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Control ;
+    rdfs:comment "Links a baseline, requirement, assessment, risk, or asset to a control."@en .
+
+spa:implementsRequirement
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "implements requirement"@en ;
+    rdfs:domain spa:Control ;
+    rdfs:range spa:Requirement ;
+    rdfs:comment "Links a control to a requirement it implements."@en .
+
+spa:satisfiesRequirement
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "satisfies requirement"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Requirement ;
+    rdfs:comment "Links a control, evidence item, metric, finding, or intent to a requirement it satisfies."@en .
+
+spa:derivedFromSource
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "derived from source"@en ;
+    rdfs:domain spa:Requirement ;
+    rdfs:range spa:RegulatorySource ;
+    rdfs:comment "Links a requirement to the regulatory, standard, contractual, or policy source from which it is derived."@en .
+
+spa:hasRequirement
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has requirement"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Requirement ;
+    rdfs:comment "Links a baseline, regulation, standard, assessment, asset, property, control, or intent to a requirement."@en .
+
+spa:hasBaselineRequirement
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has baseline requirement"@en ;
+    rdfs:domain spa:Baseline ;
+    rdfs:range spa:BaselineRequirement ;
+    rdfs:comment "Links a baseline to a baseline requirement."@en .
+
+spa:hasControlStatus
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has control status"@en ;
+    rdfs:domain spa:Control ;
+    rdfs:range spa:ControlStatus ;
+    rdfs:comment "Links a control to its implementation or operational status."@en .
+
+spa:hasControlType
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has control type"@en ;
+    rdfs:domain spa:Control ;
+    rdfs:range spa:ControlType ;
+    rdfs:comment "Links a control to its control type."@en .
+
+spa:usesMetric
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "uses metric"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Metric ;
+    rdfs:comment "Links an assessment, control, finding, baseline, requirement, or intent to a metric used for evaluation."@en .
+
+spa:isMetricUsedByAssessment
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "is metric used by assessment"@en ;
+    rdfs:domain spa:Metric ;
+    rdfs:range spa:Assessment ;
+    rdfs:comment "Links a metric to an assessment that uses it."@en .
+
+spa:findingBasedOnMetric
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "finding based on metric"@en ;
+    rdfs:domain spa:Finding ;
+    rdfs:range spa:Metric ;
+    rdfs:comment "Links a finding to a metric that supports or justifies it."@en .
+
+spa:metricSupportsFinding
+    rdf:type owl:ObjectProperty ;
+    owl:inverseOf spa:findingBasedOnMetric ;
+    rdfs:label "metric supports finding"@en ;
+    rdfs:domain spa:Metric ;
+    rdfs:range spa:Finding ;
+    rdfs:comment "Links a metric to a finding it supports."@en .
+
+spa:hasMetricDefinition
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has metric definition"@en ;
+    rdfs:domain spa:Metric ;
+    rdfs:range spa:MetricDefinition ;
+    rdfs:comment "Links a metric or metric observation to its reusable metric definition."@en .
+
+spa:hasThreshold
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has threshold"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Threshold ;
+    rdfs:comment "Links a metric, condition, baseline, requirement, or intent to a threshold."@en .
+
+spa:hasFulfillmentCondition
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has fulfillment condition"@en ;
+    rdfs:domain spa:Intent ;
+    rdfs:range spa:FulfillmentCondition ;
+    rdfs:comment "Links an intent to a declarative condition used to determine fulfillment."@en .
+
+spa:hasIntentState
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has intent state"@en ;
+    rdfs:domain spa:Intent ;
+    rdfs:range spa:IntentState ;
+    rdfs:comment "Links an intent to its lifecycle state."@en .
+
+spa:decomposesInto
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "decomposes into"@en ;
+    rdfs:domain spa:Intent ;
+    rdfs:range spa:DerivedIntent ;
+    rdfs:comment "Links a higher-level intent to one or more declarative derived intents."@en .
+
+spa:derivedFrom
+    rdf:type owl:ObjectProperty ;
+    owl:inverseOf spa:decomposesInto ;
+    rdfs:label "derived from"@en ;
+    rdfs:domain spa:DerivedIntent ;
+    rdfs:range spa:Intent ;
+    rdfs:comment "Links a derived intent to the intent from which it was declaratively derived."@en .
+
+spa:targetsAsset
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "targets asset"@en ;
+    rdfs:domain spa:Intent ;
+    rdfs:range spa:Asset ;
+    rdfs:comment "Links an intent to the asset whose desired state is expressed."@en .
+
+spa:targetsProperty
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "targets property"@en ;
+    rdfs:domain spa:Intent ;
+    rdfs:range spa:Property ;
+    rdfs:comment "Links an intent to the property whose desired state is expressed."@en .
+
+spa:addressesFinding
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "addresses finding"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Finding ;
+    rdfs:comment "Links an intent, control, or remediation action to a finding it addresses."@en .
+
+spa:triggeredBy
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "triggered by"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:Trigger ;
+    rdfs:comment "Links an assessment, intent, remediation action, or process to the trigger that initiated it."@en .
+
+spa:triggers
+    rdf:type owl:ObjectProperty ;
+    owl:inverseOf spa:triggeredBy ;
+    rdfs:label "triggers"@en ;
+    rdfs:domain spa:Trigger ;
+    rdfs:range owl:Thing ;
+    rdfs:comment "Links a trigger to the assessment, intent, remediation action, or process it initiates."@en .
+
+spa:hasRemediationAction
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has remediation action"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range spa:RemediationAction ;
+    rdfs:comment "Links a finding, gap, risk, control, or intent to a remediation action."@en .
+
+spa:mapsToConcept
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "maps to concept"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range skos:Concept ;
+    rdfs:comment "Links an ontology entity to a SKOS concept used for formal taxonomy or framework mapping."@en .
+
+spa:mapsToTMForumConcept
+    rdf:type owl:ObjectProperty ;
+    rdfs:subPropertyOf spa:mapsToConcept ;
+    rdfs:label "maps to TM Forum concept"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range skos:Concept ;
+    rdfs:comment "Links an ontology entity to a TM Forum-related SKOS concept."@en .
+
+spa:mapsToLINDDUNConcept
+    rdf:type owl:ObjectProperty ;
+    rdfs:subPropertyOf spa:mapsToConcept ;
+    rdfs:label "maps to LINDDUN concept"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range skos:Concept ;
+    rdfs:comment "Links an ontology entity to a LINDDUN privacy threat category SKOS concept."@en .
+
+spa:findings
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "findings"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range spa:Finding ;
+    rdfs:comment "The structured findings communicated by the report."@en .
+
+spa:provenance
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "provenance"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range prov:Entity ;
+    rdfs:comment "Provenance of the report: the skill that produced the raw result, the execution timestamp, and a reference to that result."@en .
+
+#################################################################
+# Data properties
+#################################################################
+
+spa:identifier
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "identifier"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A human-readable or system identifier."@en .
+
+spa:name
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "name"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A name or short title."@en .
+
+spa:description
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "description"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A textual description."@en .
+
+spa:createdAt
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "created at"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The creation timestamp of an entity."@en .
+
+spa:updatedAt
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "updated at"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The last update timestamp of an entity."@en .
+
+spa:startedAt
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "started at"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The start timestamp of an activity or lifecycle period."@en .
+
+spa:endedAt
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "ended at"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The end timestamp of an activity or lifecycle period."@en .
+
+spa:evidenceCollectedAt
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evidence collected at"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The timestamp at which evidence was collected."@en .
+
+spa:evidenceSourceSystem
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evidence source system"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The source system, tool, repository, scanner, log source, or platform from which evidence was obtained."@en .
+
+spa:evidenceURI
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evidence URI"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range xsd:anyURI ;
+    rdfs:comment "A URI identifying or locating the evidence item."@en .
+
+spa:evidenceHash
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evidence hash"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A cryptographic hash or integrity reference for the evidence item."@en .
+
+spa:evidenceFormat
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evidence format"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The format or media type of the evidence item."@en .
+
+spa:evidenceRetentionPeriod
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evidence retention period"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range xsd:duration ;
+    rdfs:comment "The intended or required retention period for the evidence item."@en .
+
+spa:evidenceValidityUntil
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evidence validity until"@en ;
+    rdfs:domain spa:Evidence ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The timestamp until which the evidence item is considered valid or current."@en .
+
+spa:metricValue
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "metric value"@en ;
+    rdfs:domain spa:Metric ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment "The numeric value of a metric observation."@en .
+
+spa:metricUnit
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "metric unit"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The unit of measure used by a metric definition."@en .
+
+spa:metricDefinitionText
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "metric definition text"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The textual definition of a metric."@en .
+
+spa:metricTimestamp
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "metric timestamp"@en ;
+    rdfs:domain spa:Metric ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The timestamp at which the metric value was observed, calculated, or reported."@en .
+
+spa:aggregationPeriod
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "aggregation period"@en ;
+    rdfs:domain spa:Metric ;
+    rdfs:range xsd:duration ;
+    rdfs:comment "The time duration over which a metric value was aggregated."@en .
+
+spa:aggregationFunction
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "aggregation function"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The aggregation function associated with a metric definition, such as average, maximum, minimum, count, percentile, or latest."@en .
+
+spa:thresholdValue
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "threshold value"@en ;
+    rdfs:domain spa:Threshold ;
+    rdfs:range xsd:decimal ;
+    rdfs:comment "The numeric value of a threshold."@en .
+
+spa:comparisonOperator
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "comparison operator"@en ;
+    rdfs:domain spa:Threshold ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The comparison operator used with a threshold, such as less-than, less-than-or-equal, greater-than, greater-than-or-equal, equal, or not-equal."@en .
+
+spa:conditionExpression
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "condition expression"@en ;
+    rdfs:domain spa:FulfillmentCondition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A declarative expression describing the condition to be satisfied."@en .
+
+spa:intentStatement
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "intent statement"@en ;
+    rdfs:domain spa:Intent ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The natural-language or machine-readable declarative statement of desired outcome represented by the intent."@en .
+
+spa:sourceReference
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "source reference"@en ;
+    rdfs:domain owl:Thing ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A textual reference to an external source, clause, article, control identifier, or document section."@en .
+
+spa:reportType
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "report type"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The report schema identifier, e.g. \"tmfIntentReport.v1\"."@en .
+
+spa:status
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "status"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The terminal status of the assessment as reported: SUCCESS, FAILED, or INCONCLUSIVE."@en .
+
+spa:summary
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "summary"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A short human-readable verdict summarising the assessment outcome."@en .
+
+spa:recommendations
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "recommendations"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Recommended remediation actions, one literal per recommendation."@en .
+
+spa:intentId
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "intent id"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Identifier of the intent this report fulfils, carried over from the originating intent."@en .
+
+#################################################################
+# SKOS concept schemes for mappings
+#################################################################
+
+spa:TMForumSecurityPropertyScheme
+    rdf:type skos:ConceptScheme ;
+    rdfs:label "TM Forum Security Property Concept Scheme"@en ;
+    skos:prefLabel "TM Forum Security Property Concept Scheme"@en ;
+    dcterms:source "TM Forum TR 2921" ;
+    skos:definition "A SKOS concept scheme for TM Forum TR 2921-inspired security property mappings used by the SPA ontology."@en .
+
+spa:LINDDUNThreatCategoryScheme
+    rdf:type skos:ConceptScheme ;
+    rdfs:label "LINDDUN Privacy Threat Category Concept Scheme"@en ;
+    skos:prefLabel "LINDDUN Privacy Threat Category Concept Scheme"@en ;
+    dcterms:source "LINDDUN privacy threat modeling framework" ;
+    skos:definition "A SKOS concept scheme for LINDDUN privacy threat category mappings used by the SPA ontology."@en .
+
+#################################################################
+# TM Forum-inspired security property individuals and mappings
+#################################################################
+
+spa:Confidentiality
+    rdf:type owl:NamedIndividual , spa:SecurityProperty , skos:Concept ;
+    rdfs:label "Confidentiality"@en ;
+    skos:prefLabel "Confidentiality"@en ;
+    skos:inScheme spa:TMForumSecurityPropertyScheme ;
+    skos:definition "The property that information is not made available or disclosed to unauthorized individuals, entities, or processes."@en ;
+    skos:closeMatch <https://www.tmforum.org/resources/reference/tr2921/#Confidentiality> .
+
+spa:Integrity
+    rdf:type owl:NamedIndividual , spa:SecurityProperty , skos:Concept ;
+    rdfs:label "Integrity"@en ;
+    skos:prefLabel "Integrity"@en ;
+    skos:inScheme spa:TMForumSecurityPropertyScheme ;
+    skos:definition "The property of accuracy and completeness of assets, data, or processing."@en ;
+    skos:closeMatch <https://www.tmforum.org/resources/reference/tr2921/#Integrity> .
+
+spa:Availability
+    rdf:type owl:NamedIndividual , spa:SecurityProperty , skos:Concept ;
+    rdfs:label "Availability"@en ;
+    skos:prefLabel "Availability"@en ;
+    skos:inScheme spa:TMForumSecurityPropertyScheme ;
+    skos:definition "The property of being accessible and usable on demand by an authorized entity."@en ;
+    skos:closeMatch <https://www.tmforum.org/resources/reference/tr2921/#Availability> .
+
+spa:Accountability
+    rdf:type owl:NamedIndividual , spa:SecurityProperty , skos:Concept ;
+    rdfs:label "Accountability"@en ;
+    skos:prefLabel "Accountability"@en ;
+    skos:inScheme spa:TMForumSecurityPropertyScheme ;
+    skos:definition "The property that actions of an entity can be traced uniquely to that entity."@en ;
+    skos:closeMatch <https://www.tmforum.org/resources/reference/tr2921/#Accountability> .
+
+spa:Authentication
+    rdf:type owl:NamedIndividual , spa:SecurityProperty , skos:Concept ;
+    rdfs:label "Authentication"@en ;
+    skos:prefLabel "Authentication"@en ;
+    skos:inScheme spa:TMForumSecurityPropertyScheme ;
+    skos:definition "The property or process of verifying the claimed identity of an entity."@en ;
+    skos:closeMatch <https://www.tmforum.org/resources/reference/tr2921/#Authentication> .
+
+spa:Authorization
+    rdf:type owl:NamedIndividual , spa:SecurityProperty , skos:Concept ;
+    rdfs:label "Authorization"@en ;
+    skos:prefLabel "Authorization"@en ;
+    skos:inScheme spa:TMForumSecurityPropertyScheme ;
+    skos:definition "The property or process of determining whether an authenticated entity is permitted to access a resource or perform an action."@en ;
+    skos:closeMatch <https://www.tmforum.org/resources/reference/tr2921/#Authorization> .
+
+spa:NonRepudiation
+    rdf:type owl:NamedIndividual , spa:SecurityProperty , skos:Concept ;
+    rdfs:label "Non-repudiation"@en ;
+    skos:prefLabel "Non-repudiation"@en ;
+    skos:inScheme spa:TMForumSecurityPropertyScheme ;
+    skos:definition "The property that an entity cannot deny having performed an action or transaction."@en ;
+    skos:closeMatch <https://www.tmforum.org/resources/reference/tr2921/#NonRepudiation> .
+
+#################################################################
+# LINDDUN privacy threat category individuals and mappings
+#################################################################
+
+spa:Linkability
+    rdf:type owl:NamedIndividual , spa:PrivacyThreatCategory , skos:Concept ;
+    rdfs:label "Linkability"@en ;
+    skos:prefLabel "Linkability"@en ;
+    skos:inScheme spa:LINDDUNThreatCategoryScheme ;
+    skos:definition "A privacy threat category concerning the ability to sufficiently distinguish whether items of interest are related."@en ;
+    skos:exactMatch <https://linddun.org/threat-tree/#Linkability> .
+
+spa:Identifiability
+    rdf:type owl:NamedIndividual , spa:PrivacyThreatCategory , skos:Concept ;
+    rdfs:label "Identifiability"@en ;
+    skos:prefLabel "Identifiability"@en ;
+    skos:inScheme spa:LINDDUNThreatCategoryScheme ;
+    skos:definition "A privacy threat category concerning the ability to sufficiently identify a data subject."@en ;
+    skos:exactMatch <https://linddun.org/threat-tree/#Identifiability> .
+
+spa:LINDDUNNonRepudiation
+    rdf:type owl:NamedIndividual , spa:PrivacyThreatCategory , skos:Concept ;
+    rdfs:label "LINDDUN Non-repudiation"@en ;
+    skos:prefLabel "Non-repudiation"@en ;
+    skos:inScheme spa:LINDDUNThreatCategoryScheme ;
+    skos:definition "A privacy threat category concerning the inability of a data subject to deny claims or actions in a privacy-relevant context."@en ;
+    skos:exactMatch <https://linddun.org/threat-tree/#NonRepudiation> .
+
+spa:Detectability
+    rdf:type owl:NamedIndividual , spa:PrivacyThreatCategory , skos:Concept ;
+    rdfs:label "Detectability"@en ;
+    skos:prefLabel "Detectability"@en ;
+    skos:inScheme spa:LINDDUNThreatCategoryScheme ;
+    skos:definition "A privacy threat category concerning the ability to sufficiently distinguish whether an item of interest exists."@en ;
+    skos:exactMatch <https://linddun.org/threat-tree/#Detectability> .
+
+spa:DisclosureOfInformation
+    rdf:type owl:NamedIndividual , spa:PrivacyThreatCategory , skos:Concept ;
+    rdfs:label "Disclosure of Information"@en ;
+    skos:prefLabel "Disclosure of Information"@en ;
+    skos:inScheme spa:LINDDUNThreatCategoryScheme ;
+    skos:definition "A privacy threat category concerning unauthorized or inappropriate disclosure of information."@en ;
+    skos:exactMatch <https://linddun.org/threat-tree/#DisclosureOfInformation> .
+
+spa:Unawareness
+    rdf:type owl:NamedIndividual , spa:PrivacyThreatCategory , skos:Concept ;
+    rdfs:label "Unawareness"@en ;
+    skos:prefLabel "Unawareness"@en ;
+    skos:inScheme spa:LINDDUNThreatCategoryScheme ;
+    skos:definition "A privacy threat category concerning insufficient awareness, transparency, or understanding by data subjects."@en ;
+    skos:exactMatch <https://linddun.org/threat-tree/#Unawareness> .
+
+spa:NonCompliance
+    rdf:type owl:NamedIndividual , spa:PrivacyThreatCategory , skos:Concept ;
+    rdfs:label "Non-compliance"@en ;
+    skos:prefLabel "Non-compliance"@en ;
+    skos:inScheme spa:LINDDUNThreatCategoryScheme ;
+    skos:definition "A privacy threat category concerning violation of legal, regulatory, contractual, policy, or organizational privacy obligations."@en ;
+    skos:exactMatch <https://linddun.org/threat-tree/#NonCompliance> .
+
+#################################################################
+# Privacy property individuals
+# LINDDUN is intentionally modeled as privacy threat categories,
+# not as privacy properties.
+#################################################################
+
+spa:DataMinimization
+    rdf:type owl:NamedIndividual , spa:PrivacyProperty ;
+    rdfs:label "Data minimization"@en ;
+    rdfs:comment "The property that personal data collection and processing are limited to what is necessary for the stated purpose."@en .
+
+spa:PurposeLimitation
+    rdf:type owl:NamedIndividual , spa:PrivacyProperty ;
+    rdfs:label "Purpose limitation"@en ;
+    rdfs:comment "The property that personal data is collected for specified, explicit, and legitimate purposes and not further processed incompatibly."@en .
+
+spa:Transparency
+    rdf:type owl:NamedIndividual , spa:PrivacyProperty ;
+    rdfs:label "Transparency"@en ;
+    rdfs:comment "The property that processing is understandable, visible, and communicated appropriately to affected data subjects."@en .
+
+spa:StorageLimitation
+    rdf:type owl:NamedIndividual , spa:PrivacyProperty ;
+    rdfs:label "Storage limitation"@en ;
+    rdfs:comment "The property that personal data is not kept longer than necessary."@en .
+
+spa:ConsentManagement
+    rdf:type owl:NamedIndividual , spa:PrivacyProperty ;
+    rdfs:label "Consent management"@en ;
+    rdfs:comment "The property that consent is collected, managed, withdrawn, and evidenced appropriately where consent is the lawful basis."@en .
+
+#################################################################
+# Role individuals
+#################################################################
+
+spa:SecurityAssessor
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "Security Assessor"@en ;
+    rdfs:comment "A role responsible for conducting or reviewing security assessments."@en .
+
+spa:PrivacyAssessor
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "Privacy Assessor"@en ;
+    rdfs:comment "A role responsible for conducting or reviewing privacy assessments."@en .
+
+spa:ComplianceOfficer
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "Compliance Officer"@en ;
+    rdfs:comment "A role responsible for compliance oversight and regulatory alignment."@en .
+
+spa:RiskOwner
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "Risk Owner"@en ;
+    rdfs:comment "A role accountable for managing a risk."@en .
+
+spa:ControlOwner
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "Control Owner"@en ;
+    rdfs:comment "A role accountable for implementation and operation of a control."@en .
+
+spa:DataProtectionOfficer
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "Data Protection Officer"@en ;
+    rdfs:comment "A role responsible for advising on and monitoring privacy and data protection compliance."@en .
+
+spa:SystemOwner
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "System Owner"@en ;
+    rdfs:comment "A role accountable for a system or service."@en .
+
+spa:IntentOwner
+    rdf:type owl:NamedIndividual , spa:Role ;
+    rdfs:label "Intent Owner"@en ;
+    rdfs:comment "A role responsible for defining, approving, or maintaining an intent."@en .
+
+#################################################################
+# Assessment method individuals
+#################################################################
+
+spa:AutomatedAssessment
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Automated Assessment"@en ;
+    rdfs:comment "An assessment method based on automated collection, scanning, monitoring, reasoning, or analysis."@en .
+
+spa:ManualReview
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Manual Review"@en ;
+    rdfs:comment "An assessment method based on human review."@en .
+
+spa:DocumentReview
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Document Review"@en ;
+    rdfs:comment "An assessment method based on review of policies, procedures, records, or other documents."@en .
+
+spa:Interview
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Interview"@en ;
+    rdfs:comment "An assessment method based on interviews with stakeholders or responsible personnel."@en .
+
+spa:TechnicalScan
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Technical Scan"@en ;
+    rdfs:comment "An assessment method based on technical scanning or automated technical inspection."@en .
+
+spa:ConfigurationReview
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Configuration Review"@en ;
+    rdfs:comment "An assessment method based on inspection of configuration settings."@en .
+
+spa:ThreatModeling
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Threat Modeling"@en ;
+    rdfs:comment "An assessment method based on identifying, analyzing, and evaluating threats."@en .
+
+spa:RiskAnalysis
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Risk Analysis"@en ;
+    rdfs:comment "An assessment method based on identifying and evaluating risks."@en .
+
+spa:PrivacyImpactAssessment
+    rdf:type owl:NamedIndividual , spa:AssessmentMethod ;
+    rdfs:label "Privacy Impact Assessment"@en ;
+    rdfs:comment "An assessment method focused on privacy impacts and data protection risks."@en .
+
+#################################################################
+# Controlled vocabulary individuals
+#################################################################
+
+spa:AssessmentPlanned
+    rdf:type owl:NamedIndividual , spa:AssessmentState ;
+    rdfs:label "Assessment planned"@en .
+
+spa:AssessmentInProgress
+    rdf:type owl:NamedIndividual , spa:AssessmentState ;
+    rdfs:label "Assessment in progress"@en .
+
+spa:AssessmentCompleted
+    rdf:type owl:NamedIndividual , spa:AssessmentState ;
+    rdfs:label "Assessment completed"@en .
+
+spa:AssessmentCancelled
+    rdf:type owl:NamedIndividual , spa:AssessmentState ;
+    rdfs:label "Assessment cancelled"@en .
+
+spa:FindingOpen
+    rdf:type owl:NamedIndividual , spa:FindingStatus ;
+    rdfs:label "Finding open"@en .
+
+spa:FindingInProgress
+    rdf:type owl:NamedIndividual , spa:FindingStatus ;
+    rdfs:label "Finding in progress"@en .
+
+spa:FindingAccepted
+    rdf:type owl:NamedIndividual , spa:FindingStatus ;
+    rdfs:label "Finding accepted"@en .
+
+spa:FindingResolved
+    rdf:type owl:NamedIndividual , spa:FindingStatus ;
+    rdfs:label "Finding resolved"@en .
+
+spa:FindingClosed
+    rdf:type owl:NamedIndividual , spa:FindingStatus ;
+    rdfs:label "Finding closed"@en .
+
+spa:SeverityLow
+    rdf:type owl:NamedIndividual , spa:Severity ;
+    rdfs:label "Low severity"@en .
+
+spa:SeverityMedium
+    rdf:type owl:NamedIndividual , spa:Severity ;
+    rdfs:label "Medium severity"@en .
+
+spa:SeverityHigh
+    rdf:type owl:NamedIndividual , spa:Severity ;
+    rdfs:label "High severity"@en .
+
+spa:SeverityCritical
+    rdf:type owl:NamedIndividual , spa:Severity ;
+    rdfs:label "Critical severity"@en .
+
+spa:LikelihoodLow
+    rdf:type owl:NamedIndividual , spa:Likelihood ;
+    rdfs:label "Low likelihood"@en .
+
+spa:LikelihoodMedium
+    rdf:type owl:NamedIndividual , spa:Likelihood ;
+    rdfs:label "Medium likelihood"@en .
+
+spa:LikelihoodHigh
+    rdf:type owl:NamedIndividual , spa:Likelihood ;
+    rdfs:label "High likelihood"@en .
+
+spa:ImpactLow
+    rdf:type owl:NamedIndividual , spa:Impact ;
+    rdfs:label "Low impact"@en .
+
+spa:ImpactMedium
+    rdf:type owl:NamedIndividual , spa:Impact ;
+    rdfs:label "Medium impact"@en .
+
+spa:ImpactHigh
+    rdf:type owl:NamedIndividual , spa:Impact ;
+    rdfs:label "High impact"@en .
+
+spa:RiskLevelLow
+    rdf:type owl:NamedIndividual , spa:RiskLevel ;
+    rdfs:label "Low risk level"@en .
+
+spa:RiskLevelMedium
+    rdf:type owl:NamedIndividual , spa:RiskLevel ;
+    rdfs:label "Medium risk level"@en .
+
+spa:RiskLevelHigh
+    rdf:type owl:NamedIndividual , spa:RiskLevel ;
+    rdfs:label "High risk level"@en .
+
+spa:RiskLevelCritical
+    rdf:type owl:NamedIndividual , spa:RiskLevel ;
+    rdfs:label "Critical risk level"@en .
+
+spa:PreventiveControl
+    rdf:type owl:NamedIndividual , spa:ControlType ;
+    rdfs:label "Preventive control"@en .
+
+spa:DetectiveControl
+    rdf:type owl:NamedIndividual , spa:ControlType ;
+    rdfs:label "Detective control"@en .
+
+spa:CorrectiveControl
+    rdf:type owl:NamedIndividual , spa:ControlType ;
+    rdfs:label "Corrective control"@en .
+
+spa:CompensatingControl
+    rdf:type owl:NamedIndividual , spa:ControlType ;
+    rdfs:label "Compensating control"@en .
+
+spa:DeterrentControl
+    rdf:type owl:NamedIndividual , spa:ControlType ;
+    rdfs:label "Deterrent control"@en .
+
+spa:ControlPlanned
+    rdf:type owl:NamedIndividual , spa:ControlStatus ;
+    rdfs:label "Control planned"@en .
+
+spa:ControlImplemented
+    rdf:type owl:NamedIndividual , spa:ControlStatus ;
+    rdfs:label "Control implemented"@en .
+
+spa:ControlOperational
+    rdf:type owl:NamedIndividual , spa:ControlStatus ;
+    rdfs:label "Control operational"@en .
+
+spa:ControlIneffective
+    rdf:type owl:NamedIndividual , spa:ControlStatus ;
+    rdfs:label "Control ineffective"@en .
+
+spa:ControlRetired
+    rdf:type owl:NamedIndividual , spa:ControlStatus ;
+    rdfs:label "Control retired"@en .
+
+spa:IntentCreated
+    rdf:type owl:NamedIndividual , spa:IntentState ;
+    rdfs:label "Intent created"@en .
+
+spa:IntentAcknowledged
+    rdf:type owl:NamedIndividual , spa:IntentState ;
+    rdfs:label "Intent acknowledged"@en .
+
+spa:IntentActive
+    rdf:type owl:NamedIndividual , spa:IntentState ;
+    rdfs:label "Intent active"@en .
+
+spa:IntentFulfilled
+    rdf:type owl:NamedIndividual , spa:IntentState ;
+    rdfs:label "Intent fulfilled"@en .
+
+spa:IntentDegraded
+    rdf:type owl:NamedIndividual , spa:IntentState ;
+    rdfs:label "Intent degraded"@en .
+
+spa:IntentViolated
+    rdf:type owl:NamedIndividual , spa:IntentState ;
+    rdfs:label "Intent violated"@en .
+
+spa:IntentRetired
+    rdf:type owl:NamedIndividual , spa:IntentState ;
+    rdfs:label "Intent retired"@en .
+
+#################################################################
+# Regulatory and standard source individuals
+#################################################################
+
+spa:GDPR
+    rdf:type owl:NamedIndividual , spa:Regulation ;
+    rdfs:label "General Data Protection Regulation"@en ;
+    spa:identifier "GDPR" ;
+    spa:sourceReference "Regulation (EU) 2016/679" .
+
+spa:NIS2
+    rdf:type owl:NamedIndividual , spa:Regulation ;
+    rdfs:label "NIS2 Directive"@en ;
+    spa:identifier "NIS2" ;
+    spa:sourceReference "Directive (EU) 2022/2555" .
+
+spa:DORA
+    rdf:type owl:NamedIndividual , spa:Regulation ;
+    rdfs:label "Digital Operational Resilience Act"@en ;
+    spa:identifier "DORA" ;
+    spa:sourceReference "Regulation (EU) 2022/2554" .
+
+spa:ISO27001
+    rdf:type owl:NamedIndividual , spa:Standard ;
+    rdfs:label "ISO/IEC 27001"@en ;
+    spa:identifier "ISO/IEC 27001" ;
+    spa:sourceReference "ISO/IEC 27001 information security management systems" .
+
+spa:NISTCSF
+    rdf:type owl:NamedIndividual , spa:Standard ;
+    rdfs:label "NIST Cybersecurity Framework"@en ;
+    spa:identifier "NIST CSF" ;
+    spa:sourceReference "NIST Cybersecurity Framework" .
+
+spa:TMForumTR2921
+    rdf:type owl:NamedIndividual , spa:Standard ;
+    rdfs:label "TM Forum TR 2921"@en ;
+    spa:identifier "TMF TR2921" ;
+    spa:sourceReference "TM Forum TR 2921 security-related technical report" .
+
+spa:LINDDUNFramework
+    rdf:type owl:NamedIndividual , spa:Standard ;
+    rdfs:label "LINDDUN Privacy Threat Modeling Framework"@en ;
+    spa:identifier "LINDDUN" ;
+    spa:sourceReference "LINDDUN privacy threat modeling framework" .
+
+#################################################################
+# SHACL validation shapes
+#################################################################
+
+spa:AssessmentShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Assessment shape"@en ;
+    sh:targetClass spa:Assessment ;
+    sh:property [
+        sh:path spa:hasAssessmentState ;
+        sh:class spa:AssessmentState ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:usesAssessmentMethod ;
+        sh:class spa:AssessmentMethod ;
+    ] ;
+    sh:property [
+        sh:path spa:assessesAsset ;
+        sh:class spa:Asset ;
+    ] .
+
+spa:FindingShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Finding shape"@en ;
+    sh:targetClass spa:Finding ;
+    sh:property [
+        sh:path spa:hasFindingStatus ;
+        sh:class spa:FindingStatus ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:hasSeverity ;
+        sh:class spa:Severity ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:hasEvidence ;
+        sh:class spa:Evidence ;
+    ] .
+
+spa:RiskShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Risk shape"@en ;
+    sh:targetClass spa:Risk ;
+    sh:property [
+        sh:path spa:hasRiskLevel ;
+        sh:class spa:RiskLevel ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:hasLikelihood ;
+        sh:class spa:Likelihood ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:hasImpact ;
+        sh:class spa:Impact ;
+        sh:maxCount 1 ;
+    ] .
+
+spa:ControlShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Control shape"@en ;
+    sh:targetClass spa:Control ;
+    sh:property [
+        sh:path spa:hasControlStatus ;
+        sh:class spa:ControlStatus ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:hasControlType ;
+        sh:class spa:ControlType ;
+        sh:maxCount 1 ;
+    ] .
+
+spa:EvidenceShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Evidence shape"@en ;
+    sh:targetClass spa:Evidence ;
+    sh:property [
+        sh:path spa:evidenceCollectedAt ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:evidenceSourceSystem ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:evidenceURI ;
+        sh:datatype xsd:anyURI ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:evidenceHash ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:evidenceFormat ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] .
+
+spa:MetricShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Metric shape"@en ;
+    sh:targetClass spa:Metric ;
+    sh:property [
+        sh:path spa:hasMetricDefinition ;
+        sh:class spa:MetricDefinition ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:metricTimestamp ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:aggregationPeriod ;
+        sh:datatype xsd:duration ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:metricValue ;
+        sh:datatype xsd:decimal ;
+    ] .
+
+spa:MetricDefinitionShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Metric definition shape"@en ;
+    sh:targetClass spa:MetricDefinition ;
+    sh:property [
+        sh:path spa:metricDefinitionText ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:metricUnit ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:aggregationFunction ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] .
+
+spa:IntentShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Intent shape"@en ;
+    sh:targetClass spa:Intent ;
+    sh:property [
+        sh:path spa:intentStatement ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:hasIntentState ;
+        sh:class spa:IntentState ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:hasFulfillmentCondition ;
+        sh:class spa:FulfillmentCondition ;
+    ] .
+
+spa:DerivedIntentShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Derived intent shape"@en ;
+    sh:targetClass spa:DerivedIntent ;
+    sh:property [
+        sh:path spa:derivedFrom ;
+        sh:class spa:Intent ;
+        sh:minCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:intentStatement ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+    ] .
+
+spa:PrivacyThreatShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Privacy threat shape"@en ;
+    sh:targetClass spa:PrivacyThreat ;
+    sh:property [
+        sh:path spa:hasPrivacyThreatCategory ;
+        sh:class spa:PrivacyThreatCategory ;
+        sh:minCount 1 ;
+    ] .
+
+spa:RequirementShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Requirement shape"@en ;
+    sh:targetClass spa:Requirement ;
+    sh:property [
+        sh:path spa:derivedFromSource ;
+        sh:class spa:RegulatorySource ;
+    ] .
+
+spa:AssessmentReportShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Assessment report shape"@en ;
+    sh:targetClass spa:AssessmentReport ;
+    sh:property [
+        sh:path spa:reportType ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:status ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "SUCCESS" "FAILED" "INCONCLUSIVE" ) ;
+    ] ;
+    sh:property [
+        sh:path spa:summary ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:intentId ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:recommendations ;
+        sh:datatype xsd:string ;
+    ] ;
+    sh:property [
+        sh:path spa:findings ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+    ] ;
+    sh:property [
+        sh:path spa:provenance ;
+        sh:nodeKind sh:BlankNodeOrIRI ;
+        sh:maxCount 1 ;
+    ] .
