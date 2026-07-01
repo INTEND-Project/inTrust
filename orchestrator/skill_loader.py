@@ -209,12 +209,19 @@ def _make_skill_tool(
         parameters: Dict[str, Any] = {
             name: kwargs.get(name) for name in param_names
         }
+        # ``intentId`` is not a skill parameter — it belongs at the top level of
+        # the intent.  When a skill declares it (e.g. mia-privacy, which queries
+        # ACAT by intent id), the LLM supplies it here; promote it so it
+        # overrides the closure's job id.  This is the only way the ``adk web``
+        # path — where the closure id is the fixed "interactive" — can reach the
+        # real intent id.  Fall back to the closure id when not provided.
+        supplied_intent_id = parameters.pop("intentId", None)
         # The bandit skill uses a nested parameter: codeReference.path
         # Translate to the format the tool wrapper expects.
         if "codeReference" in parameters:
             parameters["codeReference"] = {"path": parameters["codeReference"]}
         mini_intent = {
-            "intentId": intent_id,
+            "intentId": supplied_intent_id or intent_id,
             "parameters": parameters,
         }
         # Use NullLogger when no real job logger is available (adk web context).
