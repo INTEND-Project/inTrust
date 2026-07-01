@@ -176,40 +176,47 @@ def _make_skill_tool(
     logger : JobLogger or None
         Injected logger; ``None`` when running via ``adk web``.
     """
-    # Each skill type has a different parameter name.  We build the tool
-    # dynamically based on the skill's accepted_parameters list.
-    param_name = skill.accepted_parameters[0] if skill.accepted_parameters else "target"
+    # A skill declares the top-level parameter names it consumes in
+    # ``accepted_parameters``.  We expose every one of them as a named string
+    # argument on the tool so the LLM knows to supply all of them (e.g. MIA
+    # needs both ``model`` and ``shadowData``).  Skills with a single parameter
+    # (Bandit, Trivy) behave exactly as before.
+    param_names = list(skill.accepted_parameters) or ["target"]
 
     # The docstring is the primary mechanism by which the LLM learns about
     # this tool.  We combine the skill's description with the full Markdown
     # documentation so the model has rich context.
+    args_doc = "\n".join(
+        f"    {name}: An input for this assessment "
+        f"(see documentation above for the expected format)."
+        for name in param_names
+    )
     tool_docstring = (
         f"{skill.description}\n\n"
         f"Use this tool when the request matches the following description:\n\n"
         f"{skill.docs_content}\n\n"
         f"Args:\n"
-        f"    {param_name}: The target for this assessment "
-        f"(see documentation above for the expected format).\n\n"
+        f"{args_doc}\n\n"
         f"Returns:\n"
         f"    A structured security assessment report."
     )
 
-    # Create a closure capturing skill, intent_id, logger, and param_name.
-    # The closure reconstructs the minimal intent dict that the existing tool
-    # wrappers (bandit_assessment.py, trivy_scan.py) expect.
+    # Create a closure capturing skill, intent_id, logger, and param_names.
+    # The closure reconstructs the minimal intent dict that the tool wrappers
+    # (bandit_assessment.py, trivy_scan.py, mia_assessment.py) expect.
     def _tool_fn(**kwargs: Any) -> Dict[str, Any]:
-        target_value = kwargs.get(param_name)
-        # Reconstruct a minimal intent dict from the parameter the LLM provided.
-        mini_intent = {
-            "intentId": intent_id,
-            "parameters": {param_name: target_value},
+        # Reconstruct the intent parameters from whatever the LLM supplied.
+        parameters: Dict[str, Any] = {
+            name: kwargs.get(name) for name in param_names
         }
         # The bandit skill uses a nested parameter: codeReference.path
         # Translate to the format the tool wrapper expects.
-        if param_name == "codeReference":
-            mini_intent["parameters"] = {
-                "codeReference": {"path": target_value}
-            }
+        if "codeReference" in parameters:
+            parameters["codeReference"] = {"path": parameters["codeReference"]}
+        mini_intent = {
+            "intentId": intent_id,
+            "parameters": parameters,
+        }
         # Use NullLogger when no real job logger is available (adk web context).
         effective_logger = logger if logger is not None else NullLogger()
         return skill.execute(mini_intent, effective_logger)
@@ -223,14 +230,15 @@ def _make_skill_tool(
     # schema it sends to the LLM.  With a **kwargs signature, ADK sees no named
     # parameters and the LLM never receives the right argument name.
     # Setting __signature__ overrides what inspect.signature() returns so ADK
-    # generates a schema with exactly one named string parameter for this skill.
+    # generates a schema with one named string parameter per accepted parameter.
     _tool_fn.__signature__ = inspect.Signature(
         parameters=[
             inspect.Parameter(
-                param_name,
+                name,
                 inspect.Parameter.POSITIONAL_OR_KEYWORD,
                 annotation=str,
             )
+            for name in param_names
         ],
         return_annotation=dict,
     )

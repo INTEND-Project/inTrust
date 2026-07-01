@@ -78,12 +78,32 @@ def _data_graph_from_payload(payload: Dict[str, Any], shapes_graph):
     if not isinstance(intent, dict):
         raise ValueError("'intent' must be a JSON object")
 
+    document = dict(intent)
+
     context = payload.get("context")
     if context is None:
-        base = _ontology_base_iri(shapes_graph) or "urn:intrust:"
-        context = {"@vocab": base}
+        # Fallback context.  We deliberately do NOT map every key onto the
+        # ontology namespace: several ontology properties carry an
+        # ``rdfs:domain`` (e.g. ``spa:intentId`` -> ``spa:AssessmentReport``),
+        # so a blanket ``@vocab`` of ``spa#`` combined with RDFS inference would
+        # wrongly type the intent node as an ``spa:AssessmentReport`` and drag
+        # it under the report shape.  Instead, unmapped keys go to a neutral
+        # namespace with no domain/range, and only the fields that correspond to
+        # real intent vocabulary are mapped onto ``spa:`` terms.  The node is
+        # typed as ``spa:Intent`` so it is validated against ``spa:IntentShape``.
+        base = _ontology_base_iri(shapes_graph) or "https://intend-project.eu/ontology/spa#"
+        context = {
+            "@vocab": "urn:intrust:field:",
+            "spa": base,
+            # An intent's natural-language statement of desired outcome.
+            # Accept either the TM Forum ``description`` field or an explicit
+            # ``intentStatement`` and map both to ``spa:intentStatement``.
+            "description": "spa:intentStatement",
+            "intentStatement": "spa:intentStatement",
+        }
+        if "@type" not in document and "@type" not in context:
+            document["@type"] = "spa:Intent"
 
-    document = dict(intent)
     document["@context"] = context
     if "@id" not in document and "intentId" in document:
         document["@id"] = f"urn:intent:{document['intentId']}"
