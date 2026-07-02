@@ -1,0 +1,11 @@
+# Benchmark-only dependencies (production requirements are in ../requirements.txt).
+#
+# google-adk[extensions] pulls in litellm, which provides the LiteLlm model
+# wrapper used to talk to locally hosted Ollama models.
+google-adk[extensions]>=2.0.0
+
+# psutil is used to sample CPU and memory usage of the benchmark process.
+psutil>=6.0.0
+
+# matplotlib generates the publication-quality figures.
+matplotlib>=3.9.0

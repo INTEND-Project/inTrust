@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-k8s-001",
+  "name": "Kubernetes Cluster Security Scan",
+  "description": "Run a Trivy scan against a Kubernetes cluster to detect misconfigurations and vulnerabilities in cluster workloads.",
+  "category": "trustworthinessAssessment",
+  "intentType": "kubernetesSecurityScan",
+  "actor": {
+    "role": "PlatformEngineer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "KubernetesCluster",
+    "name": "default"
+  },
+  "parameters": {
+    "clusterName": "default"
+  },
+  "reporting": {
+    "expectedOutput": "Cluster misconfiguration and vulnerability summary",
+    "format": "application/json"
+  }
+}

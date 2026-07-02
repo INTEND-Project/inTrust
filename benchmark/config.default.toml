@@ -1,0 +1,83 @@
+# ============================================================================
+# InTrust architecture benchmark — default configuration
+#
+# Copy this file and pass your copy with:  --config my_config.toml
+# Everything the benchmark does is controlled from here; no code changes are
+# needed to switch models, experiments, or scenarios.
+# ============================================================================
+
+[general]
+# Where all benchmark outputs (raw data, plots, LaTeX, logs) are written.
+# Relative paths are resolved against the repository root.
+results_dir = "results"
+
+# Base URL of the local Ollama server.
+ollama_api_base = "http://localhost:11434"
+
+# Random seed for framework-side reproducibility (run ordering etc.).
+# Note: LLM token sampling happens inside the Ollama server and is not
+# controlled by this seed.
+seed = 42
+
+# Number of unrecorded warm-up runs before measurement starts.  Warm-ups
+# let the OS page in the model, fill caches, and download tool databases
+# so they do not pollute the measured statistics.
+warmup_runs = 5
+
+# Number of measured runs per (architecture x model x scenario) cell.
+measured_runs = 30
+
+# Per-run timeout in seconds.  A run exceeding this is recorded as failed.
+run_timeout_sec = 600
+
+
+# ----------------------------------------------------------------------------
+# Experiment 1 — comparison across model families.
+# Same benchmark, five different LLM families, concurrency fixed at 1.
+# ----------------------------------------------------------------------------
+[experiments.family_comparison]
+models = [
+    "ollama_chat/qwen3:8b",
+    "ollama_chat/llama3.1:8b",
+    "ollama_chat/gemma3:4b",
+    "ollama_chat/mistral:7b",
+    "ollama_chat/phi4",
+]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+
+
+# ----------------------------------------------------------------------------
+# Experiment 2 — model scaling study (Qwen family, three sizes).
+# Also exercises the throughput mode at several concurrency levels.
+# ----------------------------------------------------------------------------
+[experiments.scaling_study]
+models = [
+    "ollama_chat/qwen3:4b",
+    "ollama_chat/qwen3:8b",
+    "ollama_chat/qwen3:14b",
+]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1, 5, 10, 20]
+
+
+# ----------------------------------------------------------------------------
+# Assessment scenarios.  true = included in the benchmark.
+# Docker image scan needs Docker + network (pull the image once beforehand);
+# Kubernetes scan needs a live cluster and is therefore off by default.
+# ----------------------------------------------------------------------------
+[scenarios]
+bandit_static_code = true
+trivy_filesystem = true
+trivy_docker_image = true
+trivy_kubernetes = false
+
+
+# ----------------------------------------------------------------------------
+# LLM provider.  "ollama" routes every model string through ADK's LiteLlm
+# wrapper pointed at ollama_api_base.  Additional providers (gemini, openai,
+# ...) can be added in benchmark/model_factory.py without touching anything
+# else.
+# ----------------------------------------------------------------------------
+[provider]
+type = "ollama"

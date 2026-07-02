@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-001",
+  "name": "Filesystem Security and Compliance Scan",
+  "description": "Run a Trivy scan on a local directory to detect vulnerabilities, secrets, and misconfigurations.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/sample_code"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/sample_code"
+  },
+  "reporting": {
+    "expectedOutput": "Consolidated JSON report of detected issues and severity levels",
+    "format": "application/json"
+  }
+}

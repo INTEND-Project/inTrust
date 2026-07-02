@@ -8,6 +8,7 @@
 /cache
 /storage
 /logs
+/results
 /scan-*.json
 /scan-fs-intent-002.json
 /trivy-compliance-report.json
