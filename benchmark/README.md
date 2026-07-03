@@ -78,7 +78,7 @@ ollama pull mistral:7b
 ollama pull phi4
 
 # Experiment 2 — Qwen scaling study (qwen3:8b already pulled above)
-ollama pull qwen3:4b
+ollama pull qwen3:1.7b
 ollama pull qwen3:14b
 ```
 
@@ -170,7 +170,7 @@ python -m benchmark.run_benchmark --dry-run --runs 3 --warmup 1
 
 # One real run against the smallest model:
 python -m benchmark.run_benchmark --experiment scaling_study \
-    --model ollama_chat/qwen3:4b --scenario bandit_static_code \
+    --model ollama_chat/qwen3:1.7b --scenario bandit_static_code \
     --runs 1 --warmup 0
 ```
 

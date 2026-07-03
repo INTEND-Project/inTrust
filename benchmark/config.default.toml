@@ -51,15 +51,15 @@ concurrency_levels = [1]
 # Experiment 2 — model scaling study (Qwen family, three sizes).
 # Also exercises the throughput mode at several concurrency levels.
 #
-# CAUTION: at the time of writing, Ollama's qwen3:4b tag maps to the
-# Qwen3-2507 *thinking-only* build, which ignores `think = false` (unlike
-# the classic hybrid qwen3:0.6b/1.7b/8b/14b builds).  Verify the tag before
-# a campaign (see README troubleshooting) — qwen3:1.7b is a drop-in
-# alternative "small" model from the same classic series.
+# NOTE: qwen3:1.7b is used as the "small" model instead of qwen3:4b —
+# at the time of writing, Ollama's qwen3:4b tag maps to the Qwen3-2507
+# *thinking-only* build, which ignores `think = false` and would confound
+# the scaling comparison (the 1.7b/8b/14b tags are all classic hybrid
+# builds that honour it; see README troubleshooting).
 # ----------------------------------------------------------------------------
 [experiments.scaling_study]
 models = [
-    "ollama_chat/qwen3:4b",
+    "ollama_chat/qwen3:1.7b",
     "ollama_chat/qwen3:8b",
     "ollama_chat/qwen3:14b",
 ]
