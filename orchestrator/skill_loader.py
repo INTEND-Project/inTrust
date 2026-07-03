@@ -199,6 +199,15 @@ def _make_skill_tool(
     # wrappers (bandit_assessment.py, trivy_scan.py) expect.
     def _tool_fn(**kwargs: Any) -> Dict[str, Any]:
         target_value = kwargs.get(param_name)
+        # The schema declares a string, but LLMs sometimes pass a structured
+        # object copied from the intent (e.g. {"path": "..."}).  Coerce it to
+        # the target string instead of failing the assessment.
+        if isinstance(target_value, dict):
+            target_value = (
+                target_value.get("path")
+                or target_value.get("name")
+                or next(iter(target_value.values()), None)
+            )
         # Reconstruct a minimal intent dict from the parameter the LLM provided.
         mini_intent = {
             "intentId": intent_id,

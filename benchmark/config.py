@@ -49,6 +49,11 @@ class BenchmarkConfig:
     experiments: Dict[str, ExperimentConfig]
     enabled_scenarios: List[str]
     provider_type: str = "ollama"
+    # Client-side timeout for a single LLM request (litellm 'timeout' kwarg).
+    request_timeout_sec: int = 300
+    # Extra kwargs forwarded verbatim to every LiteLlm model instance
+    # (e.g. think=false, num_predict, num_ctx for Ollama).
+    model_kwargs: dict = field(default_factory=dict)
     extra: dict = field(default_factory=dict)
 
 
@@ -133,6 +138,8 @@ def load_config(config_path: Path | None = None) -> BenchmarkConfig:
     if not enabled_scenarios:
         raise ValueError(f"{path}: all scenarios are disabled — nothing to benchmark")
 
+    provider = raw.get("provider", {})
+
     return BenchmarkConfig(
         results_dir=results_dir,
         ollama_api_base=general.get("ollama_api_base", "http://localhost:11434"),
@@ -142,6 +149,8 @@ def load_config(config_path: Path | None = None) -> BenchmarkConfig:
         run_timeout_sec=int(general.get("run_timeout_sec", 600)),
         experiments=experiments,
         enabled_scenarios=enabled_scenarios,
-        provider_type=raw.get("provider", {}).get("type", "ollama"),
+        provider_type=provider.get("type", "ollama"),
+        request_timeout_sec=int(provider.get("request_timeout_sec", 300)),
+        model_kwargs=dict(provider.get("model_kwargs", {})),
         extra=raw,
     )

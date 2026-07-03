@@ -1,0 +1,51 @@
+# ============================================================================
+# PILOT configuration — functional verification on modest hardware.
+#
+# The full experiment matrix (config.default.toml) uses 4B–14B models and is
+# intended for a GPU machine.  This pilot uses tiny models and few runs so
+# that the complete pipeline (both architectures, metric collection, reports,
+# plots, LaTeX) can be verified end-to-end on a CPU-only laptop.
+#
+# Pull the pilot models first:
+#     ollama pull qwen3:0.6b
+#     ollama pull qwen3:1.7b
+#     ollama pull llama3.2:1b
+#     ollama pull gemma3:1b
+#
+# Run with:
+#     python -m benchmark.run_benchmark --config benchmark/config.pilot.toml
+# ============================================================================
+
+[general]
+results_dir = "results"
+ollama_api_base = "http://localhost:11434"
+seed = 42
+warmup_runs = 1
+measured_runs = 3
+run_timeout_sec = 300
+
+[experiments.pilot]
+models = [
+    "ollama_chat/qwen3:0.6b",
+    "ollama_chat/qwen3:1.7b",
+    "ollama_chat/llama3.2:1b",
+    "ollama_chat/gemma3:1b",
+]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+
+# Only the two scenarios that need no external infrastructure.
+[scenarios]
+bandit_static_code = true
+trivy_filesystem = true
+trivy_docker_image = false
+trivy_kubernetes = false
+
+[provider]
+type = "ollama"
+request_timeout_sec = 240
+
+[provider.model_kwargs]
+think = false
+num_predict = 1024
+num_ctx = 8192

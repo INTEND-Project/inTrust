@@ -46,6 +46,10 @@ _USER_ID = "benchmark"
 # Name of the delegation function ADK injects for multi-agent routing.
 _TRANSFER_FN = "transfer_to_agent"
 
+# Tool result statuses that count as a successful assessment (matches the
+# production convention in orchestrator/agent.py).
+_TOOL_SUCCESS_STATUSES = {"SUCCESS", "COMPLETED"}
+
 
 async def execute_run(
     architecture: str,
@@ -168,6 +172,21 @@ async def execute_run(
     except Exception as exc:  # timeout, connection error, tool crash, ...
         result.status = "FAILED"
         result.error = f"{type(exc).__name__}: {exc}"
+
+    # A tool that ran but reported failure (e.g. bad arguments from the LLM)
+    # also fails the run — the assessment did not actually happen.
+    if result.status == "OK":
+        failed_tools = [c for c in collector.tool_calls
+                        if c["status"] not in _TOOL_SUCCESS_STATUSES]
+        if failed_tools:
+            result.status = "FAILED"
+            result.error = (f"tool '{failed_tools[0]['skill']}' reported "
+                            f"{failed_tools[0]['status']}: "
+                            f"{failed_tools[0].get('error')}")
+        elif not collector.tool_calls:
+            # The model answered without executing any assessment tool.
+            result.status = "FAILED"
+            result.error = "no assessment tool was executed"
 
     # ---- derive the metrics ----------------------------------------------------
     result.e2e_ms = (time.perf_counter() - perf_start) * 1000.0

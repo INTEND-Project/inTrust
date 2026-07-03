@@ -20,6 +20,35 @@ production InTrust service is not modified and keeps working as before.
 
 ---
 
+## 0. Hardware requirements
+
+The full experiment matrix uses 4B–14B parameter models and is intended for
+a machine with a **GPU** (≥ 12 GB VRAM comfortably fits the largest model,
+qwen3:14b at Q4).  On a CPU-only laptop these models generate a few tokens
+per second and a single run can take many minutes.
+
+For CPU-only machines, use the **pilot configuration**
+([`config.pilot.toml`](config.pilot.toml)): tiny models (0.6B–1.7B), 1
+warm-up + 3 measured runs, the two infrastructure-free scenarios.  It
+exercises the complete pipeline end-to-end and verifies your setup before
+the real campaign:
+
+```bash
+ollama pull qwen3:0.6b && ollama pull qwen3:1.7b
+ollama pull llama3.2:1b && ollama pull gemma3:1b
+
+python -m benchmark.run_benchmark --config benchmark/config.pilot.toml
+```
+
+Note on thinking models: qwen3 (and other reasoning models) generate
+hundreds of hidden "thinking" tokens per step by default.  The shipped
+configs disable this (`think = false` under `[provider.model_kwargs]`) so
+runs measure the plain agentic flow; this is part of the recorded
+methodology (the full config is echoed into every result file).  Re-enable
+it deliberately if reasoning behaviour is itself under study.
+
+---
+
 ## 1. Installation
 
 From the repository root (Python 3.11+ required; the repo venv already has
@@ -92,6 +121,8 @@ Key settings:
 | `seed` | 42 | framework-side random seed (run ordering; LLM sampling is server-side) |
 | `run_timeout_sec` | 600 | a run exceeding this is recorded as failed |
 | `ollama_api_base` | `http://localhost:11434` | Ollama server URL |
+| `[provider].request_timeout_sec` | 300 | client-side timeout for one LLM request |
+| `[provider.model_kwargs]` | `think=false`, `num_predict=1024`, `num_ctx=8192` | generation settings forwarded to LiteLLM/Ollama; part of the recorded methodology |
 | `[experiments.*].models` | see file | model list per experiment (LiteLLM `ollama_chat/<name>` strings) |
 | `[experiments.*].concurrency_levels` | 1 / 1,5,10,20 | throughput mode levels |
 | `[scenarios]` | k8s off | enable/disable individual assessment scenarios |
@@ -190,7 +221,35 @@ python -m benchmark.plots --experiment scaling_study --run-id <run_id>
 The `.tex` files are self-contained booktabs tables ready for `\input{}`
 (the paper preamble needs `\usepackage{booktabs}`).
 
-## 7. Extending the framework
+## 7. Troubleshooting
+
+- **Runs time out / Ollama seems stuck.**  When a benchmark run is cancelled
+  client-side, the Ollama server may keep draining the in-flight generation;
+  subsequent requests queue behind it (Ollama serves one request at a time
+  by default).  Restart Ollama to clear the queue.
+- **Every run of a thinking model times out.**  Check that
+  `think = false` is present under `[provider.model_kwargs]` in the config
+  you are passing.
+- **`litellm.Timeout` errors in results.**  The model is slower than
+  `request_timeout_sec` on your hardware — use smaller models (pilot
+  config) or a GPU machine.
+- **Multi-agent runs fail with `Tool '<name>_agent' not found`.**  The
+  model called the specialist's name as a function instead of using ADK's
+  `transfer_to_agent` delegation.  Small models (≲ 2B) do this frequently.
+  It is recorded as a failed run with `routing_correct = false` and the
+  exact error in the raw JSON — i.e. it is DATA (the multi-agent
+  architecture demands more protocol-following capability from the
+  orchestrator model), not a framework bug.
+- **`think = false` has no effect for a specific model tag.**  Ollama
+  model tags are mutable and some point at "thinking-only" builds where
+  reasoning cannot be disabled.  At the time of writing, `qwen3:4b` maps
+  to the Qwen3-2507 *thinking* build (recognisable by its 262k context in
+  `ollama show`), unlike `qwen3:0.6b/1.7b/8b/14b` which are classic hybrid
+  builds that honour `think = false`.  Verify each tag with a quick
+  one-off completion before a campaign, and record `ollama list` digests
+  with your results.
+
+## 8. Extending the framework
 
 - **New skill/assessment**: add the skill to the production `skills/`
   directory as usual (plus its `docs/skills/*.md`), then add a scenario

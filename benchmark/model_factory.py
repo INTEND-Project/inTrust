@@ -35,9 +35,17 @@ def make_model(model_string: str, cfg: BenchmarkConfig):
         LLM object (a stated property of Architecture A).
     """
     if cfg.provider_type == "ollama":
-        # LiteLlm forwards extra kwargs (api_base) to the litellm completion
-        # call, which routes the request to the local Ollama server.
-        return LiteLlm(model=model_string, api_base=cfg.ollama_api_base)
+        # LiteLlm forwards extra kwargs to the litellm completion call:
+        # - api_base routes the request to the local Ollama server,
+        # - timeout makes a stuck generation fail with a clear error,
+        # - cfg.model_kwargs carries generation settings from the config
+        #   (think=false, num_predict, num_ctx, ...) — recorded methodology.
+        return LiteLlm(
+            model=model_string,
+            api_base=cfg.ollama_api_base,
+            timeout=cfg.request_timeout_sec,
+            **cfg.model_kwargs,
+        )
 
     if cfg.provider_type == "gemini":
         # Gemini models are referenced by plain string; ADK resolves them

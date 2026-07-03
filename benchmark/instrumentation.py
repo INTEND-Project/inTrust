@@ -61,12 +61,18 @@ def make_timed_skill(skill: AssessmentSkill, collector: RunCollector) -> Assessm
     def timed_execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
         wall_started = time.time()
         perf_started = time.perf_counter()
+        error = None
         try:
             result = real_execute(intent, logger)
-            status = result.get("status", "UNKNOWN") if isinstance(result, dict) else "UNKNOWN"
+            if isinstance(result, dict):
+                status = result.get("status", "UNKNOWN")
+                error = result.get("error")
+            else:
+                status = "UNKNOWN"
             return result
-        except Exception:
+        except Exception as exc:
             status = "EXCEPTION"
+            error = str(exc)
             raise
         finally:
             duration = time.perf_counter() - perf_started
@@ -77,6 +83,7 @@ def make_timed_skill(skill: AssessmentSkill, collector: RunCollector) -> Assessm
                     "finished": wall_started + duration,
                     "duration_sec": duration,
                     "status": status,
+                    "error": error,
                 }
             )
 
