@@ -103,9 +103,13 @@ request_timeout_sec = 300
 #                   runs infeasible on CPU-only machines.  Applied to all
 #                   models for uniformity; non-thinking models ignore it.
 #   num_predict     hard cap on generated tokens per LLM call (guards
-#                   against runaway generation).
+#                   against runaway generation).  IMPORTANT: when thinking
+#                   is enabled, 1024 is far too small — the model burns the
+#                   whole budget on reasoning and never emits the tool call.
+#                   Use -1 (unlimited) or >= 8192 for thinking campaigns.
 #   num_ctx         context window; Ollama's default (4096) is raised so
-#                   prompt + tool schemas + response always fit.
+#                   prompt + tool schemas + response always fit.  Raise to
+#                   >= 32768 for thinking campaigns (reasoning accumulates).
 [provider.model_kwargs]
 think = false
 num_predict = 1024

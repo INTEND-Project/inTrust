@@ -240,6 +240,19 @@ The `.tex` files are self-contained booktabs tables ready for `\input{}`
   exact error in the raw JSON — i.e. it is DATA (the multi-agent
   architecture demands more protocol-following capability from the
   orchestrator model), not a framework bug.
+- **Thinking enabled, but every run fails with `selected: null` / "no
+  assessment tool was executed".**  The completion-token cap is too small:
+  a thinking model spends its budget on hidden reasoning and is cut off
+  before emitting the tool call (symptom: completion tokens ≈
+  `num_predict` exactly).  Raise `num_predict` (e.g. `-1` for unlimited or
+  `8192`) and `num_ctx` (e.g. `32768` — thinking turns accumulate across
+  the conversation) when running thinking-enabled campaigns.
+- **Runs are slow even on a GPU machine.**  Verify Ollama is actually
+  using the GPU: `ollama ps` must show `size_vram > 0` (ideally
+  "100% GPU") and the ollama process should appear in `nvidia-smi`.
+  A few tokens/second means CPU inference.  Also make sure
+  `request_timeout_sec` exceeds the realistic duration of one LLM call,
+  otherwise litellm kills generations mid-flight.
 - **`think = false` has no effect for a specific model tag.**  Ollama
   model tags are mutable and some point at "thinking-only" builds where
   reasoning cannot be disabled.  At the time of writing, `qwen3:4b` maps
