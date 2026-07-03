@@ -26,8 +26,10 @@ data with ``python -m benchmark.plots`` / ``python -m benchmark.latex_tables``.
 import argparse
 import asyncio
 import dataclasses
+import logging
 import random
 import sys
+import warnings
 from pathlib import Path
 
 # Allow running both as a module (python -m benchmark.run_benchmark) and as a
@@ -124,8 +126,25 @@ async def _dry_run_execute(architecture, model_string, scenario, skills, cfg,
     )
 
 
+def _quiet_logging() -> None:
+    """
+    Silence framework log noise during benchmark campaigns.
+
+    Expected per-run failures (e.g. a small model hallucinating a tool name)
+    make ADK log multi-page tracebacks that drown the progress output.  The
+    error of every failed run is already captured in the RunResult and lands
+    in the raw JSON / JSONL logs, so the console only needs the one-line
+    progress messages the experiment driver prints.
+    """
+    for name in ("google", "google_adk", "LiteLLM", "litellm", "httpx"):
+        logging.getLogger(name).setLevel(logging.CRITICAL)
+    # ADK emits an [EXPERIMENTAL] UserWarning per FunctionTool construction.
+    warnings.filterwarnings("ignore", category=UserWarning, module="google.adk")
+
+
 def main() -> None:
     args = _parse_args()
+    _quiet_logging()
     cfg = _apply_overrides(load_config(args.config), args)
 
     # Select the experiments to run.

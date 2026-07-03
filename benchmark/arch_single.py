@@ -18,14 +18,10 @@ from typing import List
 
 from google.adk.agents import LlmAgent
 
-from orchestrator.skill_loader import (
-    AssessmentSkill,
-    NullLogger,
-    SkillRegistry,
-)
+from orchestrator.skill_loader import AssessmentSkill, SkillRegistry
 
 from .config import BenchmarkConfig
-from .instrumentation import RunCollector, make_timed_skill
+from .instrumentation import RunCollector, SilentLogger, make_timed_skill
 from .model_factory import make_model
 from .prompts import ORCHESTRATOR_INSTRUCTION
 
@@ -61,7 +57,7 @@ def build_single_agent(
     # Architecture B faithful to the production implementation.
     timed_skills = [make_timed_skill(skill, collector) for skill in skills]
     registry = SkillRegistry(timed_skills)
-    tools = registry.to_adk_tools(intent_id="benchmark", logger=NullLogger())
+    tools = registry.to_adk_tools(intent_id="benchmark", logger=SilentLogger())
 
     return LlmAgent(
         name="orchestrator",

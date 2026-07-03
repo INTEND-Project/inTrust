@@ -29,14 +29,10 @@ from typing import List
 
 from google.adk.agents import LlmAgent
 
-from orchestrator.skill_loader import (
-    AssessmentSkill,
-    NullLogger,
-    SkillRegistry,
-)
+from orchestrator.skill_loader import AssessmentSkill, SkillRegistry
 
 from .config import BenchmarkConfig
-from .instrumentation import RunCollector, make_timed_skill
+from .instrumentation import RunCollector, SilentLogger, make_timed_skill
 from .model_factory import make_model
 from .prompts import ORCHESTRATOR_INSTRUCTION, SPECIALIST_INSTRUCTION_TEMPLATE
 
@@ -61,7 +57,7 @@ def build_multi_agent(
         # single tool (one-skill registry -> one tool).  This guarantees the
         # tool implementation and schema are IDENTICAL to Architecture B.
         registry = SkillRegistry([timed])
-        (tool,) = registry.to_adk_tools(intent_id="benchmark", logger=NullLogger())
+        (tool,) = registry.to_adk_tools(intent_id="benchmark", logger=SilentLogger())
 
         # The description is what the ROOT model reads when deciding which
         # specialist to transfer to.  It carries the same text that the tool

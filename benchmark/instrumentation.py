@@ -28,6 +28,28 @@ import psutil
 from orchestrator.skill_loader import AssessmentSkill
 
 
+class SilentLogger:
+    """
+    No-op logger passed to skills during benchmark runs.
+
+    The production ``NullLogger`` prints to stdout, which would add several
+    lines per run to the campaign output.  Skill/tool outcomes are already
+    captured by the timing wrapper and the run results, so nothing is lost.
+    """
+
+    def info(self, component: str, message: str) -> None:
+        pass
+
+    def warning(self, component: str, message: str) -> None:
+        pass
+
+    def error(self, component: str, message: str) -> None:
+        pass
+
+    def exception(self, component: str, message: str, exc: BaseException) -> None:
+        pass
+
+
 class RunCollector:
     """
     Mutable per-run record filled in by the timed tool wrappers.
