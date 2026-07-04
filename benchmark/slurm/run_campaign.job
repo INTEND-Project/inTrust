@@ -34,6 +34,9 @@
 
 # ---- parameters (override via sbatch --export=ALL,NAME=value) --------------
 REPO_DIR="${REPO_DIR:-/home/rustemd/SOCC/inTrust}"
+# Python environment: CONDA_ENV (a conda environment name) takes precedence;
+# set CONDA_ENV="" and VENV=/path/to/venv to use a classic virtualenv instead.
+CONDA_ENV="${CONDA_ENV:-venv}"
 VENV="${VENV:-${REPO_DIR}/venv}"
 PORT="${PORT:-33111}"
 EXPERIMENT="${EXPERIMENT:-scaling_study}"
@@ -86,7 +89,16 @@ done
 # ---- run the campaign --------------------------------------------------------
 cd "${REPO_DIR}"
 mkdir -p results
-source "${VENV}/bin/activate"
+
+# Activate the Python environment.  'conda activate' needs conda's shell hook
+# first because batch jobs run a non-interactive shell (no .bashrc).
+if [ -n "${CONDA_ENV}" ]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "${CONDA_ENV}"
+elif [ -n "${VENV}" ]; then
+    source "${VENV}/bin/activate"
+fi
+echo "Using python: $(which python)"
 
 # Point the benchmark at this job's Ollama port without editing the config.
 export INTRUST_OLLAMA_API_BASE="http://127.0.0.1:${PORT}"

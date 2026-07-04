@@ -20,7 +20,7 @@
 #           running CPU-only and something is wrong with the allocation.
 #
 # Then run the benchmark from a login-node shell:
-#   cd /home/rustemd/SOCC/inTrust && source venv/bin/activate
+#   cd /home/rustemd/SOCC/inTrust && conda activate venv
 #   INTRUST_OLLAMA_API_BASE=http://127.0.0.1:33111 \
 #       python -m benchmark.run_benchmark --experiment scaling_study
 # ============================================================================

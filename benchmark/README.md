@@ -186,10 +186,14 @@ One-time setup on the cluster:
 ```bash
 git clone <repo-url> ~/SOCC/inTrust && cd ~/SOCC/inTrust
 git checkout experiments
-python3 -m venv venv && source venv/bin/activate
+# With conda (default on ds01):
+conda create --name venv python=3.12 && conda activate venv
+# ...or with a classic virtualenv:  python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt -r benchmark/requirements.txt
 mkdir -p ~/logs/slurm
 # Edit the two .job files: set the --output path and REPO_DIR to your home.
+# run_campaign.job activates the conda env named "venv" by default; set the
+# CONDA_ENV variable (or CONDA_ENV="" + VENV=/path) if yours differs.
 ```
 
 **Campaign workflow (recommended)** — one self-contained job that starts
