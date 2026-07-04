@@ -34,14 +34,20 @@ run_timeout_sec = 600
 # ----------------------------------------------------------------------------
 # Experiment 1 — comparison across model families.
 # Same benchmark, five different LLM families, concurrency fixed at 1.
+#
+# REQUIREMENT: every model must have the Ollama "tools" capability (check
+# with `ollama show <tag>` — the capabilities list must include "tools").
+# Both architectures rely on native function calling; models without it are
+# rejected by the server before generation.  gemma3 and phi4 were excluded
+# for this reason (a capability finding reported in the paper).
 # ----------------------------------------------------------------------------
 [experiments.family_comparison]
 models = [
     "ollama_chat/qwen3:8b",
     "ollama_chat/llama3.1:8b",
-    "ollama_chat/gemma3:4b",
+    "ollama_chat/granite3.3:8b",
     "ollama_chat/mistral:7b",
-    "ollama_chat/phi4",
+    "ollama_chat/hermes3:8b",
 ]
 architectures = ["single_agent", "multi_agent"]
 concurrency_levels = [1]

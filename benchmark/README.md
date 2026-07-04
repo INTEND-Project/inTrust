@@ -73,9 +73,9 @@ Pull the models used by the two experiments:
 # Experiment 1 — family comparison
 ollama pull qwen3:8b
 ollama pull llama3.1:8b
-ollama pull gemma3:4b
+ollama pull granite3.3:8b
 ollama pull mistral:7b
-ollama pull phi4
+ollama pull hermes3:8b
 
 # Experiment 2 — Qwen scaling study (qwen3:8b already pulled above)
 ollama pull qwen3:1.7b
@@ -97,6 +97,14 @@ ollama pull qwen3:14b
 
 - **Trivy Kubernetes scan** (disabled by default): requires a live cluster
   reachable through your kubeconfig; enable it in the config file.
+
+**Model requirement — native tool calling.**  Both architectures rely on
+Ollama's function-calling API, so every benchmark model must have the
+`tools` capability: `ollama show <tag>` must list `tools` under
+Capabilities.  Models without it (e.g. `gemma3`, `phi4` at the time of
+writing) are rejected by the server before generation and score 0% — they
+cannot participate in either architecture.  This is why the family
+comparison uses granite3.3 and hermes3 rather than Gemma and Phi.
 
 ---
 
@@ -284,6 +292,14 @@ python -m benchmark.latex_tables --experiment family_comparison
 
 # A specific (older) execution instead of the latest:
 python -m benchmark.plots --experiment scaling_study --run-id <run_id>
+```
+
+To diagnose failed runs in a campaign, print a per-cell error breakdown
+(distinct error messages with counts, plus whether routing had succeeded
+before the failure):
+
+```bash
+python -m benchmark.errors --experiment family_comparison [--run-id <run_id>]
 ```
 
 The `.tex` files are self-contained booktabs tables ready for `\input{}`
