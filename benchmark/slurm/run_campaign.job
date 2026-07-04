@@ -58,6 +58,7 @@ export OLLAMA_NUM_PARALLEL=4
 export OLLAMA_KEEP_ALIVE=30m
 
 # ---- start Ollama in the background inside this allocation -----------------
+mkdir -p "${REPO_DIR}/results"
 ollama serve > "${REPO_DIR}/results/ollama_serve_${SLURM_JOB_ID}.log" 2>&1 &
 OLLAMA_PID=$!
 # Always shut Ollama down when the job ends, whatever happens in between.
