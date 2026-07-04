@@ -1,0 +1,62 @@
+#!/bin/bash
+# ============================================================================
+# Slurm job: run Ollama with GPU access on ds01 (interactive workflow).
+#
+# Use this when you want a long-lived Ollama server to pull models or run
+# pilot benchmarks against from a login-node shell.  For full unattended
+# campaigns, prefer run_campaign.job (self-contained: server + benchmark).
+#
+# Before first use:
+#   1. Change the --output path below to YOUR home directory.
+#   2. Make sure the log directory exists:  mkdir -p ~/logs/slurm
+#   3. Pick a free port (PORT variable below) and remember it — the
+#      benchmark must be pointed at it via INTRUST_OLLAMA_API_BASE.
+#
+# Submit:   sbatch benchmark/slurm/ollama_serve.job
+# Monitor:  sq                      (job status)
+#           tail -f ~/logs/slurm/ollama_serve_<jobid>.out
+#           Look for: 'inference compute ... name="NVIDIA A30"' — that line
+#           confirms the GPU was detected.  If it is missing, the job is
+#           running CPU-only and something is wrong with the allocation.
+#
+# Then run the benchmark from a login-node shell:
+#   cd /home/rustemd/SOCC/inTrust && source venv/bin/activate
+#   INTRUST_OLLAMA_API_BASE=http://127.0.0.1:33111 \
+#       python -m benchmark.run_benchmark --experiment scaling_study
+# ============================================================================
+#SBATCH --output /home/rustemd/logs/slurm/ollama_serve_%j.out
+#SBATCH --job-name ollama/serve
+#SBATCH --partition sintef
+#SBATCH --ntasks 1
+#SBATCH --mem=32GB
+#SBATCH --cpus-per-task=8
+#SBATCH --gres gpu:a30:1
+#SBATCH --time 00-12:00:00
+
+# Port the Ollama API listens on (127.0.0.1 = only reachable on ds01 itself).
+PORT=33111
+
+echo ""
+echo "***** LAUNCHING *****"
+date '+%F %H:%M:%S'
+echo "Ollama API: http://127.0.0.1:${PORT}"
+echo ""
+
+export OLLAMA_HOST=127.0.0.1:${PORT}
+
+# Serve up to 4 requests in parallel — REQUIRED for the throughput experiment
+# (Ollama otherwise queues concurrent requests one after another and the
+# concurrency levels all measure the same serial behaviour).  Each parallel
+# slot multiplies the KV-cache memory, so keep this modest on a 24 GB A30.
+export OLLAMA_NUM_PARALLEL=4
+
+# Keep models loaded between benchmark cells so model (re)loading never
+# pollutes measured runs (warm-ups handle the first load).
+export OLLAMA_KEEP_ALIVE=30m
+
+srun ollama serve 2>&1
+
+echo ""
+echo "***** DONE *****"
+date '+%F %H:%M:%S'
+echo ""

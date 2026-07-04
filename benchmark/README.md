@@ -176,6 +176,65 @@ python -m benchmark.run_benchmark --experiment scaling_study \
 
 ---
 
+## 3b. Running on a Slurm cluster (ds01)
+
+On shared GPU servers where Ollama must be launched through Slurm to get GPU
+access, use the job scripts in [`benchmark/slurm/`](slurm/).
+
+One-time setup on the cluster:
+
+```bash
+git clone <repo-url> ~/SOCC/inTrust && cd ~/SOCC/inTrust
+git checkout experiments
+python3 -m venv venv && source venv/bin/activate
+pip install -r requirements.txt -r benchmark/requirements.txt
+mkdir -p ~/logs/slurm
+# Edit the two .job files: set the --output path and REPO_DIR to your home.
+```
+
+**Campaign workflow (recommended)** — one self-contained job that starts
+Ollama on the GPU node, pulls the models, runs the experiment, and shuts
+down again (survives SSH disconnects):
+
+```bash
+sbatch benchmark/slurm/run_campaign.job                                  # scaling_study
+sbatch --export=ALL,EXPERIMENT=family_comparison \
+       benchmark/slurm/run_campaign.job                                  # experiment 1
+sbatch --export=ALL,EXTRA_ARGS="--runs 3 --warmup 1" \
+       benchmark/slurm/run_campaign.job                                  # quick test
+```
+
+Monitor with `sq` and `tail -f ~/logs/slurm/benchmark_<jobid>.out`.
+Results land in `results/` inside the repo exactly as in a local run.
+
+**Interactive workflow** — a long-lived GPU Ollama server to experiment
+against from a login-node shell:
+
+```bash
+sbatch benchmark/slurm/ollama_serve.job
+# wait until the log shows: inference compute ... name="NVIDIA A30"
+INTRUST_OLLAMA_API_BASE=http://127.0.0.1:33111 \
+    python -m benchmark.run_benchmark --experiment scaling_study --runs 1 --warmup 0
+```
+
+`INTRUST_OLLAMA_API_BASE` overrides the config's `ollama_api_base`, so the
+per-job port never requires editing a config file.
+
+Cluster notes:
+
+- The A30's 24 GB fits every configured model (largest: qwen3:14b Q4 ≈ 9.3 GB).
+- The job scripts set `OLLAMA_NUM_PARALLEL=4` — without it Ollama serialises
+  concurrent requests and the throughput experiment's concurrency levels all
+  measure the same serial behaviour.  Each parallel slot multiplies KV-cache
+  memory; keep it modest.
+- Maximum job runtime is 24 h.  If a full experiment does not fit, submit it
+  per experiment (`EXPERIMENT=...`) or reduce `measured_runs` via a config copy.
+- GPU sanity check: the Ollama log must contain
+  `inference compute ... name="NVIDIA A30"`; a few tokens/second means the
+  job is running CPU-only.
+
+---
+
 ## 4. Collected metrics (and why)
 
 | Metric | How | Why it matters for the paper |

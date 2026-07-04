@@ -11,6 +11,7 @@ scenarios, run counts, seeds, paths) lives in the config file so that
 experiments are reproducible from configuration alone.
 """
 
+import os
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -140,9 +141,17 @@ def load_config(config_path: Path | None = None) -> BenchmarkConfig:
 
     provider = raw.get("provider", {})
 
+    # The Ollama URL can be overridden through the environment.  Used by the
+    # Slurm jobs (benchmark/slurm/), where the server runs on a per-job port,
+    # so no config file editing is needed per submission.
+    ollama_api_base = os.environ.get(
+        "INTRUST_OLLAMA_API_BASE",
+        general.get("ollama_api_base", "http://localhost:11434"),
+    )
+
     return BenchmarkConfig(
         results_dir=results_dir,
-        ollama_api_base=general.get("ollama_api_base", "http://localhost:11434"),
+        ollama_api_base=ollama_api_base,
         seed=int(general.get("seed", 42)),
         warmup_runs=int(general.get("warmup_runs", 5)),
         measured_runs=int(general.get("measured_runs", 30)),

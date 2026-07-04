@@ -1,0 +1,100 @@
+#!/bin/bash
+# ============================================================================
+# Slurm job: self-contained benchmark campaign on ds01 (recommended).
+#
+# Allocates one GPU, starts Ollama INSIDE the allocation, waits until the
+# API answers, pulls the required models, runs the benchmark campaign, and
+# shuts Ollama down again.  Because everything happens inside one job, the
+# campaign survives SSH disconnects and needs no interaction.
+#
+# Before first use:
+#   1. Change the --output path below and the REPO_DIR variable to YOUR
+#      home directory / repository clone.
+#   2. Make sure the log directory exists:  mkdir -p ~/logs/slurm
+#
+# Submit (defaults: scaling_study with the models from the config):
+#   sbatch benchmark/slurm/run_campaign.job
+#
+# Override the experiment or add CLI flags without editing the file:
+#   sbatch --export=ALL,EXPERIMENT=family_comparison benchmark/slurm/run_campaign.job
+#   sbatch --export=ALL,EXPERIMENT=scaling_study,EXTRA_ARGS="--runs 5" \
+#          benchmark/slurm/run_campaign.job
+#
+# Results land in $REPO_DIR/results/ exactly as in a local run; plots and
+# LaTeX tables can be (re)generated afterwards on any machine.
+# ============================================================================
+#SBATCH --output /home/rustemd/logs/slurm/benchmark_%j.out
+#SBATCH --job-name intrust/benchmark
+#SBATCH --partition sintef
+#SBATCH --ntasks 1
+#SBATCH --mem=32GB
+#SBATCH --cpus-per-task=8
+#SBATCH --gres gpu:a30:1
+#SBATCH --time 00-24:00:00
+
+# ---- parameters (override via sbatch --export=ALL,NAME=value) --------------
+REPO_DIR="${REPO_DIR:-/home/rustemd/SOCC/inTrust}"
+VENV="${VENV:-${REPO_DIR}/venv}"
+PORT="${PORT:-33111}"
+EXPERIMENT="${EXPERIMENT:-scaling_study}"
+# Models to pull before the campaign starts (space-separated Ollama tags).
+# Pulling up front keeps download time out of the benchmark process entirely.
+MODELS="${MODELS:-qwen3:1.7b qwen3:8b qwen3:14b}"
+# Extra CLI flags for run_benchmark.py, e.g. "--runs 5 --warmup 1".
+EXTRA_ARGS="${EXTRA_ARGS:-}"
+
+echo ""
+echo "***** LAUNCHING *****"
+date '+%F %H:%M:%S'
+echo "Repo:       ${REPO_DIR}"
+echo "Experiment: ${EXPERIMENT}"
+echo "Models:     ${MODELS}"
+echo "Ollama API: http://127.0.0.1:${PORT}"
+echo ""
+
+export OLLAMA_HOST=127.0.0.1:${PORT}
+# See ollama_serve.job for why these two matter for the benchmark.
+export OLLAMA_NUM_PARALLEL=4
+export OLLAMA_KEEP_ALIVE=30m
+
+# ---- start Ollama in the background inside this allocation -----------------
+ollama serve > "${REPO_DIR}/results/ollama_serve_${SLURM_JOB_ID}.log" 2>&1 &
+OLLAMA_PID=$!
+# Always shut Ollama down when the job ends, whatever happens in between.
+trap 'kill ${OLLAMA_PID} 2>/dev/null' EXIT
+
+# Wait (up to 60 s) for the API to come up before doing anything else.
+for i in $(seq 1 60); do
+    if curl -s --max-time 2 "http://127.0.0.1:${PORT}/api/version" > /dev/null; then
+        echo "Ollama is up (after ${i}s)."
+        break
+    fi
+    if [ "$i" -eq 60 ]; then
+        echo "ERROR: Ollama did not come up within 60 s — aborting." >&2
+        exit 1
+    fi
+    sleep 1
+done
+
+# ---- pull the models (no-op when already present) ---------------------------
+for model in ${MODELS}; do
+    echo "Pulling ${model} ..."
+    ollama pull "${model}"
+done
+
+# ---- run the campaign --------------------------------------------------------
+cd "${REPO_DIR}"
+mkdir -p results
+source "${VENV}/bin/activate"
+
+# Point the benchmark at this job's Ollama port without editing the config.
+export INTRUST_OLLAMA_API_BASE="http://127.0.0.1:${PORT}"
+
+python -m benchmark.run_benchmark --experiment "${EXPERIMENT}" ${EXTRA_ARGS}
+STATUS=$?
+
+echo ""
+echo "***** DONE (exit ${STATUS}) *****"
+date '+%F %H:%M:%S'
+echo ""
+exit ${STATUS}
