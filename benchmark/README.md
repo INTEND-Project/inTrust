@@ -208,6 +208,11 @@ sbatch --export=ALL,EXTRA_ARGS="--runs 3 --warmup 1" \
        benchmark/slurm/run_campaign.job                                  # quick test
 ```
 
+The job pulls the models of the **selected experiment** automatically
+(derived from the config, so the pull list can never diverge from what the
+benchmark requests).  Override with `MODELS="tag1 tag2"` or point at an
+alternative config with `CONFIG=path/to/config.toml` via `--export`.
+
 Monitor with `sq` and `tail -f ~/logs/slurm/benchmark_<jobid>.out`.
 Results land in `results/` inside the repo exactly as in a local run.
 

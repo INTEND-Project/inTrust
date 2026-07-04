@@ -140,6 +140,13 @@ def _quiet_logging() -> None:
         logging.getLogger(name).setLevel(logging.CRITICAL)
     # ADK emits an [EXPERIMENTAL] UserWarning per FunctionTool construction.
     warnings.filterwarnings("ignore", category=UserWarning, module="google.adk")
+    # litellm prints a "Give Feedback / Get Help" banner on every failed
+    # request, bypassing the logging system — turn it off explicitly.
+    try:
+        import litellm
+        litellm.suppress_debug_info = True
+    except ImportError:
+        pass  # --dry-run works without litellm installed
 
 
 def main() -> None:

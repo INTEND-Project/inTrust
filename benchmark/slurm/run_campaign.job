@@ -3,22 +3,27 @@
 # Slurm job: self-contained benchmark campaign on ds01 (recommended).
 #
 # Allocates one GPU, starts Ollama INSIDE the allocation, waits until the
-# API answers, pulls the required models, runs the benchmark campaign, and
-# shuts Ollama down again.  Because everything happens inside one job, the
-# campaign survives SSH disconnects and needs no interaction.
+# API answers, pulls the models of the selected experiment, runs the
+# benchmark campaign, and shuts Ollama down again.  Because everything
+# happens inside one job, the campaign survives SSH disconnects and needs
+# no interaction.
 #
 # Before first use:
 #   1. Change the --output path below and the REPO_DIR variable to YOUR
 #      home directory / repository clone.
 #   2. Make sure the log directory exists:  mkdir -p ~/logs/slurm
 #
-# Submit (defaults: scaling_study with the models from the config):
+# Submit (defaults: scaling_study):
 #   sbatch benchmark/slurm/run_campaign.job
 #
 # Override the experiment or add CLI flags without editing the file:
 #   sbatch --export=ALL,EXPERIMENT=family_comparison benchmark/slurm/run_campaign.job
 #   sbatch --export=ALL,EXPERIMENT=scaling_study,EXTRA_ARGS="--runs 5" \
 #          benchmark/slurm/run_campaign.job
+#
+# The models to pull are derived automatically from the config file for the
+# selected experiment, so the pull list can never diverge from what the
+# benchmark will actually request.
 #
 # Results land in $REPO_DIR/results/ exactly as in a local run; plots and
 # LaTeX tables can be (re)generated afterwards on any machine.
@@ -40,9 +45,12 @@ CONDA_ENV="${CONDA_ENV:-venv}"
 VENV="${VENV:-${REPO_DIR}/venv}"
 PORT="${PORT:-33111}"
 EXPERIMENT="${EXPERIMENT:-scaling_study}"
-# Models to pull before the campaign starts (space-separated Ollama tags).
-# Pulling up front keeps download time out of the benchmark process entirely.
-MODELS="${MODELS:-qwen3:1.7b qwen3:8b qwen3:14b}"
+# Optional alternative config file, passed to run_benchmark as --config.
+CONFIG="${CONFIG:-}"
+# Models to pull before the campaign (space-separated Ollama tags).
+# "auto" (default) reads the model list of $EXPERIMENT from the config so the
+# pulls always match what the benchmark will request.
+MODELS="${MODELS:-auto}"
 # Extra CLI flags for run_benchmark.py, e.g. "--runs 5 --warmup 1".
 EXTRA_ARGS="${EXTRA_ARGS:-}"
 
@@ -51,16 +59,27 @@ echo "***** LAUNCHING *****"
 date '+%F %H:%M:%S'
 echo "Repo:       ${REPO_DIR}"
 echo "Experiment: ${EXPERIMENT}"
-echo "Models:     ${MODELS}"
 echo "Ollama API: http://127.0.0.1:${PORT}"
 echo ""
 
+# ---- activate the Python environment ----------------------------------------
+# 'conda activate' needs conda's shell hook first because batch jobs run a
+# non-interactive shell (no .bashrc).
+cd "${REPO_DIR}"
+if [ -n "${CONDA_ENV}" ]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "${CONDA_ENV}"
+elif [ -n "${VENV}" ]; then
+    source "${VENV}/bin/activate"
+fi
+echo "Using python: $(which python)"
+
+# ---- start Ollama in the background inside this allocation -----------------
 export OLLAMA_HOST=127.0.0.1:${PORT}
 # See ollama_serve.job for why these two matter for the benchmark.
 export OLLAMA_NUM_PARALLEL=4
 export OLLAMA_KEEP_ALIVE=30m
 
-# ---- start Ollama in the background inside this allocation -----------------
 mkdir -p "${REPO_DIR}/results"
 ollama serve > "${REPO_DIR}/results/ollama_serve_${SLURM_JOB_ID}.log" 2>&1 &
 OLLAMA_PID=$!
@@ -80,30 +99,36 @@ for i in $(seq 1 60); do
     sleep 1
 done
 
-# ---- pull the models (no-op when already present) ---------------------------
+# ---- resolve and pull the models of this experiment --------------------------
+if [ "${MODELS}" = "auto" ]; then
+    MODELS=$(python - <<PYEOF
+from benchmark.config import load_config
+cfg = load_config("${CONFIG}" or None)
+models = cfg.experiments["${EXPERIMENT}"].models
+# Strip the litellm provider prefix ("ollama_chat/qwen3:8b" -> "qwen3:8b").
+print(" ".join(m.split("/")[-1] for m in models))
+PYEOF
+    ) || { echo "ERROR: could not read model list from config." >&2; exit 1; }
+fi
+echo "Models: ${MODELS}"
+
+# Pulling up front keeps download time out of the benchmark process entirely
+# (a pull is a no-op when the model is already present).
 for model in ${MODELS}; do
     echo "Pulling ${model} ..."
     ollama pull "${model}"
 done
 
 # ---- run the campaign --------------------------------------------------------
-cd "${REPO_DIR}"
-mkdir -p results
-
-# Activate the Python environment.  'conda activate' needs conda's shell hook
-# first because batch jobs run a non-interactive shell (no .bashrc).
-if [ -n "${CONDA_ENV}" ]; then
-    source "$(conda info --base)/etc/profile.d/conda.sh"
-    conda activate "${CONDA_ENV}"
-elif [ -n "${VENV}" ]; then
-    source "${VENV}/bin/activate"
-fi
-echo "Using python: $(which python)"
-
 # Point the benchmark at this job's Ollama port without editing the config.
 export INTRUST_OLLAMA_API_BASE="http://127.0.0.1:${PORT}"
 
-python -m benchmark.run_benchmark --experiment "${EXPERIMENT}" ${EXTRA_ARGS}
+if [ -n "${CONFIG}" ]; then
+    python -m benchmark.run_benchmark --config "${CONFIG}" \
+        --experiment "${EXPERIMENT}" ${EXTRA_ARGS}
+else
+    python -m benchmark.run_benchmark --experiment "${EXPERIMENT}" ${EXTRA_ARGS}
+fi
 STATUS=$?
 
 echo ""
