@@ -116,7 +116,12 @@ request_timeout_sec = 300
 #   num_ctx         context window; Ollama's default (4096) is raised so
 #                   prompt + tool schemas + response always fit.  Raise to
 #                   >= 32768 for thinking campaigns (reasoning accumulates).
+#   temperature     0 = greedy decoding — standard benchmark methodology:
+#                   removes sampling luck from tool-call success, improves
+#                   run-to-run reproducibility, and applies identically to
+#                   both architectures.
 [provider.model_kwargs]
 think = false
 num_predict = 1024
 num_ctx = 8192
+temperature = 0

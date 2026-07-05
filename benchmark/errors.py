@@ -51,7 +51,8 @@ def _normalise(error: Optional[str]) -> str:
     return first_line
 
 
-def summarize_errors(experiment: str, run_id: Optional[str], cfg) -> None:
+def summarize_errors(experiment: str, run_id: Optional[str], cfg,
+                     show_final_text: bool = False) -> None:
     """Print the per-cell error breakdown of one benchmark execution."""
     raw_dir = cfg.results_dir / experiment / "raw"
     if run_id is None:
@@ -65,7 +66,8 @@ def summarize_errors(experiment: str, run_id: Optional[str], cfg) -> None:
 
     # cell -> (total runs, Counter of error messages, routing-ok-but-failed count)
     cells = defaultdict(lambda: {"total": 0, "failed": 0,
-                                 "errors": Counter(), "routing_ok_failed": 0})
+                                 "errors": Counter(), "routing_ok_failed": 0,
+                                 "example_final_text": None})
     for run in data.get("runs", []):
         if run.get("warmup"):
             continue
@@ -77,6 +79,10 @@ def summarize_errors(experiment: str, run_id: Optional[str], cfg) -> None:
             cell["errors"][_normalise(run.get("error"))] += 1
             if run.get("routing_correct"):
                 cell["routing_ok_failed"] += 1
+            # Keep the first failed run's final response as an example of
+            # what the model said instead of completing the assessment.
+            if cell["example_final_text"] is None and run.get("final_text"):
+                cell["example_final_text"] = run["final_text"]
 
     print(f"Run: {run_id}\n")
     any_failures = False
@@ -91,6 +97,12 @@ def summarize_errors(experiment: str, run_id: Optional[str], cfg) -> None:
                   f"of the failed runs — failure happened after selection)")
         for message, count in cell["errors"].most_common():
             print(f"  {count:3d}x  {message}")
+        if show_final_text and cell["example_final_text"]:
+            text = cell["example_final_text"].strip()
+            if len(text) > 500:
+                text = text[:500] + "…"
+            print(f"  example final response of a failed run:\n"
+                  f"  > " + text.replace("\n", "\n  > "))
         print()
     if not any_failures:
         print("No failed measured runs in this execution.")
@@ -102,9 +114,14 @@ def main() -> None:
     parser.add_argument("--run-id", default=None,
                         help="specific run ID (default: most recent)")
     parser.add_argument("--config", type=Path, default=None)
+    parser.add_argument("--final-text", action="store_true",
+                        help="show an example final response per failing cell "
+                             "(what the model said instead of completing the "
+                             "assessment)")
     args = parser.parse_args()
     cfg = load_config(args.config)
-    summarize_errors(args.experiment, args.run_id, cfg)
+    summarize_errors(args.experiment, args.run_id, cfg,
+                     show_final_text=args.final_text)
 
 
 if __name__ == "__main__":

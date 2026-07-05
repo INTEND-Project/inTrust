@@ -130,7 +130,7 @@ Key settings:
 | `run_timeout_sec` | 600 | a run exceeding this is recorded as failed |
 | `ollama_api_base` | `http://localhost:11434` | Ollama server URL |
 | `[provider].request_timeout_sec` | 300 | client-side timeout for one LLM request |
-| `[provider.model_kwargs]` | `think=false`, `num_predict=1024`, `num_ctx=8192` | generation settings forwarded to LiteLLM/Ollama; part of the recorded methodology |
+| `[provider.model_kwargs]` | `think=false`, `num_predict=1024`, `num_ctx=8192`, `temperature=0` | generation settings forwarded to LiteLLM/Ollama; part of the recorded methodology (temperature 0 = greedy decoding for reproducibility) |
 | `[experiments.*].models` | see file | model list per experiment (LiteLLM `ollama_chat/<name>` strings) |
 | `[experiments.*].concurrency_levels` | 1 / 1,5,10,20 | throughput mode levels |
 | `[scenarios]` | k8s off | enable/disable individual assessment scenarios |
@@ -301,6 +301,10 @@ before the failure):
 ```bash
 python -m benchmark.errors --experiment family_comparison [--run-id <run_id>]
 ```
+
+Add `--final-text` to also print one example final response per failing
+cell — i.e. what the model said instead of completing the assessment
+(useful for classifying protocol failures of borderline models).
 
 The `.tex` files are self-contained booktabs tables ready for `\input{}`
 (the paper preamble needs `\usepackage{booktabs}`).

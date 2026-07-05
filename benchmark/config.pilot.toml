@@ -49,3 +49,4 @@ request_timeout_sec = 240
 think = false
 num_predict = 1024
 num_ctx = 8192
+temperature = 0
