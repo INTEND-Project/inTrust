@@ -40,12 +40,18 @@ run_timeout_sec = 600
 # Both architectures rely on native function calling; models without it are
 # rejected by the server before generation.  gemma3 and phi4 were excluded
 # for this reason (a capability finding reported in the paper).
+#
+# A model must also work through the litellm "ollama_chat" translation
+# layer — verify any new model with one real run before a campaign.
+# granite3.3 was excluded because it tool-calls correctly through Ollama's
+# native API but not through litellm (leaked ChatML template tokens, no
+# tool call) — a stack incompatibility, not a model capability result.
 # ----------------------------------------------------------------------------
 [experiments.family_comparison]
 models = [
     "ollama_chat/qwen3:8b",
     "ollama_chat/llama3.1:8b",
-    "ollama_chat/granite3.3:8b",
+    "ollama_chat/command-r7b",
     "ollama_chat/mistral:7b",
     "ollama_chat/hermes3:8b",
 ]

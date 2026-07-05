@@ -73,7 +73,7 @@ Pull the models used by the two experiments:
 # Experiment 1 — family comparison
 ollama pull qwen3:8b
 ollama pull llama3.1:8b
-ollama pull granite3.3:8b
+ollama pull command-r7b
 ollama pull mistral:7b
 ollama pull hermes3:8b
 
@@ -349,6 +349,35 @@ The `.tex` files are self-contained booktabs tables ready for `\input{}`
   builds that honour `think = false`.  Verify each tag with a quick
   one-off completion before a campaign, and record `ollama list` digests
   with your results.
+
+### Observed failure modes
+
+Every failure mode seen so far, in decreasing order of severity — use
+`python -m benchmark.errors --experiment X --final-text` to classify new
+anomalies against this list:
+
+1. **Tool-incapable rejection** — the Ollama server refuses the request
+   ("does not support tools") in well under a second.  The model cannot
+   participate in either architecture (seen: gemma3, phi4 → excluded).
+2. **Stack incompatibility** — the model tool-calls correctly through
+   Ollama's *native* API but not through the litellm `ollama_chat`
+   translation (symptom: leaked chat-template tokens such as
+   `<|im_start|>` in the final text, no tool call).  Not a model result —
+   exclude the model and verify with a direct `curl` to `/api/chat` with a
+   `tools` payload (seen: granite3.3:8b → replaced by command-r7b).
+3. **Format non-adherence** — the model understands the task but emits the
+   call as text instead of a native function call, e.g. a
+   `transfer_to_agent(...)` pseudo-code block (seen: mistral:7b,
+   multi-agent).  Genuine capability data.
+4. **Hallucinated / fabricated completion** — the model claims the
+   assessment happened, or even invents a complete assessment report with
+   made-up findings, without any tool having run (seen: mistral:7b
+   single-agent announcing results; granite3.3 multi-agent fabricating a
+   full TM Forum report).  Genuine data — and the most dangerous mode for
+   a trustworthiness platform.
+5. **Full protocol adherence** — 100% routing and completion in both
+   architectures (seen: qwen3:8b, llama3.1:8b, hermes3:8b at
+   temperature 0).
 
 ## 8. Extending the framework
 
