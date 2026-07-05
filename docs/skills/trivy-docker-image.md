@@ -1,5 +1,4 @@
 ---
-name: trivy-docker-image
 description: Scans Docker images for high and critical vulnerabilities using Trivy.
 ---
 
@@ -25,8 +24,8 @@ The required parameter is `parameters.dockerImage`.
 
 ## Execution
 
-Run the `scan_docker_image` implementation. It invokes the packaged Trivy
-binary, scans the image, parses JSON output, and summarizes findings.
+The skill invokes the packaged Trivy binary, scans the image, parses the
+JSON output, and summarizes findings.
 
 ## Output
 

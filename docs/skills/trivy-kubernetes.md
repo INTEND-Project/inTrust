@@ -1,5 +1,4 @@
 ---
-name: trivy-kubernetes
 description: Evaluates Kubernetes cluster security and compliance posture using Trivy.
 ---
 
@@ -25,8 +24,8 @@ The required parameter is `parameters.clusterName`.
 
 ## Execution
 
-Run the `scan_k8_cluster` implementation. It invokes the packaged Trivy binary
-against the requested Kubernetes cluster and summarizes the report.
+The skill invokes the packaged Trivy binary against the requested
+Kubernetes cluster and summarizes the report.
 
 ## Output
 

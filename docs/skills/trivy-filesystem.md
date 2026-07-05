@@ -1,5 +1,4 @@
 ---
-name: trivy-filesystem
 description: Scans a local directory for vulnerabilities, secrets, and misconfigurations using Trivy.
 ---
 
@@ -26,8 +25,8 @@ The required parameter is `parameters.fsPath`.
 
 ## Execution
 
-Run the `scan_fs` implementation. It invokes the packaged Trivy binary with
-filesystem scanners enabled and returns summarized findings.
+The skill invokes the packaged Trivy binary with filesystem scanners
+enabled and returns summarized findings.
 
 ## Output
 

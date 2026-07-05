@@ -17,6 +17,13 @@ Adding a new skill to the system requires only two things:
    English (this text is embedded in the LLM agent's tool descriptions
    so the model knows when to use the skill).
 No changes to the orchestrator or any other file are needed.
+
+IMPORTANT — skill documentation is read by the LLM as a tool description.
+Never mention callable-looking identifiers in the .md files other than the
+tool's own name: no internal function names (``run_bandit_assessment``),
+no hyphenated skill names in frontmatter.  Models — especially smaller
+ones — will obediently try to call whatever name the documentation shows
+them, and fail because no such tool is registered.
 """
 
 import importlib

@@ -1,5 +1,4 @@
 ---
-name: bandit-static-code
 description: Evaluates Python source code for security vulnerabilities using Bandit.
 ---
 
@@ -28,8 +27,8 @@ The required parameter is `parameters.codeReference.path`.
 
 ## Execution
 
-Run the `run_bandit_assessment` implementation. It invokes Bandit recursively,
-parses JSON output, summarizes severity counts, and returns a structured
+The skill invokes Bandit recursively on the target directory, parses the
+JSON output, summarizes severity counts, and returns a structured
 assessment report.
 
 ## Output
