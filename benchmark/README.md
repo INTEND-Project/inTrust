@@ -370,11 +370,13 @@ anomalies against this list:
    `transfer_to_agent(...)` pseudo-code block (seen: mistral:7b,
    multi-agent).  Genuine capability data.
 4. **Hallucinated / fabricated completion** — the model claims the
-   assessment happened, or even invents a complete assessment report with
-   made-up findings, without any tool having run (seen: mistral:7b
-   single-agent announcing results; granite3.3 multi-agent fabricating a
-   full TM Forum report).  Genuine data — and the most dangerous mode for
-   a trustworthiness platform.
+   assessment happened or will happen, or even invents a complete
+   assessment report with made-up findings, without any tool having run
+   (seen: mistral:7b single-agent announcing results; command-r7b in both
+   architectures announcing the assessment in coherent prose after
+   correctly reading the tool descriptions and target; granite3.3
+   multi-agent fabricating a full TM Forum report).  Genuine data — and
+   the most dangerous mode for a trustworthiness platform.
 5. **Full protocol adherence** — 100% routing and completion in both
    architectures (seen: qwen3:8b, llama3.1:8b, hermes3:8b at
    temperature 0).
