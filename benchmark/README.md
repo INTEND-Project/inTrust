@@ -76,7 +76,7 @@ Pull the models used by the two experiments:
 ollama pull qwen3:8b
 ollama pull llama3.1:8b
 ollama pull orieg/gemma3-tools:12b-ft-v2
-ollama pull deepseek-r1:8b
+ollama pull MFDoom/deepseek-r1-tool-calling:8b
 
 # Experiment 2 — qwen3 scaling study (qwen3:8b already pulled above).
 # qwen3:4b is excluded (thinking-only 2507 build, see Troubleshooting);
@@ -115,11 +115,14 @@ Ollama's function-calling API, so every benchmark model must have the
 `tools` capability: `ollama show <tag>` must list `tools` under
 Capabilities.  Models without it (e.g. stock `gemma3`, `phi4` at the time
 of writing) are rejected by the server before generation and score 0% —
-they cannot participate in either architecture.  For this reason the Gemma
-family entry is `orieg/gemma3-tools`, a community QLoRA fine-tune of
-Gemma 3 for function calling (methodology footnote: it is not stock
-Gemma).  qwen3 and deepseek-r1 are thinking-capable models run with
-`think = false` — part of the recorded methodology.
+they cannot participate in either architecture.  For this reason two
+family entries are community builds (methodology footnotes — they are not
+the stock models): the Gemma entry is `orieg/gemma3-tools` (QLoRA
+fine-tune for function calling) and the DeepSeek entry is
+`MFDoom/deepseek-r1-tool-calling` (tools added via a custom chat
+template; stock deepseek-r1 is rejected by the server).  qwen3 and
+deepseek-r1 are thinking-capable models run with `think = false` — part
+of the recorded methodology.
 
 ---
 
@@ -392,7 +395,12 @@ anomalies against this list:
    correctly reading the tool descriptions and target; granite3.3
    multi-agent fabricating a full TM Forum report).  Genuine data — and
    the most dangerous mode for a trustworthiness platform.
-5. **Full protocol adherence** — 100% routing and completion in both
+5. **Clarification instead of action** — the model understands the task
+   but asks the user a confirming question ("could you verify the path?")
+   instead of acting (seen: orieg/gemma3-tools multi-agent root — while
+   the SAME model completes the single-agent flow at 100%, a strong
+   cross-architecture contrast).  Genuine data.
+6. **Full protocol adherence** — 100% routing and completion in both
    architectures (seen: qwen3:8b, llama3.1:8b, hermes3:8b at
    temperature 0).
 
