@@ -22,10 +22,11 @@ production InTrust service is not modified and keeps working as before.
 
 ## 0. Hardware requirements
 
-The full experiment matrix uses 4B–14B parameter models and is intended for
-a machine with a **GPU** (≥ 12 GB VRAM comfortably fits the largest model,
-qwen3:14b at Q4).  On a CPU-only laptop these models generate a few tokens
-per second and a single run can take many minutes.
+The full experiment matrix uses 0.8B–27B parameter models and is intended
+for a machine with a **GPU** (≥ 24 GB VRAM fits the largest model,
+qwen3.5:27b at ~17 GB Q4 — e.g. an NVIDIA A30).  On a CPU-only laptop these
+models generate a few tokens per second and a single run can take many
+minutes.
 
 For CPU-only machines, use the **pilot configuration**
 ([`config.pilot.toml`](config.pilot.toml)): tiny models (0.6B–1.7B), 1
@@ -71,15 +72,16 @@ Pull the models used by the two experiments:
 
 ```bash
 # Experiment 1 — family comparison
-ollama pull qwen3:8b
+ollama pull qwen3.5:9b
 ollama pull llama3.1:8b
-ollama pull command-r7b
-ollama pull mistral:7b
-ollama pull hermes3:8b
+ollama pull orieg/gemma3-tools:12b-ft-v2
+ollama pull deepseek-r1:8b
 
-# Experiment 2 — Qwen scaling study (qwen3:8b already pulled above)
-ollama pull qwen3:1.7b
-ollama pull qwen3:14b
+# Experiment 2 — qwen3.5 scaling study (qwen3.5:9b already pulled above)
+ollama pull qwen3.5:0.8b
+ollama pull qwen3.5:2b
+ollama pull qwen3.5:4b
+ollama pull qwen3.5:27b
 ```
 
 ### One-time scenario preparation
@@ -101,10 +103,13 @@ ollama pull qwen3:14b
 **Model requirement — native tool calling.**  Both architectures rely on
 Ollama's function-calling API, so every benchmark model must have the
 `tools` capability: `ollama show <tag>` must list `tools` under
-Capabilities.  Models without it (e.g. `gemma3`, `phi4` at the time of
-writing) are rejected by the server before generation and score 0% — they
-cannot participate in either architecture.  This is why the family
-comparison uses granite3.3 and hermes3 rather than Gemma and Phi.
+Capabilities.  Models without it (e.g. stock `gemma3`, `phi4` at the time
+of writing) are rejected by the server before generation and score 0% —
+they cannot participate in either architecture.  For this reason the Gemma
+family entry is `orieg/gemma3-tools`, a community QLoRA fine-tune of
+Gemma 3 for function calling (methodology footnote: it is not stock
+Gemma).  qwen3.5 and deepseek-r1 are thinking-capable models run with
+`think = false` — part of the recorded methodology.
 
 ---
 
@@ -178,7 +183,7 @@ python -m benchmark.run_benchmark --dry-run --runs 3 --warmup 1
 
 # One real run against the smallest model:
 python -m benchmark.run_benchmark --experiment scaling_study \
-    --model ollama_chat/qwen3:1.7b --scenario bandit_static_code \
+    --model ollama_chat/qwen3.5:0.8b --scenario bandit_static_code \
     --runs 1 --warmup 0
 ```
 

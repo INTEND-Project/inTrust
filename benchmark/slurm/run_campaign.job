@@ -105,8 +105,10 @@ if [ "${MODELS}" = "auto" ]; then
 from benchmark.config import load_config
 cfg = load_config("${CONFIG}" or None)
 models = cfg.experiments["${EXPERIMENT}"].models
-# Strip the litellm provider prefix ("ollama_chat/qwen3:8b" -> "qwen3:8b").
-print(" ".join(m.split("/")[-1] for m in models))
+# Strip ONLY the litellm provider prefix ("ollama_chat/qwen3:8b" ->
+# "qwen3:8b").  Namespaced community models keep their namespace
+# ("ollama_chat/orieg/gemma3-tools:12b" -> "orieg/gemma3-tools:12b").
+print(" ".join(m.removeprefix("ollama_chat/") for m in models))
 PYEOF
     ) || { echo "ERROR: could not read model list from config." >&2; exit 1; }
 fi

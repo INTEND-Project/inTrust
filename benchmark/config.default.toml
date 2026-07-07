@@ -36,44 +36,44 @@ run_timeout_sec = 600
 # Same benchmark, five different LLM families, concurrency fixed at 1.
 #
 # REQUIREMENT: every model must have the Ollama "tools" capability (check
-# with `ollama show <tag>` — the capabilities list must include "tools").
-# Both architectures rely on native function calling; models without it are
-# rejected by the server before generation.  gemma3 and phi4 were excluded
-# for this reason (a capability finding reported in the paper).
+# with `ollama show <tag>` — the capabilities list must include "tools")
+# AND work through the litellm "ollama_chat" translation layer — verify any
+# new model with one real run before a campaign.
 #
-# A model must also work through the litellm "ollama_chat" translation
-# layer — verify any new model with one real run before a campaign.
-# granite3.3 was excluded because it tool-calls correctly through Ollama's
-# native API but not through litellm (leaked ChatML template tokens, no
-# tool call) — a stack incompatibility, not a model capability result.
+# Notes on the selected models:
+# - The Gemma entry is `orieg/gemma3-tools` — a community QLoRA fine-tune
+#   of Gemma 3 for function calling, because stock gemma3 has no tools
+#   capability on Ollama (methodology footnote: not stock Gemma).
+# - qwen3.5 and deepseek-r1 are thinking-capable models; the benchmark
+#   runs them with think=false (see [provider.model_kwargs]).
+# Previously excluded: gemma3/phi4 (no tools capability), granite3.3
+# (tool-calls natively but not through litellm — leaked ChatML tokens),
+# mistral:7b / command-r7b / hermes3 (removed in the matrix redesign;
+# mistral and command-r7b showed 0% protocol adherence, hermes3 worked).
 # ----------------------------------------------------------------------------
 [experiments.family_comparison]
 models = [
-    "ollama_chat/qwen3:8b",
+    "ollama_chat/qwen3.5:9b",
     "ollama_chat/llama3.1:8b",
-    "ollama_chat/command-r7b",
-    "ollama_chat/mistral:7b",
-    "ollama_chat/hermes3:8b",
+    "ollama_chat/orieg/gemma3-tools:12b-ft-v2",
+    "ollama_chat/deepseek-r1:8b",
 ]
 architectures = ["single_agent", "multi_agent"]
 concurrency_levels = [1]
 
 
 # ----------------------------------------------------------------------------
-# Experiment 2 — model scaling study (Qwen family, three sizes).
-# Also exercises the throughput mode at several concurrency levels.
-#
-# NOTE: qwen3:1.7b is used as the "small" model instead of qwen3:4b —
-# at the time of writing, Ollama's qwen3:4b tag maps to the Qwen3-2507
-# *thinking-only* build, which ignores `think = false` and would confound
-# the scaling comparison (the 1.7b/8b/14b tags are all classic hybrid
-# builds that honour it; see README troubleshooting).
+# Experiment 2 — model scaling study (qwen3.5 family, five sizes from
+# 0.8B to 27B).  Also exercises the throughput mode at several concurrency
+# levels.  qwen3.5:27b is ~17 GB at Q4 and fits a 24 GB GPU (A30).
 # ----------------------------------------------------------------------------
 [experiments.scaling_study]
 models = [
-    "ollama_chat/qwen3:1.7b",
-    "ollama_chat/qwen3:8b",
-    "ollama_chat/qwen3:14b",
+    "ollama_chat/qwen3.5:0.8b",
+    "ollama_chat/qwen3.5:2b",
+    "ollama_chat/qwen3.5:4b",
+    "ollama_chat/qwen3.5:9b",
+    "ollama_chat/qwen3.5:27b",
 ]
 architectures = ["single_agent", "multi_agent"]
 concurrency_levels = [1, 5, 10, 20]

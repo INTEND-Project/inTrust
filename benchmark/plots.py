@@ -19,6 +19,7 @@ Figures produced:
 
 import argparse
 import csv
+import re
 import sys
 from collections import defaultdict
 from pathlib import Path
@@ -39,6 +40,30 @@ from benchmark.config import BenchmarkConfig, load_config  # noqa: E402
 # Consistent colours for the two architectures across all figures.
 _ARCH_COLOURS = {"single_agent": "#1f77b4", "multi_agent": "#d62728"}
 _ARCH_LABELS = {"single_agent": "Single agent + skills", "multi_agent": "Multi-agent"}
+
+# In line plots (throughput), architecture is encoded by line STYLE and
+# marker while each MODEL gets its own colour — otherwise several models of
+# the same architecture would share an identical colour+style and be
+# indistinguishable.
+_ARCH_LINESTYLES = {"single_agent": "-", "multi_agent": "--"}
+_ARCH_MARKERS = {"single_agent": "o", "multi_agent": "s"}
+
+
+def _model_sort_key(model: str):
+    """
+    Sort models by parameter count when the tag ends in a size (e.g.
+    'qwen3.5:0.8b' < 'qwen3.5:2b' < 'qwen3.5:27b'), falling back to
+    alphabetical.  A plain string sort would order 27b between 0.8b and 2b.
+    """
+    match = re.search(r":(\d+(?:\.\d+)?)b\b", model)
+    return (model.split(":")[0], float(match.group(1)) if match else 0.0, model)
+
+
+def _model_colours(models) -> dict:
+    """Assign each model a distinct colour from the tab10/tab20 palettes."""
+    models = sorted(models, key=_model_sort_key)
+    cmap = plt.get_cmap("tab10" if len(models) <= 10 else "tab20")
+    return {m: cmap(i % cmap.N) for i, m in enumerate(models)}
 
 # Publication-quality defaults.
 plt.rcParams.update({
@@ -118,7 +143,7 @@ def _latency_boxplot(rows: List[dict], plots_dir: Path) -> None:
         if value is not None:
             data[row["model"]][row["architecture"]].append(value)
 
-    models = sorted(data)
+    models = sorted(data, key=_model_sort_key)
     architectures = [a for a in ("single_agent", "multi_agent")
                      if any(a in d for d in data.values())]
 
@@ -160,7 +185,7 @@ def _resource_bars(rows: List[dict], plots_dir: Path, metric_avg: str,
         if peak is not None:
             peaks[row["model"]][row["architecture"]].append(peak)
 
-    models = sorted(data)
+    models = sorted(data, key=_model_sort_key)
     architectures = [a for a in ("single_agent", "multi_agent")
                      if any(a in d for d in data.values())]
 
@@ -200,7 +225,7 @@ def _token_bars(rows: List[dict], plots_dir: Path) -> None:
               "skipping token_usage.png")
         return
 
-    models = sorted(data)
+    models = sorted(data, key=_model_sort_key)
     architectures = [a for a in ("single_agent", "multi_agent")
                      if any(a in d for d in data.values())]
 
@@ -236,13 +261,19 @@ def _throughput_lines(tp_path: Path, plots_dir: Path) -> None:
         key = (rec["architecture"], rec["model"])
         series[key][int(rec["concurrency"])].append(float(rec["rps"]))
 
+    # Colour identifies the MODEL; linestyle + marker identify the
+    # architecture — every line is unambiguous even with many models.
+    colours = _model_colours({model for (_arch, model) in series})
+
     fig, ax = plt.subplots(figsize=(6, 4))
-    for (arch, model), by_conc in sorted(series.items()):
+    for (arch, model), by_conc in sorted(
+            series.items(), key=lambda kv: (kv[0][0], _model_sort_key(kv[0][1]))):
         concurrency = sorted(by_conc)
         rps = [sum(by_conc[c]) / len(by_conc[c]) for c in concurrency]
-        ax.plot(concurrency, rps, marker="o",
-                color=_ARCH_COLOURS.get(arch),
-                linestyle="-" if arch == "single_agent" else "--",
+        ax.plot(concurrency, rps,
+                color=colours[model],
+                linestyle=_ARCH_LINESTYLES.get(arch, "-"),
+                marker=_ARCH_MARKERS.get(arch, "o"),
                 label=f"{_ARCH_LABELS.get(arch, arch)} / {_short_model(model)}")
     ax.set_xlabel("Concurrency level")
     ax.set_ylabel("Requests per second")
