@@ -22,12 +22,11 @@ production InTrust service is not modified and keeps working as before.
 
 ## 0. Hardware requirements
 
-The full experiment matrix uses 0.6B–32B parameter models and is intended
-for a machine with a **GPU** (≥ 24 GB VRAM fits the largest models,
-qwen3:30b/32b at ~18–20 GB Q4 — e.g. an NVIDIA A30; they are tight under
-concurrent KV caches and may partially offload in throughput cells).  On a
-CPU-only laptop these models generate a few tokens per second and a single
-run can take many minutes.
+The full experiment matrix uses 0.8B–27B parameter models and is intended
+for a machine with a **GPU** (≥ 24 GB VRAM fits the largest model,
+qwen3.5:27b at ~17 GB Q4 — e.g. an NVIDIA A30).  On a CPU-only laptop
+these models generate a few tokens per second and a single run can take
+many minutes.
 
 For CPU-only machines, use the **pilot configuration**
 ([`config.pilot.toml`](config.pilot.toml)): tiny models (0.6B–1.7B), 1
@@ -73,19 +72,20 @@ Pull the models used by the two experiments:
 
 ```bash
 # Experiment 1 — family comparison
-ollama pull qwen3:8b
+# (qwen3.5 and deepseek-r1 require a recent Ollama — see the user-local
+# Ollama instructions in the Slurm section)
+ollama pull qwen3.5:9b
 ollama pull llama3.1:8b
 ollama pull orieg/gemma3-tools:12b-ft-v2
-ollama pull deepseek-r1:8b   # requires a recent Ollama (see below)
+ollama pull deepseek-r1:8b
 
-# Experiment 2 — qwen3 scaling study (qwen3:8b already pulled above).
-# qwen3:4b is excluded (thinking-only 2507 build, see Troubleshooting);
-# qwen3:235b is excluded (~140 GB, exceeds a 24 GB GPU).
-ollama pull qwen3:0.6b
-ollama pull qwen3:1.7b
-ollama pull qwen3:14b
-ollama pull qwen3:30b
-ollama pull qwen3:32b
+# Experiment 2 — qwen3.5 scaling study (qwen3.5:9b already pulled above).
+# qwen3.5:35b (~24 GB) and 122b (~81 GB) are excluded — they exceed a
+# 24 GB GPU once the KV cache is added.
+ollama pull qwen3.5:0.8b
+ollama pull qwen3.5:2b
+ollama pull qwen3.5:4b
+ollama pull qwen3.5:27b
 ```
 
 Note: manual pulling is only needed when you run the benchmark yourself
@@ -120,9 +120,9 @@ is therefore the community build `orieg/gemma3-tools` (QLoRA fine-tune
 for function calling — methodology footnote: not stock Gemma).  The
 DeepSeek entry is stock `deepseek-r1`, but it **requires a recent
 Ollama** — old servers reject it with "does not support tools" (see the
-user-local Ollama instructions in the Slurm section).  qwen3 and
-deepseek-r1 are thinking-capable models run with `think = false` — part
-of the recorded methodology.
+user-local Ollama instructions in the Slurm section); the same applies to
+the qwen3.5 family.  qwen3.5 and deepseek-r1 are thinking-capable models
+run with `think = false` — part of the recorded methodology.
 
 ---
 
@@ -196,7 +196,7 @@ python -m benchmark.run_benchmark --dry-run --runs 3 --warmup 1
 
 # One real run against the smallest model:
 python -m benchmark.run_benchmark --experiment scaling_study \
-    --model ollama_chat/qwen3:0.6b --scenario bandit_static_code \
+    --model ollama_chat/qwen3.5:0.8b --scenario bandit_static_code \
     --runs 1 --warmup 0
 ```
 
@@ -284,7 +284,7 @@ the provenance is recorded with the campaign.
 
 Cluster notes:
 
-- The A30's 24 GB fits every configured model (largest: qwen3:14b Q4 ≈ 9.3 GB).
+- The A30's 24 GB fits every configured model (largest: qwen3.5:27b Q4 ≈ 17 GB).
 - The job scripts set `OLLAMA_NUM_PARALLEL=4` — without it Ollama serialises
   concurrent requests and the throughput experiment's concurrency levels all
   measure the same serial behaviour.  Each parallel slot multiplies KV-cache
@@ -419,15 +419,18 @@ anomalies against this list:
 3. **Format non-adherence** — the model understands the task but emits the
    call as text instead of a native function call, e.g. a
    `transfer_to_agent(...)` pseudo-code block (seen: mistral:7b,
-   multi-agent).  Genuine capability data.
+   multi-agent) or a JSON blob naming the correct target agent
+   (seen: deepseek-r1:8b, multi-agent).  Genuine capability data.
 4. **Hallucinated / fabricated completion** — the model claims the
    assessment happened or will happen, or even invents a complete
    assessment report with made-up findings, without any tool having run
    (seen: mistral:7b single-agent announcing results; command-r7b in both
    architectures announcing the assessment in coherent prose after
-   correctly reading the tool descriptions and target; granite3.3
-   multi-agent fabricating a full TM Forum report).  Genuine data — and
-   the most dangerous mode for a trustworthiness platform.
+   correctly reading the tool descriptions and target; deepseek-r1:8b
+   single-agent announcing the dispatch with structured reasoning — and
+   extracting the wrong target, the component name instead of the path;
+   granite3.3 multi-agent fabricating a full TM Forum report).  Genuine
+   data — and the most dangerous mode for a trustworthiness platform.
 5. **Clarification instead of action** — the model understands the task
    but asks the user a confirming question ("could you verify the path?")
    instead of acting (seen: orieg/gemma3-tools multi-agent root — while
