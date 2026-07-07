@@ -28,6 +28,7 @@ them, and fail because no such tool is registered.
 
 import importlib
 import inspect
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Callable, Dict, List, Optional
@@ -206,9 +207,18 @@ def _make_skill_tool(
     # wrappers (bandit_assessment.py, trivy_scan.py) expect.
     def _tool_fn(**kwargs: Any) -> Dict[str, Any]:
         target_value = kwargs.get(param_name)
-        # The schema declares a string, but LLMs sometimes pass a structured
-        # object copied from the intent (e.g. {"path": "..."}).  Coerce it to
-        # the target string instead of failing the assessment.
+        # The schema declares a string, but LLMs pass this argument in three
+        # shapes: a plain string, a structured object copied from the intent
+        # (e.g. {"path": "..."}), or that same object SERIALISED INTO A
+        # STRING ('{"path": "..."}').  Normalise the last two to the target
+        # string instead of failing the assessment.
+        if isinstance(target_value, str) and target_value.lstrip().startswith("{"):
+            try:
+                parsed = json.loads(target_value)
+                if isinstance(parsed, dict):
+                    target_value = parsed
+            except ValueError:
+                pass  # not JSON after all — keep the string as-is
         if isinstance(target_value, dict):
             target_value = (
                 target_value.get("path")
