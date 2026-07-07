@@ -44,7 +44,7 @@ run_timeout_sec = 600
 # - The Gemma entry is `orieg/gemma3-tools` — a community QLoRA fine-tune
 #   of Gemma 3 for function calling, because stock gemma3 has no tools
 #   capability on Ollama (methodology footnote: not stock Gemma).
-# - qwen3.5 and deepseek-r1 are thinking-capable models; the benchmark
+# - qwen3 and deepseek-r1 are thinking-capable models; the benchmark
 #   runs them with think=false (see [provider.model_kwargs]).
 # Previously excluded: gemma3/phi4 (no tools capability), granite3.3
 # (tool-calls natively but not through litellm — leaked ChatML tokens),
@@ -53,7 +53,7 @@ run_timeout_sec = 600
 # ----------------------------------------------------------------------------
 [experiments.family_comparison]
 models = [
-    "ollama_chat/qwen3.5:9b",
+    "ollama_chat/qwen3:8b",
     "ollama_chat/llama3.1:8b",
     "ollama_chat/orieg/gemma3-tools:12b-ft-v2",
     "ollama_chat/deepseek-r1:8b",
@@ -63,17 +63,26 @@ concurrency_levels = [1]
 
 
 # ----------------------------------------------------------------------------
-# Experiment 2 — model scaling study (qwen3.5 family, five sizes from
-# 0.8B to 27B).  Also exercises the throughput mode at several concurrency
-# levels.  qwen3.5:27b is ~17 GB at Q4 and fits a 24 GB GPU (A30).
+# Experiment 2 — model scaling study (qwen3 family, six sizes from 0.6B to
+# 32B).  Also exercises the throughput mode at several concurrency levels.
+#
+# Excluded sizes:
+# - qwen3:4b — Ollama's tag maps to the Qwen3-2507 thinking-only build,
+#   which ignores `think = false` (see README troubleshooting) and would
+#   put a build quirk, not a size effect, into the scaling curve.
+# - qwen3:235b — ~140 GB, far beyond a 24 GB A30.
+# VRAM note: qwen3:30b (MoE, ~18 GB) and qwen3:32b (~20 GB) fit the A30
+# but are tight with the OLLAMA_NUM_PARALLEL=4 KV cache; throughput cells
+# may partially offload to CPU — slower, but valid measurements.
 # ----------------------------------------------------------------------------
 [experiments.scaling_study]
 models = [
-    "ollama_chat/qwen3.5:0.8b",
-    "ollama_chat/qwen3.5:2b",
-    "ollama_chat/qwen3.5:4b",
-    "ollama_chat/qwen3.5:9b",
-    "ollama_chat/qwen3.5:27b",
+    "ollama_chat/qwen3:0.6b",
+    "ollama_chat/qwen3:1.7b",
+    "ollama_chat/qwen3:8b",
+    "ollama_chat/qwen3:14b",
+    "ollama_chat/qwen3:30b",
+    "ollama_chat/qwen3:32b",
 ]
 architectures = ["single_agent", "multi_agent"]
 concurrency_levels = [1, 5, 10, 20]

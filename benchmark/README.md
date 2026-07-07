@@ -22,11 +22,12 @@ production InTrust service is not modified and keeps working as before.
 
 ## 0. Hardware requirements
 
-The full experiment matrix uses 0.8B–27B parameter models and is intended
-for a machine with a **GPU** (≥ 24 GB VRAM fits the largest model,
-qwen3.5:27b at ~17 GB Q4 — e.g. an NVIDIA A30).  On a CPU-only laptop these
-models generate a few tokens per second and a single run can take many
-minutes.
+The full experiment matrix uses 0.6B–32B parameter models and is intended
+for a machine with a **GPU** (≥ 24 GB VRAM fits the largest models,
+qwen3:30b/32b at ~18–20 GB Q4 — e.g. an NVIDIA A30; they are tight under
+concurrent KV caches and may partially offload in throughput cells).  On a
+CPU-only laptop these models generate a few tokens per second and a single
+run can take many minutes.
 
 For CPU-only machines, use the **pilot configuration**
 ([`config.pilot.toml`](config.pilot.toml)): tiny models (0.6B–1.7B), 1
@@ -72,17 +73,26 @@ Pull the models used by the two experiments:
 
 ```bash
 # Experiment 1 — family comparison
-ollama pull qwen3.5:9b
+ollama pull qwen3:8b
 ollama pull llama3.1:8b
 ollama pull orieg/gemma3-tools:12b-ft-v2
 ollama pull deepseek-r1:8b
 
-# Experiment 2 — qwen3.5 scaling study (qwen3.5:9b already pulled above)
-ollama pull qwen3.5:0.8b
-ollama pull qwen3.5:2b
-ollama pull qwen3.5:4b
-ollama pull qwen3.5:27b
+# Experiment 2 — qwen3 scaling study (qwen3:8b already pulled above).
+# qwen3:4b is excluded (thinking-only 2507 build, see Troubleshooting);
+# qwen3:235b is excluded (~140 GB, exceeds a 24 GB GPU).
+ollama pull qwen3:0.6b
+ollama pull qwen3:1.7b
+ollama pull qwen3:14b
+ollama pull qwen3:30b
+ollama pull qwen3:32b
 ```
+
+Note: manual pulling is only needed when you run the benchmark yourself
+against an already-running Ollama server.  The Slurm campaign job
+(`benchmark/slurm/run_campaign.job`) pulls the selected experiment's
+models automatically before the campaign starts — Ollama does **not**
+auto-download models on inference requests.
 
 ### One-time scenario preparation
 
@@ -108,7 +118,7 @@ of writing) are rejected by the server before generation and score 0% —
 they cannot participate in either architecture.  For this reason the Gemma
 family entry is `orieg/gemma3-tools`, a community QLoRA fine-tune of
 Gemma 3 for function calling (methodology footnote: it is not stock
-Gemma).  qwen3.5 and deepseek-r1 are thinking-capable models run with
+Gemma).  qwen3 and deepseek-r1 are thinking-capable models run with
 `think = false` — part of the recorded methodology.
 
 ---
@@ -183,7 +193,7 @@ python -m benchmark.run_benchmark --dry-run --runs 3 --warmup 1
 
 # One real run against the smallest model:
 python -m benchmark.run_benchmark --experiment scaling_study \
-    --model ollama_chat/qwen3.5:0.8b --scenario bandit_static_code \
+    --model ollama_chat/qwen3:0.6b --scenario bandit_static_code \
     --runs 1 --warmup 0
 ```
 
