@@ -261,10 +261,13 @@ support, or newer model families).  Ollama is a self-contained binary, so
 you can install a current release in your home directory — no root needed:
 
 ```bash
-curl -L -o /tmp/ollama.tgz https://ollama.com/download/ollama-linux-amd64.tgz
-mkdir -p ~/ollama && tar -xzf /tmp/ollama.tgz -C ~/ollama
+curl -L -o /tmp/ollama.tar.zst https://ollama.com/download/ollama-linux-amd64.tar.zst
+mkdir -p ~/ollama && tar -xf /tmp/ollama.tar.zst -C ~/ollama
 ~/ollama/bin/ollama --version
 ```
+
+(`tar -xf` auto-detects the zstd compression; when upgrading an existing
+install, remove the old libraries first: `rm -rf ~/ollama/lib/ollama`.)
 
 Then point the job scripts at it via the `OLLAMA_BIN` variable:
 
