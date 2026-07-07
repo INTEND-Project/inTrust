@@ -36,10 +36,16 @@
 # Port the Ollama API listens on (127.0.0.1 = only reachable on ds01 itself).
 PORT=33111
 
+# Ollama binary.  Override with a user-local install when the system Ollama
+# is too old for the benchmark models (see README, "Using a newer Ollama"):
+#   sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama benchmark/slurm/ollama_serve.job
+OLLAMA_BIN="${OLLAMA_BIN:-ollama}"
+
 echo ""
 echo "***** LAUNCHING *****"
 date '+%F %H:%M:%S'
 echo "Ollama API: http://127.0.0.1:${PORT}"
+echo "Ollama bin: ${OLLAMA_BIN} ($("${OLLAMA_BIN}" --version 2>&1))"
 echo ""
 
 export OLLAMA_HOST=127.0.0.1:${PORT}
@@ -54,7 +60,7 @@ export OLLAMA_NUM_PARALLEL=4
 # pollutes measured runs (warm-ups handle the first load).
 export OLLAMA_KEEP_ALIVE=30m
 
-srun ollama serve 2>&1
+srun "${OLLAMA_BIN}" serve 2>&1
 
 echo ""
 echo "***** DONE *****"

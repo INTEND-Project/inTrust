@@ -43,6 +43,10 @@ REPO_DIR="${REPO_DIR:-/home/rustemd/SOCC/inTrust}"
 # set CONDA_ENV="" and VENV=/path/to/venv to use a classic virtualenv instead.
 CONDA_ENV="${CONDA_ENV:-venv}"
 VENV="${VENV:-${REPO_DIR}/venv}"
+# Ollama binary.  Override with a user-local install when the system Ollama
+# is too old for the benchmark models (see README, "Using a newer Ollama"):
+#   sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama ...
+OLLAMA_BIN="${OLLAMA_BIN:-ollama}"
 PORT="${PORT:-33111}"
 EXPERIMENT="${EXPERIMENT:-scaling_study}"
 # Optional alternative config file, passed to run_benchmark as --config.
@@ -60,6 +64,8 @@ date '+%F %H:%M:%S'
 echo "Repo:       ${REPO_DIR}"
 echo "Experiment: ${EXPERIMENT}"
 echo "Ollama API: http://127.0.0.1:${PORT}"
+# Record which Ollama serves this campaign (methodology provenance).
+echo "Ollama bin: ${OLLAMA_BIN} ($("${OLLAMA_BIN}" --version 2>&1))"
 echo ""
 
 # ---- activate the Python environment ----------------------------------------
@@ -81,7 +87,7 @@ export OLLAMA_NUM_PARALLEL=4
 export OLLAMA_KEEP_ALIVE=30m
 
 mkdir -p "${REPO_DIR}/results"
-ollama serve > "${REPO_DIR}/results/ollama_serve_${SLURM_JOB_ID}.log" 2>&1 &
+"${OLLAMA_BIN}" serve > "${REPO_DIR}/results/ollama_serve_${SLURM_JOB_ID}.log" 2>&1 &
 OLLAMA_PID=$!
 # Always shut Ollama down when the job ends, whatever happens in between.
 trap 'kill ${OLLAMA_PID} 2>/dev/null' EXIT
@@ -118,7 +124,7 @@ echo "Models: ${MODELS}"
 # (a pull is a no-op when the model is already present).
 for model in ${MODELS}; do
     echo "Pulling ${model} ..."
-    ollama pull "${model}"
+    "${OLLAMA_BIN}" pull "${model}"
 done
 
 # ---- run the campaign --------------------------------------------------------

@@ -76,7 +76,7 @@ Pull the models used by the two experiments:
 ollama pull qwen3:8b
 ollama pull llama3.1:8b
 ollama pull orieg/gemma3-tools:12b-ft-v2
-ollama pull MFDoom/deepseek-r1-tool-calling:8b
+ollama pull deepseek-r1:8b   # requires a recent Ollama (see below)
 
 # Experiment 2 — qwen3 scaling study (qwen3:8b already pulled above).
 # qwen3:4b is excluded (thinking-only 2507 build, see Troubleshooting);
@@ -115,12 +115,12 @@ Ollama's function-calling API, so every benchmark model must have the
 `tools` capability: `ollama show <tag>` must list `tools` under
 Capabilities.  Models without it (e.g. stock `gemma3`, `phi4` at the time
 of writing) are rejected by the server before generation and score 0% —
-they cannot participate in either architecture.  For this reason two
-family entries are community builds (methodology footnotes — they are not
-the stock models): the Gemma entry is `orieg/gemma3-tools` (QLoRA
-fine-tune for function calling) and the DeepSeek entry is
-`MFDoom/deepseek-r1-tool-calling` (tools added via a custom chat
-template; stock deepseek-r1 is rejected by the server).  qwen3 and
+they cannot participate in either architecture.  The Gemma family entry
+is therefore the community build `orieg/gemma3-tools` (QLoRA fine-tune
+for function calling — methodology footnote: not stock Gemma).  The
+DeepSeek entry is stock `deepseek-r1`, but it **requires a recent
+Ollama** — old servers reject it with "does not support tools" (see the
+user-local Ollama instructions in the Slurm section).  qwen3 and
 deepseek-r1 are thinking-capable models run with `think = false` — part
 of the recorded methodology.
 
@@ -255,6 +255,30 @@ INTRUST_OLLAMA_API_BASE=http://127.0.0.1:33111 \
 `INTRUST_OLLAMA_API_BASE` overrides the config's `ollama_api_base`, so the
 per-job port never requires editing a config file.
 
+**Using a newer Ollama than the system one.**  Some benchmark models need
+a newer Ollama than the cluster provides (e.g. stock `deepseek-r1` tool
+support, or newer model families).  Ollama is a self-contained binary, so
+you can install a current release in your home directory — no root needed:
+
+```bash
+curl -L -o /tmp/ollama.tgz https://ollama.com/download/ollama-linux-amd64.tgz
+mkdir -p ~/ollama && tar -xzf /tmp/ollama.tgz -C ~/ollama
+~/ollama/bin/ollama --version
+```
+
+Then point the job scripts at it via the `OLLAMA_BIN` variable:
+
+```bash
+sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama,EXPERIMENT=family_comparison \
+       benchmark/slurm/run_campaign.job
+```
+
+Models are stored in `~/.ollama` regardless of which binary pulled them;
+the campaign job's auto-pull refreshes registry manifests, which matters
+when a model's tool-capable template only exists in newer manifests
+(deepseek-r1).  Each job logs the Ollama binary and version it used, so
+the provenance is recorded with the campaign.
+
 Cluster notes:
 
 - The A30's 24 GB fits every configured model (largest: qwen3:14b Q4 ≈ 9.3 GB).
@@ -377,12 +401,18 @@ anomalies against this list:
 1. **Tool-incapable rejection** — the Ollama server refuses the request
    ("does not support tools") in well under a second.  The model cannot
    participate in either architecture (seen: gemma3, phi4 → excluded).
-2. **Stack incompatibility** — the model tool-calls correctly through
+2. **Stack incompatibility** — the failure sits in the serving stack, not
+   the model.  Variants seen: (a) the model tool-calls correctly through
    Ollama's *native* API but not through the litellm `ollama_chat`
-   translation (symptom: leaked chat-template tokens such as
-   `<|im_start|>` in the final text, no tool call).  Not a model result —
-   exclude the model and verify with a direct `curl` to `/api/chat` with a
-   `tools` payload (seen: granite3.3:8b → replaced by command-r7b).
+   translation — symptom: leaked chat-template tokens such as
+   `<|im_start|>` in the final text (granite3.3:8b); (b) a community
+   tool-calling template emits a CORRECT call as an unparsed JSON text
+   block that never becomes a native tool call
+   (MFDoom/deepseek-r1-tool-calling); (c) an outdated server/manifest
+   rejects a model that supports tools upstream (stock deepseek-r1 on
+   Ollama 0.12 → fixed by a user-local newer Ollama, see the Slurm
+   section).  Not model results — exclude or fix the stack, and verify
+   with a direct `curl` to `/api/chat` with a `tools` payload.
 3. **Format non-adherence** — the model understands the task but emits the
    call as text instead of a native function call, e.g. a
    `transfer_to_agent(...)` pseudo-code block (seen: mistral:7b,

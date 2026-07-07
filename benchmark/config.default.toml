@@ -44,11 +44,13 @@ run_timeout_sec = 600
 # - The Gemma entry is `orieg/gemma3-tools` — a community QLoRA fine-tune
 #   of Gemma 3 for function calling, because stock gemma3 has no tools
 #   capability on Ollama (methodology footnote: not stock Gemma).
-# - The DeepSeek entry is `MFDoom/deepseek-r1-tool-calling` — a community
-#   build adding tools via a custom chat template, because the stock
-#   deepseek-r1 manifest is rejected by the server ("does not support
-#   tools" on Ollama 0.12).  Upstream caveat: DeepSeek function calling
-#   may be unstable (looped calls / empty responses) — failures are data.
+# - The DeepSeek entry (stock deepseek-r1) REQUIRES A RECENT OLLAMA: old
+#   servers (0.12) reject it with "does not support tools" because their
+#   registry manifest predates tool support.  Use a user-local Ollama via
+#   the Slurm jobs' OLLAMA_BIN variable (see README) — the campaign job's
+#   auto-pull then refreshes the manifest.  The MFDoom community build was
+#   tried and excluded: it emitted a correct tool call as unparsed text
+#   (template artifact, see README failure modes).
 # - qwen3 and deepseek-r1 are thinking-capable models; the benchmark
 #   runs them with think=false (see [provider.model_kwargs]).
 # Previously excluded: gemma3/phi4 (no tools capability), granite3.3
@@ -61,7 +63,7 @@ models = [
     "ollama_chat/qwen3:8b",
     "ollama_chat/llama3.1:8b",
     "ollama_chat/orieg/gemma3-tools:12b-ft-v2",
-    "ollama_chat/MFDoom/deepseek-r1-tool-calling:8b",
+    "ollama_chat/deepseek-r1:8b",
 ]
 architectures = ["single_agent", "multi_agent"]
 concurrency_levels = [1]
