@@ -3,10 +3,20 @@ Benchmark scenarios — the fixed assessment tasks that every architecture and
 every model must execute.
 
 Each scenario couples:
-- a frozen TM Forum intent (JSON file under ``benchmark/data/intents/``),
-- the skill the orchestrator is EXPECTED to select for that intent, and
+- a set of frozen TM Forum intent VARIANTS (JSON files under
+  ``benchmark/data/intents/``, matched by filename prefix),
+- the skill the orchestrator is EXPECTED to select for those intents, and
 - the corresponding tool-function / specialist-agent names used to verify
   routing in each architecture.
+
+Why several intent variants per scenario: the benchmark decodes greedily
+(temperature 0), so repeated runs of ONE frozen intent are near
+deterministic — per-cell routing accuracy would be a single routing
+decision observed N times.  With five variants (different targets, varied
+phrasing) each cell contains five genuine routing decisions, making routing
+accuracy a robustness measure across intent formulations.  Runs rotate
+through the variants (``run_idx % len(intents)``), and both architectures
+see the identical variant set.
 
 The intents and their input data are committed to the repository so that all
 experiments operate on byte-identical inputs (reproducibility requirement).
@@ -15,7 +25,7 @@ experiments operate on byte-identical inputs (reproducibility requirement).
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Tuple
 
 from .config import REPO_ROOT
 
@@ -25,12 +35,12 @@ _INTENTS_DIR = Path(__file__).resolve().parent / "data" / "intents"
 
 @dataclass(frozen=True)
 class Scenario:
-    """One benchmark scenario: a fixed intent plus its expected routing."""
+    """One benchmark scenario: fixed intent variants plus expected routing."""
 
     # Scenario key as used in the config file, e.g. "bandit_static_code".
     name: str
-    # The frozen intent dictionary sent to the agent as the user message.
-    intent: Dict[str, Any]
+    # The frozen intent variants; runs rotate through them by run index.
+    intents: Tuple[Dict[str, Any], ...]
     # Production skill name expected to be selected (e.g. "bandit-static-code").
     expected_skill: str
     # Tool function name in the single-agent architecture (skill name with
@@ -40,12 +50,14 @@ class Scenario:
     expected_agent: str
 
 
-# Maps scenario key -> (intent file, expected production skill name).
+# Maps scenario key -> (intent filename prefix, expected production skill).
+# All files matching ``<prefix>*.json`` are loaded (sorted) as the variant
+# set — scenarios with a single intent file simply yield one variant.
 _SCENARIO_TABLE = {
-    "bandit_static_code": ("intent_bandit.json", "bandit-static-code"),
-    "trivy_filesystem": ("intent_trivy_fs.json", "trivy-filesystem"),
-    "trivy_docker_image": ("intent_trivy_image.json", "trivy-docker-image"),
-    "trivy_kubernetes": ("intent_trivy_k8s.json", "trivy-kubernetes"),
+    "bandit_static_code": ("intent_bandit", "bandit-static-code"),
+    "trivy_filesystem": ("intent_trivy_fs", "trivy-filesystem"),
+    "trivy_docker_image": ("intent_trivy_image", "trivy-docker-image"),
+    "trivy_kubernetes": ("intent_trivy_k8s", "trivy-kubernetes"),
 }
 
 
@@ -93,18 +105,23 @@ def load_scenarios(enabled: List[str]) -> List[Scenario]:
         so run ordering is identical across benchmark executions.
     """
     scenarios: List[Scenario] = []
-    for key, (intent_file, skill_name) in _SCENARIO_TABLE.items():
+    for key, (prefix, skill_name) in _SCENARIO_TABLE.items():
         if key not in enabled:
             continue
-        intent_path = _INTENTS_DIR / intent_file
-        with open(intent_path, encoding="utf-8") as fh:
-            intent = json.load(fh)
-        intent = _resolve_paths(intent)
+        intent_paths = sorted(_INTENTS_DIR.glob(f"{prefix}*.json"))
+        if not intent_paths:
+            raise FileNotFoundError(
+                f"No intent files matching '{prefix}*.json' in {_INTENTS_DIR}"
+            )
+        intents = []
+        for intent_path in intent_paths:
+            with open(intent_path, encoding="utf-8") as fh:
+                intents.append(_resolve_paths(json.load(fh)))
         tool_fn = skill_name.replace("-", "_")
         scenarios.append(
             Scenario(
                 name=key,
-                intent=intent,
+                intents=tuple(intents),
                 expected_skill=skill_name,
                 expected_tool_fn=tool_fn,
                 expected_agent=f"{tool_fn}_agent",

@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-002",
+  "name": "Dependency Vulnerability Scan",
+  "description": "Inspect the web-portal project folder for third-party packages with known CVEs.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "DevOpsEngineer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_2"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_2"
+  },
+  "reporting": {
+    "expectedOutput": "List of vulnerable packages with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

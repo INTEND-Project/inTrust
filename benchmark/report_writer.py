@@ -33,6 +33,7 @@ from .metrics import RunResult, summarize
 # CSV columns, in the exact order they appear in the file.
 _CSV_COLUMNS = [
     "architecture", "model", "scenario", "concurrency", "run_idx",
+    "intent_variant",
     "e2e_ms", "selection_ms", "llm_ms", "tool_ms", "format_ms",
     "cpu_avg", "cpu_peak", "rss_avg_mb", "rss_peak_mb",
     "prompt_tokens", "completion_tokens", "total_tokens",

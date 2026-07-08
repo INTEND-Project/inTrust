@@ -67,12 +67,18 @@ async def execute_run(
     All exceptions (model unreachable, timeout, tool crash) are caught and
     recorded as a FAILED run so long experiment campaigns never abort.
     """
+    # Rotate through the scenario's frozen intent variants so a measured
+    # cell samples several distinct intent formulations (see scenarios.py).
+    intent_variant = run_idx % len(scenario.intents)
+    intent = scenario.intents[intent_variant]
+
     result = RunResult(
         architecture=architecture,
         model=model_string,
         scenario=scenario.name,
         concurrency=concurrency,
         run_idx=run_idx,
+        intent_variant=intent_variant,
         warmup=warmup,
         expected=(
             scenario.expected_agent
@@ -101,7 +107,7 @@ async def execute_run(
     # architectures and all models.
     user_message = genai_types.Content(
         role="user",
-        parts=[genai_types.Part(text=json.dumps(scenario.intent, indent=2))],
+        parts=[genai_types.Part(text=json.dumps(intent, indent=2))],
     )
 
     # ---- run and consume the event stream ------------------------------------

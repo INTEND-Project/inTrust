@@ -96,8 +96,15 @@ auto-download models on inference requests.
 
 ### One-time scenario preparation
 
-- **Bandit / Trivy filesystem scans** need nothing: they scan the frozen
-  sample code committed under `benchmark/data/sample_code/`.
+- **Bandit / Trivy filesystem scans** need nothing: they scan frozen
+  inputs committed to the repository.  Bandit targets are five small
+  Python modules with distinct known findings
+  (`benchmark/data/bandit_targets/target_{1..5}/`); Trivy filesystem
+  targets are five tiny projects, each just a `requirements.txt` with
+  pinned known-CVE package versions
+  (`benchmark/data/fs_targets/project_{1..5}/`) so a scan takes seconds.
+  Trivy downloads its vulnerability DB on first use — warm-up runs absorb
+  this, or pre-cache it with `trivy image --download-db-only` (same DB).
 - **Trivy Docker image scan**: pull the pinned image once and pre-download
   the Trivy vulnerability database so neither download pollutes the
   measured timings:
@@ -151,7 +158,19 @@ Key settings:
 | `[provider.model_kwargs]` | `think=false`, `num_predict=1024`, `num_ctx=8192`, `temperature=0` | generation settings forwarded to LiteLLM/Ollama; part of the recorded methodology (temperature 0 = greedy decoding for reproducibility) |
 | `[experiments.*].models` | see file | model list per experiment (LiteLLM `ollama_chat/<name>` strings) |
 | `[experiments.*].concurrency_levels` | 1 / 1,5,10,20 | throughput mode levels |
-| `[scenarios]` | k8s off | enable/disable individual assessment scenarios |
+| `[scenarios]` | bandit + trivy fs on | enable/disable individual assessment scenarios |
+
+**Intent variants.**  Each enabled scenario ships **five frozen intent
+variants** (different assessment targets, varied TM Forum phrasing) under
+`benchmark/data/intents/`; runs rotate through them (`run_idx % 5`, so 30
+measured runs = 6 per variant, recorded in the `intent_variant` CSV
+column).  This matters because the benchmark decodes greedily
+(`temperature = 0`): repeated runs of a single frozen intent are near
+deterministic, so per-cell routing accuracy would be one routing decision
+observed 30 times.  Five variants make routing accuracy a robustness
+measure across intent formulations — and since each variant has a distinct
+expected finding set, results also verify the correct target was scanned.
+Both architectures always see the identical variant set.
 
 ---
 

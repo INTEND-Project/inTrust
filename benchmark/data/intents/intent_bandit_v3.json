@@ -1,7 +1,7 @@
 {
-  "intentId": "bench-bandit-001",
-  "name": "Static Code Security Analysis",
-  "description": "Perform static code analysis on a Python source directory to identify security vulnerabilities using Bandit.",
+  "intentId": "bench-bandit-003",
+  "name": "Source Code Vulnerability Audit",
+  "description": "Audit the session-handling Python sources for known dangerous constructs such as unsafe deserialization.",
   "category": "trustworthinessAssessment",
   "intentType": "staticCodeAnalysis",
   "actor": {
@@ -10,12 +10,12 @@
   },
   "target": {
     "type": "SoftwareComponent",
-    "name": "benchmark-sample-code"
+    "name": "session-handling-service"
   },
   "parameters": {
     "assessmentType": "static_code_analysis",
     "codeReference": {
-      "path": "benchmark/data/sample_code",
+      "path": "benchmark/data/bandit_targets/target_3",
       "language": "python"
     }
   },

@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-004",
+  "name": "Insecure Network Code Detection",
+  "description": "Statically analyse the download-client Python module and flag insecure network and TLS usage.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "PlatformEngineer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "download-client"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_4",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Findings grouped by severity with remediation hints",
+    "format": "application/json"
+  }
+}

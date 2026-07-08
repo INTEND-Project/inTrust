@@ -23,6 +23,7 @@ class RunResult:
     concurrency: int           # concurrency level this run executed under
     run_idx: int               # 0-based index within the measured runs
     warmup: bool               # True for warm-up runs (excluded from stats)
+    intent_variant: int = 0    # frozen intent variant sent (run_idx % #variants)
 
     # ---- outcome ------------------------------------------------------------
     status: str = "OK"         # "OK" or "FAILED"

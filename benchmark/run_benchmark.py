@@ -114,6 +114,7 @@ async def _dry_run_execute(architecture, model_string, scenario, skills, cfg,
     return RunResult(
         architecture=architecture, model=model_string, scenario=scenario.name,
         concurrency=concurrency, run_idx=run_idx, warmup=warmup,
+        intent_variant=run_idx % len(scenario.intents),
         e2e_ms=e2e, selection_ms=random.uniform(200, 900),
         llm_ms=e2e - tool, tool_ms=tool, format_ms=random.uniform(100, 600),
         cpu_avg=random.uniform(5, 30), cpu_peak=random.uniform(30, 90),

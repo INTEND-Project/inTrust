@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-004",
+  "name": "Local Directory CVE Assessment",
+  "description": "Assess the configuration-tools project directory on disk and report any dependencies affected by published vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_4"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_4"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability report per dependency with severity ratings",
+    "format": "application/json"
+  }
+}

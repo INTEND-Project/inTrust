@@ -95,12 +95,17 @@ concurrency_levels = [1, 5, 10, 20]
 
 # ----------------------------------------------------------------------------
 # Assessment scenarios.  true = included in the benchmark.
+# Each enabled scenario has FIVE frozen intent variants (different targets,
+# varied phrasing) that runs rotate through — see benchmark/data/intents/.
+# The filesystem scan targets tiny frozen requirements.txt projects
+# (benchmark/data/fs_targets/) so each Trivy scan takes seconds; the vuln
+# DB is cached during warm-up runs.
 # Docker image scan needs Docker + network (pull the image once beforehand);
 # Kubernetes scan needs a live cluster and is therefore off by default.
 # ----------------------------------------------------------------------------
 [scenarios]
 bandit_static_code = true
-trivy_filesystem = false
+trivy_filesystem = true
 trivy_docker_image = false
 trivy_kubernetes = false
 
