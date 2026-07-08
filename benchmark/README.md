@@ -236,6 +236,12 @@ conda create --name venv python=3.12 && conda activate venv
 # ...or with a classic virtualenv:  python3 -m venv venv && source venv/bin/activate
 pip install -r requirements.txt -r benchmark/requirements.txt
 mkdir -p ~/logs/slurm
+# The Trivy scenarios need the Linux Trivy binary at <repo>/bin/trivy
+# (outside Docker it is not installed automatically).  Record the version —
+# it is part of the methodology:
+curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh \
+    | sh -s -- -b ./bin
+./bin/trivy --version
 # Edit the two .job files: set the --output path and REPO_DIR to your home.
 # run_campaign.job activates the conda env named "venv" by default; set the
 # CONDA_ENV variable (or CONDA_ENV="" + VENV=/path) if yours differs.
