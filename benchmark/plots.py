@@ -11,8 +11,12 @@ at any time without re-running any benchmark:
 
 Figures produced:
 - latency_boxplot.png     end-to-end latency per model, grouped by architecture
-- cpu_usage.png           average / peak CPU utilisation per cell
-- memory_usage.png        average / peak RSS per cell
+- cpu_usage.png           average / peak CPU utilisation per cell (Ollama
+                          server when sampled, harness process otherwise —
+                          the figure title names the source)
+- memory_usage.png        average / peak RSS per cell (same source rule)
+- gpu_usage.png           average / peak GPU utilisation (when sampled)
+- vram_usage.png          average / peak GPU memory (when sampled)
 - token_usage.png         mean total tokens per cell
 - throughput.png          requests-per-second vs concurrency (if measured)
 """
@@ -103,6 +107,11 @@ def _float(row: dict, key: str) -> Optional[float]:
     return float(value)
 
 
+def _has_data(rows: List[dict], key: str) -> bool:
+    """True when at least one row carries a real value for this column."""
+    return any(_float(row, key) is not None for row in rows)
+
+
 def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> None:
     """Generate all figures for one experiment's stored raw data."""
     raw_dir = cfg.results_dir / experiment / "raw"
@@ -121,10 +130,33 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
         return
 
     _latency_boxplot(rows, plots_dir)
-    _resource_bars(rows, plots_dir, metric_avg="cpu_avg", metric_peak="cpu_peak",
-                   ylabel="CPU utilisation (%)", filename="cpu_usage.png")
-    _resource_bars(rows, plots_dir, metric_avg="rss_avg_mb", metric_peak="rss_peak_mb",
-                   ylabel="RSS memory (MB)", filename="memory_usage.png")
+
+    # CPU / memory figures prefer the Ollama SERVER metrics (where inference
+    # happens); harness metrics are the fallback (e.g. dry-run data) and the
+    # figure title always names the measured source.
+    if _has_data(rows, "server_cpu_avg"):
+        _resource_bars(rows, plots_dir,
+                       metric_avg="server_cpu_avg", metric_peak="server_cpu_peak",
+                       ylabel="CPU utilisation (%) — Ollama server",
+                       filename="cpu_usage.png")
+        _resource_bars(rows, plots_dir,
+                       metric_avg="server_rss_avg_mb", metric_peak="server_rss_peak_mb",
+                       ylabel="RSS memory (MB) — Ollama server",
+                       filename="memory_usage.png")
+    else:
+        _resource_bars(rows, plots_dir, metric_avg="cpu_avg", metric_peak="cpu_peak",
+                       ylabel="CPU utilisation (%) — harness process",
+                       filename="cpu_usage.png")
+        _resource_bars(rows, plots_dir, metric_avg="rss_avg_mb", metric_peak="rss_peak_mb",
+                       ylabel="RSS memory (MB) — harness process",
+                       filename="memory_usage.png")
+    if _has_data(rows, "gpu_util_avg"):
+        _resource_bars(rows, plots_dir,
+                       metric_avg="gpu_util_avg", metric_peak="gpu_util_peak",
+                       ylabel="GPU utilisation (%)", filename="gpu_usage.png")
+        _resource_bars(rows, plots_dir,
+                       metric_avg="vram_avg_mb", metric_peak="vram_peak_mb",
+                       ylabel="GPU memory (MB)", filename="vram_usage.png")
     _token_bars(rows, plots_dir)
 
     tp_path = raw_dir / f"{run_id}_throughput.csv"

@@ -43,11 +43,24 @@ class RunResult:
     # timestamp (the LLM summarising the tool result).
     format_ms: Optional[float] = None
 
-    # ---- resource metrics (whole benchmark process) --------------------------
+    # ---- resource metrics -----------------------------------------------------
+    # Harness process (ADK client): orchestration overhead, mostly idle on
+    # HTTP during generation — NOT the inference cost.
     cpu_avg: float = 0.0
     cpu_peak: float = 0.0
     rss_avg_mb: float = 0.0
     rss_peak_mb: float = 0.0
+    # Ollama server process tree on the same host: where inference happens.
+    # None when no local Ollama process was found (dry-run, remote server).
+    server_cpu_avg: Optional[float] = None
+    server_cpu_peak: Optional[float] = None
+    server_rss_avg_mb: Optional[float] = None
+    server_rss_peak_mb: Optional[float] = None
+    # GPU via nvidia-smi: utilisation % and VRAM MB.  None without a GPU.
+    gpu_util_avg: Optional[float] = None
+    gpu_util_peak: Optional[float] = None
+    vram_avg_mb: Optional[float] = None
+    vram_peak_mb: Optional[float] = None
 
     # ---- token metrics (None -> reported as "N/A") ----------------------------
     prompt_tokens: Optional[int] = None

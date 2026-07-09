@@ -151,11 +151,32 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
     )
     (latex_dir / "latency.tex").write_text(tex, encoding="utf-8")
 
-    # ---- CPU and memory tables ---------------------------------------------------
-    for metric_avg, metric_peak, unit, fname, caption in [
-        ("cpu_avg", "cpu_peak", "\\%", "cpu.tex", "CPU utilisation"),
-        ("rss_avg_mb", "rss_peak_mb", "MB", "memory.tex", "RSS memory"),
-    ]:
+    # ---- CPU / memory / GPU tables -------------------------------------------------
+    # Prefer the Ollama SERVER metrics (where inference happens); fall back
+    # to the harness-process metrics when no server was sampled (dry runs).
+    if any(_values(rows_, "server_cpu_avg")
+           for rows_ in cells.values()):
+        resource_tables = [
+            ("server_cpu_avg", "server_cpu_peak", "\\%", "cpu.tex",
+             "CPU utilisation (Ollama server)"),
+            ("server_rss_avg_mb", "server_rss_peak_mb", "MB", "memory.tex",
+             "RSS memory (Ollama server)"),
+        ]
+    else:
+        resource_tables = [
+            ("cpu_avg", "cpu_peak", "\\%", "cpu.tex",
+             "CPU utilisation (harness process)"),
+            ("rss_avg_mb", "rss_peak_mb", "MB", "memory.tex",
+             "RSS memory (harness process)"),
+        ]
+    if any(_values(rows_, "gpu_util_avg") for rows_ in cells.values()):
+        resource_tables += [
+            ("gpu_util_avg", "gpu_util_peak", "\\%", "gpu.tex",
+             "GPU utilisation"),
+            ("vram_avg_mb", "vram_peak_mb", "MB", "vram.tex",
+             "GPU memory"),
+        ]
+    for metric_avg, metric_peak, unit, fname, caption in resource_tables:
         body = []
         for model, scenario in pairs:
             means = {}

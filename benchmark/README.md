@@ -197,6 +197,7 @@ results/
 │   │              <run_id>.csv   (flat, one row per measured run — plot-ready)
 │   │              <run_id>_throughput.csv
 │   ├── plots/     latency_boxplot.png, cpu_usage.png, memory_usage.png,
+│   │              gpu_usage.png, vram_usage.png (GPU machines),
 │   │              token_usage.png, throughput.png
 │   ├── latex/     latency.tex, cpu.tex, memory.tex, tokens.tex,
 │   │              routing.tex, throughput.tex
@@ -329,13 +330,21 @@ Cluster notes:
 | End-to-end latency (min/max/mean/median/stdev/p95) | `perf_counter` around the full request → response cycle | the primary user-visible cost of each architecture |
 | Skill-selection latency | timestamp of the first routing decision (tool call in B, `transfer_to_agent` in A) | isolates the routing overhead the architecture adds |
 | LLM time / tool time / formatting time | ADK event timestamps + a timing wrapper around each assessment tool | separates architecture overhead (LLM calls) from constant tool cost |
-| CPU avg/peak, RSS avg/peak | `psutil` sampler at 100 ms | resource cost comparison; multi-agent does more LLM round-trips |
+| Harness CPU/RSS avg/peak | `psutil` sampler at 100 ms on the benchmark process | orchestration-framework overhead of each architecture (the ADK client mostly idles on HTTP during generation) |
+| Server CPU/RSS avg/peak | same sampler over the **Ollama process tree** on the host | the actual inference cost — this is the headline resource comparison.  RSS summed over the serve process and its runner children double-counts shared pages: read absolutes as an upper bound, deltas between cells as the signal |
+| GPU utilisation / VRAM avg/peak | `nvidia-smi` polled every 500 ms (when available) | accelerator cost per model size and architecture on GPU machines |
 | Prompt/completion/total tokens | `event.usage_metadata` (recorded as `N/A` when unavailable — never fails the run) | token economy differs: 1 shared context vs. several smaller ones |
 | Routing accuracy | selected skill/agent vs. expected per scenario | do smaller models route worse in one architecture? |
 | Throughput (req/s, failures) | waves of N concurrent runs via `asyncio.gather` | behaviour under load per architecture |
 
 Warm-up runs are excluded from every statistic.  Each run uses a **fresh
 agent and a fresh ADK session** — no conversation history is ever reused.
+
+Resource-sampling caveats: server and GPU metrics require the benchmark
+and the Ollama server to share a host (as in the Slurm campaign jobs) —
+otherwise those fields are `N/A`; the GPU fields are `N/A` without
+`nvidia-smi`.  Under concurrency, server/GPU numbers reflect the shared
+load of the whole wave, not one isolated request.
 
 ---
 

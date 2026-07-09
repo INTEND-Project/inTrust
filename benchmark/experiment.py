@@ -142,10 +142,9 @@ async def _sampled_run(
         run_idx=run_idx, concurrency=concurrency, warmup=warmup,
     )
     stats = sampler.stop()
-    run.cpu_avg = stats["cpu_avg"]
-    run.cpu_peak = stats["cpu_peak"]
-    run.rss_avg_mb = stats["rss_avg_mb"]
-    run.rss_peak_mb = stats["rss_peak_mb"]
+    # Keys match RunResult field names (harness, server, and GPU metrics).
+    for key, value in stats.items():
+        setattr(run, key, value)
     return run
 
 

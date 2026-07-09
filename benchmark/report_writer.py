@@ -36,6 +36,8 @@ _CSV_COLUMNS = [
     "intent_variant",
     "e2e_ms", "selection_ms", "llm_ms", "tool_ms", "format_ms",
     "cpu_avg", "cpu_peak", "rss_avg_mb", "rss_peak_mb",
+    "server_cpu_avg", "server_cpu_peak", "server_rss_avg_mb", "server_rss_peak_mb",
+    "gpu_util_avg", "gpu_util_peak", "vram_avg_mb", "vram_peak_mb",
     "prompt_tokens", "completion_tokens", "total_tokens",
     "routing_correct", "status",
 ]
@@ -173,10 +175,22 @@ def _summary_markdown(
         )
     lines.append("")
 
-    lines.append("## Resource usage per cell (process-wide)")
+    lines.append("## Resource usage per cell")
     lines.append("")
-    lines.append("| Architecture | Model | Scenario | CPU avg (%) | CPU peak (%) | RSS avg (MB) | RSS peak (MB) | Tokens (mean total) |")
-    lines.append("|---|---|---|---|---|---|---|---|")
+    lines.append("Harness = benchmark client process (orchestration overhead); "
+                 "Server = Ollama process tree (inference); GPU via nvidia-smi.")
+    lines.append("")
+    lines.append("| Architecture | Model | Scenario | Harness CPU avg (%) | Harness RSS peak (MB) | Server CPU avg (%) | Server RSS peak (MB) | GPU util avg (%) | VRAM peak (MB) | Tokens (mean total) |")
+    lines.append("|---|---|---|---|---|---|---|---|---|---|")
+
+    def _mean_of(runs, attr):
+        vals = [getattr(r, attr) for r in runs if getattr(r, attr) is not None]
+        return f"{sum(vals) / len(vals):.1f}" if vals else "N/A"
+
+    def _max_of(runs, attr):
+        vals = [getattr(r, attr) for r in runs if getattr(r, attr) is not None]
+        return f"{max(vals):.0f}" if vals else "N/A"
+
     for (arch, model, scen), runs in sorted(cells.items()):
         ok = [r for r in runs if r.status == "OK"]
         if not ok:
@@ -185,10 +199,12 @@ def _summary_markdown(
         token_str = f"{sum(tokens) / len(tokens):.0f}" if tokens else "N/A"
         lines.append(
             f"| {arch} | {model} | {scen} "
-            f"| {sum(r.cpu_avg for r in ok) / len(ok):.1f} "
-            f"| {max(r.cpu_peak for r in ok):.1f} "
-            f"| {sum(r.rss_avg_mb for r in ok) / len(ok):.0f} "
-            f"| {max(r.rss_peak_mb for r in ok):.0f} "
+            f"| {_mean_of(ok, 'cpu_avg')} "
+            f"| {_max_of(ok, 'rss_peak_mb')} "
+            f"| {_mean_of(ok, 'server_cpu_avg')} "
+            f"| {_max_of(ok, 'server_rss_peak_mb')} "
+            f"| {_mean_of(ok, 'gpu_util_avg')} "
+            f"| {_max_of(ok, 'vram_peak_mb')} "
             f"| {token_str} |"
         )
     lines.append("")
