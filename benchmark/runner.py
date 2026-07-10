@@ -179,9 +179,10 @@ async def execute_run(
         result.status = "FAILED"
         result.error = f"{type(exc).__name__}: {exc}"
 
-    # A tool that ran but reported failure (e.g. bad arguments from the LLM)
-    # also fails the run — the assessment did not actually happen.
-    if result.status == "OK":
+    # Status refinement depends on whether a skill was SUPPOSED to run.
+    if result.status == "OK" and scenario.is_supported:
+        # A tool that ran but reported failure (e.g. bad arguments from the
+        # LLM) fails the run — the assessment did not actually happen.
         failed_tools = [c for c in collector.tool_calls
                         if c["status"] not in _TOOL_SUCCESS_STATUSES]
         if failed_tools:
@@ -193,6 +194,10 @@ async def execute_run(
             # The model answered without executing any assessment tool.
             result.status = "FAILED"
             result.error = "no assessment tool was executed"
+    # For a gatekeeping (unsupported) scenario neither branch applies:
+    # calling no tool is the CORRECT outcome, and even a wrongly-invoked
+    # tool leaves the run completed — the decision quality is measured by
+    # routing_correct below, not by run status.
 
     # ---- derive the metrics ----------------------------------------------------
     result.e2e_ms = (time.perf_counter() - perf_start) * 1000.0
@@ -216,10 +221,15 @@ async def execute_run(
     # else: leave as None -> reported as "N/A" downstream.
 
     # ---- routing accuracy --------------------------------------------------------
-    # No selection at all (model never called a tool / never transferred) is
-    # a routing failure, not a crash — it is one of the phenomena measured.
-    result.routing_correct = (
-        result.selected is not None and result.selected == result.expected
-    )
+    if scenario.is_supported:
+        # No selection at all (model never called a tool / never transferred)
+        # is a routing failure, not a crash — one of the phenomena measured.
+        result.routing_correct = (
+            result.selected is not None and result.selected == result.expected
+        )
+    else:
+        # Gatekeeping: the correct decision is to select NOTHING (the request
+        # matches no available skill).  Any selection is over-triggering.
+        result.routing_correct = result.selected is None
 
     return result

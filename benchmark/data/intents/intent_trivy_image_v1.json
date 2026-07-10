@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-001",
+  "name": "Container Image Vulnerability Scan",
+  "description": "Scan a Docker container image for known HIGH and CRITICAL vulnerabilities using Trivy.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "python-application-base"
+  },
+  "parameters": {
+    "dockerImage": "python:3.9-slim"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

@@ -105,17 +105,23 @@ auto-download models on inference requests.
   (`benchmark/data/fs_targets/project_{1..5}/`) so a scan takes seconds.
   Trivy downloads its vulnerability DB on first use — warm-up runs absorb
   this, or pre-cache it with `trivy image --download-db-only` (same DB).
-- **Trivy Docker image scan**: pull the pinned image once and pre-download
-  the Trivy vulnerability database so neither download pollutes the
-  measured timings:
+- **Trivy Docker image scan**: scans five pinned public images
+  (python:3.9-slim, node:18-alpine, golang:1.20-alpine, nginx:1.21,
+  redis:6.2).  **No Docker engine is required** — Trivy pulls each image
+  straight from the registry.  The first scan of each image downloads its
+  layers (warm-up runs absorb this).  Unlike the bandit/filesystem inputs,
+  image scans are **not frozen**: registry image contents and the Trivy
+  vulnerability DB change over time, so record the Trivy DB version with
+  the results (it is echoed into the tool output).  Pre-cache the DB with
+  `trivy image --download-db-only` if desired.
+- **Gatekeeping (`unsupported_request`)**: needs nothing — five requests
+  that match no available skill (network port scan, DAST, TLS audit,
+  licence-compliance audit, penetration test).  The correct behaviour is
+  to select no skill at all.
 
-  ```bash
-  docker pull python:3.11-slim
-  trivy image --download-db-only
-  ```
-
-- **Trivy Kubernetes scan** (disabled by default): requires a live cluster
-  reachable through your kubeconfig; enable it in the config file.
+The Kubernetes assessment is **not** a benchmark scenario, but its skill
+stays loaded in every agent as a routing **distractor** — a capability the
+model can see but that is never the right answer for any request tested.
 
 **Model requirement — native tool calling.**  Both architectures rely on
 Ollama's function-calling API, so every benchmark model must have the
@@ -171,6 +177,20 @@ observed 30 times.  Five variants make routing accuracy a robustness
 measure across intent formulations — and since each variant has a distinct
 expected finding set, results also verify the correct target was scanned.
 Both architectures always see the identical variant set.
+
+**Gatekeeping as a comparison dimension.**  Alongside the three supported
+assessment types, the `unsupported_request` scenario sends requests that
+match **no** available skill.  The correct response is to route to nothing
+and explain that no capability applies; selecting any skill is
+*over-triggering* (hallucinating a capability).  Scoring is therefore
+inverted for this scenario — a run that calls no tool is the success case
+and counts as correct routing, while a run that invokes any skill counts
+as incorrect (the run still completes, so it is not a `FAILED` status).
+This measures a safety property distinct from routing accuracy: whether an
+architecture is more prone to acting when it should abstain.  The loaded
+Kubernetes skill is a deliberate distractor that raises the difficulty of
+both routing and gatekeeping (the model must ignore an irrelevant but
+plausible-looking capability).
 
 ---
 
@@ -335,6 +355,7 @@ Cluster notes:
 | GPU utilisation / VRAM avg/peak | `nvidia-smi` polled every 500 ms (when available) | accelerator cost per model size and architecture on GPU machines |
 | Prompt/completion/total tokens | `event.usage_metadata` (recorded as `N/A` when unavailable — never fails the run) | token economy differs: 1 shared context vs. several smaller ones |
 | Routing accuracy | selected skill/agent vs. expected per scenario | do smaller models route worse in one architecture? |
+| Gatekeeping accuracy | for `unsupported_request`: did the model correctly select NO skill? | does one architecture over-trigger (act when it should abstain) more than the other? |
 | Throughput (req/s, failures) | waves of N concurrent runs via `asyncio.gather` | behaviour under load per architecture |
 
 Warm-up runs are excluded from every statistic.  Each run uses a **fresh

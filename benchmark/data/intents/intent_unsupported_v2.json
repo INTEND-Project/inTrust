@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-002",
+  "name": "Dynamic Web Application Scan",
+  "description": "Run a dynamic application security test (DAST) against a running web application to detect runtime vulnerabilities such as XSS and injection.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dynamicApplicationScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "WebApplication",
+    "url": "https://staging.example.com"
+  },
+  "parameters": {
+    "targetUrl": "https://staging.example.com"
+  },
+  "reporting": {
+    "expectedOutput": "List of runtime web vulnerabilities with severities",
+    "format": "application/json"
+  }
+}

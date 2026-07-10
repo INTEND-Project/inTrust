@@ -160,6 +160,12 @@ def _summary_markdown(
 
     lines.append("## Latency and routing per cell")
     lines.append("")
+    lines.append("Routing accuracy = fraction of correct routing decisions. "
+                 "For the `unsupported_request` (gatekeeping) scenario "
+                 "\"correct\" means the model refused — it selected no skill; "
+                 "for the other scenarios it means the expected skill was "
+                 "selected.")
+    lines.append("")
     lines.append("| Architecture | Model | Scenario | n | Mean (ms) | Median | Stdev | p95 | Min | Max | Routing acc. | Failures |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
     for (arch, model, scen), runs in sorted(cells.items()):

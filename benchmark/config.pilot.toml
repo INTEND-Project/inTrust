@@ -34,12 +34,14 @@ models = [
 architectures = ["single_agent", "multi_agent"]
 concurrency_levels = [1]
 
-# Only the two scenarios that need no external infrastructure.
+# Network-light scenarios for pipeline verification: static code, the local
+# filesystem scan, and the gatekeeping test.  Docker image scans (network
+# image pulls) are left off to keep the pilot self-contained.
 [scenarios]
 bandit_static_code = true
 trivy_filesystem = true
 trivy_docker_image = false
-trivy_kubernetes = false
+unsupported_request = true
 
 [provider]
 type = "ollama"

@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-002",
+  "name": "Base Image Security Check",
+  "description": "Check the Node.js service base image for vulnerable OS and application packages before publishing.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "DevOpsEngineer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "node-service-image"
+  },
+  "parameters": {
+    "dockerImage": "node:18-alpine"
+  },
+  "reporting": {
+    "expectedOutput": "List of vulnerable components with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

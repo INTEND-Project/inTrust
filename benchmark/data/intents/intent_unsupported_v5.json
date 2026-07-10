@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-005",
+  "name": "Penetration Test",
+  "description": "Conduct an active penetration test against a target host, attempting exploitation of discovered weaknesses to demonstrate impact.",
+  "category": "trustworthinessAssessment",
+  "intentType": "penetrationTest",
+  "actor": {
+    "role": "RedTeamOperator",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "NetworkHost",
+    "host": "vpn-gateway.example.com"
+  },
+  "parameters": {
+    "host": "vpn-gateway.example.com",
+    "scope": "external"
+  },
+  "reporting": {
+    "expectedOutput": "Exploited findings with proof-of-concept and remediation",
+    "format": "application/json"
+  }
+}

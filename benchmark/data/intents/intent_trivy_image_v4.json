@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-004",
+  "name": "Web Server Image Assessment",
+  "description": "Assess the nginx web-server container image for known security vulnerabilities prior to deployment.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "ReleaseManager",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "nginx-frontend-image"
+  },
+  "parameters": {
+    "dockerImage": "nginx:1.21"
+  },
+  "reporting": {
+    "expectedOutput": "Findings grouped by severity with remediation hints",
+    "format": "application/json"
+  }
+}

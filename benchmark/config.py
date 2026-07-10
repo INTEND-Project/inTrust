@@ -67,7 +67,7 @@ _KNOWN_SCENARIOS = {
     "bandit_static_code",
     "trivy_filesystem",
     "trivy_docker_image",
-    "trivy_kubernetes",
+    "unsupported_request",
 }
 
 

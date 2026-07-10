@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-004",
+  "name": "Software Licence Compliance Audit",
+  "description": "Audit a project's third-party dependencies for open-source licence compliance and flag copyleft or incompatible licences.",
+  "category": "trustworthinessAssessment",
+  "intentType": "licenceComplianceAudit",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareProject",
+    "name": "billing-service"
+  },
+  "parameters": {
+    "projectName": "billing-service",
+    "licencePolicy": "no-copyleft"
+  },
+  "reporting": {
+    "expectedOutput": "List of dependencies with licences and policy violations",
+    "format": "application/json"
+  }
+}

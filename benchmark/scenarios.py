@@ -25,7 +25,7 @@ experiments operate on byte-identical inputs (reproducibility requirement).
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from .config import REPO_ROOT
 
@@ -42,22 +42,31 @@ class Scenario:
     # The frozen intent variants; runs rotate through them by run index.
     intents: Tuple[Dict[str, Any], ...]
     # Production skill name expected to be selected (e.g. "bandit-static-code").
-    expected_skill: str
+    # None for gatekeeping scenarios: no skill matches and the correct
+    # behaviour is to call no tool at all.
+    expected_skill: Optional[str]
     # Tool function name in the single-agent architecture (skill name with
     # hyphens replaced by underscores — see skill_loader._make_skill_tool).
     expected_tool_fn: str
     # Specialist agent name in the multi-agent architecture.
     expected_agent: str
+    # True for real assessments (a specific skill must be selected); False
+    # for gatekeeping scenarios (the model should refuse — select nothing).
+    is_supported: bool = True
 
 
 # Maps scenario key -> (intent filename prefix, expected production skill).
 # All files matching ``<prefix>*.json`` are loaded (sorted) as the variant
-# set — scenarios with a single intent file simply yield one variant.
+# set.  A None skill marks a GATEKEEPING scenario: the request matches no
+# skill and the correct outcome is to call no tool.  The Kubernetes skill
+# is intentionally NOT a scenario here — it stays loaded in every agent as a
+# routing distractor (a capability that is never the right answer), but it
+# is never the expected selection.  Dict order defines run order.
 _SCENARIO_TABLE = {
     "bandit_static_code": ("intent_bandit", "bandit-static-code"),
     "trivy_filesystem": ("intent_trivy_fs", "trivy-filesystem"),
     "trivy_docker_image": ("intent_trivy_image", "trivy-docker-image"),
-    "trivy_kubernetes": ("intent_trivy_k8s", "trivy-kubernetes"),
+    "unsupported_request": ("intent_unsupported", None),
 }
 
 
@@ -117,6 +126,19 @@ def load_scenarios(enabled: List[str]) -> List[Scenario]:
         for intent_path in intent_paths:
             with open(intent_path, encoding="utf-8") as fh:
                 intents.append(_resolve_paths(json.load(fh)))
+        if skill_name is None:
+            # Gatekeeping scenario: no skill should be selected.
+            scenarios.append(
+                Scenario(
+                    name=key,
+                    intents=tuple(intents),
+                    expected_skill=None,
+                    expected_tool_fn="(unsupported)",
+                    expected_agent="(unsupported)",
+                    is_supported=False,
+                )
+            )
+            continue
         tool_fn = skill_name.replace("-", "_")
         scenarios.append(
             Scenario(
@@ -125,6 +147,7 @@ def load_scenarios(enabled: List[str]) -> List[Scenario]:
                 expected_skill=skill_name,
                 expected_tool_fn=tool_fn,
                 expected_agent=f"{tool_fn}_agent",
+                is_supported=True,
             )
         )
     return scenarios

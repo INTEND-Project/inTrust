@@ -255,7 +255,10 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
                 _bold_if(f"{acc:.0f}\\%", arch == best),
             ])
     tex = _table(
-        f"Routing accuracy — {experiment.replace('_', ' ')}.",
+        f"Routing accuracy — {experiment.replace('_', ' ')}.  For the "
+        f"gatekeeping scenario (unsupported request) \\emph{{correct}} means "
+        f"the model selected no skill; otherwise it means the expected skill "
+        f"was selected.",
         f"tab:{exp_tex}-routing",
         ["Model", "Scenario (architecture)", "Accuracy"],
         body,

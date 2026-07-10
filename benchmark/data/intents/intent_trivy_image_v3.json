@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-003",
+  "name": "Docker Image CVE Audit",
+  "description": "Audit the Go builder container image for published vulnerabilities in its OS layers and toolchain.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "PlatformEngineer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "go-builder-image"
+  },
+  "parameters": {
+    "dockerImage": "golang:1.20-alpine"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

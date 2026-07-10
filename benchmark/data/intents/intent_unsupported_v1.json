@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-001",
+  "name": "Network Port Scan",
+  "description": "Perform an active network port scan of a target host to enumerate open ports and running services.",
+  "category": "trustworthinessAssessment",
+  "intentType": "networkPortScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "NetworkHost",
+    "host": "10.0.14.22"
+  },
+  "parameters": {
+    "host": "10.0.14.22",
+    "portRange": "1-65535"
+  },
+  "reporting": {
+    "expectedOutput": "List of open ports with detected services",
+    "format": "application/json"
+  }
+}
