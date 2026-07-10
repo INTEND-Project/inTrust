@@ -103,11 +103,11 @@ concurrency_levels = [1, 5, 10, 20]
 # - trivy_filesystem   : tiny frozen requirements.txt projects
 #                        (benchmark/data/fs_targets/); scan takes seconds.
 # - trivy_docker_image : public registry images.  No Docker engine needed —
-#                        Trivy pulls from the registry directly.  These
-#                        inputs are NOT frozen: image contents and the Trivy
-#                        vuln DB evolve, so record the DB version with
-#                        results.  First scan of each image downloads layers
-#                        (warm-ups absorb it).
+#                        Trivy pulls from the registry directly.  First scan
+#                        of each image downloads layers (warm-ups absorb it).
+#                        Image contents / vuln DB evolve, which is fine:
+#                        assessment accuracy is out of benchmark scope — the
+#                        compared variables are orchestration properties.
 # - unsupported_request: GATEKEEPING — requests that match NO available
 #                        skill (port scan, DAST, TLS audit, licence audit,
 #                        pen-test).  Correct behaviour is to select nothing;

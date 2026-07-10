@@ -109,11 +109,13 @@ auto-download models on inference requests.
   (python:3.9-slim, node:18-alpine, golang:1.20-alpine, nginx:1.21,
   redis:6.2).  **No Docker engine is required** — Trivy pulls each image
   straight from the registry.  The first scan of each image downloads its
-  layers (warm-up runs absorb this).  Unlike the bandit/filesystem inputs,
-  image scans are **not frozen**: registry image contents and the Trivy
-  vulnerability DB change over time, so record the Trivy DB version with
-  the results (it is echoed into the tool output).  Pre-cache the DB with
-  `trivy image --download-db-only` if desired.
+  layers (warm-up runs absorb this).  Note that unlike the bandit and
+  filesystem inputs these are not byte-frozen (registry contents and the
+  Trivy vulnerability DB evolve) — this does **not** affect the benchmark's
+  validity, because the compared variables are orchestration properties
+  (routing, gatekeeping, latency, tokens, resources); assessment-result
+  content is out of scope (see the metrics section).  Pre-cache the DB
+  with `trivy image --download-db-only` if desired.
 - **Gatekeeping (`unsupported_request`)**: needs nothing — five requests
   that match no available skill (network port scan, DAST, TLS audit,
   licence-compliance audit, penetration test).  The correct behaviour is
@@ -180,17 +182,63 @@ Both architectures always see the identical variant set.
 
 **Gatekeeping as a comparison dimension.**  Alongside the three supported
 assessment types, the `unsupported_request` scenario sends requests that
-match **no** available skill.  The correct response is to route to nothing
-and explain that no capability applies; selecting any skill is
-*over-triggering* (hallucinating a capability).  Scoring is therefore
-inverted for this scenario — a run that calls no tool is the success case
-and counts as correct routing, while a run that invokes any skill counts
-as incorrect (the run still completes, so it is not a `FAILED` status).
-This measures a safety property distinct from routing accuracy: whether an
-architecture is more prone to acting when it should abstain.  The loaded
-Kubernetes skill is a deliberate distractor that raises the difficulty of
-both routing and gatekeeping (the model must ignore an irrelevant but
-plausible-looking capability).
+match **no** available skill.  The intended system behaviour is to
+**reject the request and not proceed with any assessment**: route to
+nothing and explain that no capability applies.  Selecting any skill —
+however loosely related — is *over-triggering* (hallucinating a
+capability) and counts as a miss.  Scoring is therefore inverted for this
+scenario: a run that calls no tool is the success case and counts as
+correct routing, while a run that invokes any skill counts as incorrect
+(the run still completes, so it is not a `FAILED` status — failure counts
+stay reserved for crashes, timeouts, and broken tools).  This measures a
+safety property distinct from routing accuracy: whether an architecture is
+more prone to acting when it should abstain.
+
+The test is fair by construction: the shared orchestrator instruction
+([`prompts.py`](prompts.py), byte-identical in both architectures)
+explicitly authorises refusal — *"If no capability is appropriate for the
+request, explain politely that InTrust does not currently support the
+requested assessment type."*  A model that over-triggers does so despite
+an explicit escape hatch, so gatekeeping measures judgment, not obedience
+to an impossible instruction.
+
+### The routing distractor
+
+All **four** production skills stay loaded in both architectures, but only
+three ever appear as benchmark scenarios — the Kubernetes cluster scan is
+a deliberate **routing distractor**: a capability the model always sees
+and must always reject.  The construction is symmetric across the two
+architectures: in the single-agent architecture the distractor is a fourth
+`FunctionTool`; in the multi-agent architecture it is a fourth specialist
+agent (with its own LLM instance and prompt, like every other specialist).
+Both architectures therefore face the identical decision space.
+
+Why it is there:
+
+1. **Realism** — production intent-based platforms carry capabilities that
+   most incoming requests do not exercise; an orchestrator that only ever
+   sees exactly-matching options is an artificially easy test.
+2. **Harder routing** — every supported scenario becomes a 1-of-4
+   discrimination instead of 1-of-3.
+3. **It gives gatekeeping teeth** — an unsupported request arrives with an
+   attractive-but-wrong option available, so abstention is a real decision
+   rather than a default.  Without a distractor, a model could look like a
+   good gatekeeper simply because nothing plausible was on offer.
+
+Selecting the distractor is **always** wrong: on the three supported
+scenarios it is a routing miss, on the gatekeeping scenario it is
+over-triggering.  The `selected` field in the raw JSON records exactly
+which skill/agent every run chose, so distractor-selection rates per
+model, architecture, and scenario can be computed from stored data without
+re-running anything.
+
+Observed early evidence for why this matters: in the laptop pilot,
+qwen3:1.7b routed **every** unsupported request into the Kubernetes
+distractor, in both architectures (`trivy_kubernetes` as tool,
+`trivy_kubernetes_agent` as specialist).  The distractor makes
+over-triggering visible and attributable — without it, that failure mode
+would be indistinguishable from a correct refusal or spread thinly over
+the supported skills.
 
 ---
 
@@ -344,6 +392,14 @@ Cluster notes:
 ---
 
 ## 4. Collected metrics (and why)
+
+Scope note: the benchmark compares **orchestration architectures** — what
+is measured is how requests are routed, refused, and served (routing and
+gatekeeping accuracy, latency, tokens, throughput, resources).  The
+*content* of the assessment results (e.g. how many CVEs Trivy finds) is
+**not** a compared metric; the assessment tools only need to run
+consistently for both architectures, which they do by construction (both
+invoke the identical production skills).
 
 | Metric | How | Why it matters for the paper |
 |---|---|---|
