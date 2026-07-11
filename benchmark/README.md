@@ -384,10 +384,39 @@ Cluster notes:
   measure the same serial behaviour.  Each parallel slot multiplies KV-cache
   memory; keep it modest.
 - Maximum job runtime is 24 h.  If a full experiment does not fit, submit it
-  per experiment (`EXPERIMENT=...`) or reduce `measured_runs` via a config copy.
+  per experiment (`EXPERIMENT=...`) or split it across chained jobs (below).
 - GPU sanity check: the Ollama log must contain
   `inference compute ... name="NVIDIA A30"`; a few tokens/second means the
   job is running CPU-only.
+
+**Campaigns longer than 24 h.**  The scaling study is large — 5 models × 2
+architectures × 4 scenarios × (warm-ups + 30 measured + throughput waves),
+roughly 5,000 model-driven runs, of which the 27B model alone owns ~1,000
+at tens of seconds each.  It exceeds the 24 h cap, and **a job killed at the
+cap writes no results** (outputs are produced only at the end), so it must
+be split.  Slurm's native mechanism is a dependency chain: the second job
+starts only once the first finishes.  The helper does this and prints the
+merge command:
+
+```bash
+# From a login-node shell (submits two chained jobs; part 2 waits for part 1):
+OLLAMA_BIN=$HOME/ollama/bin/ollama benchmark/slurm/submit_split_campaign.sh
+```
+
+By default part 1 runs qwen3.5 0.8b/2b/4b/9b and part 2 runs 27b alone;
+override `PART1`/`PART2`/`EXPERIMENT` to split differently.  Each part is a
+normal execution with its own run ID.  When both finish, merge them into
+one result set (new merged run ID, with regenerated plots and tables):
+
+```bash
+ls -t results/scaling_study/raw/*.json | head          # find the two run IDs
+python -m benchmark.merge_runs --experiment scaling_study \
+    --run-ids <part1_run_id> <part2_run_id>
+```
+
+The parts must **partition** the models (each model in exactly one part);
+`merge_runs` warns if a cell appears in more than one part, since that
+would double-count its statistics.
 
 ---
 

@@ -55,8 +55,10 @@ def _parse_args() -> argparse.Namespace:
                         help="path to a TOML config (default: config.default.toml)")
     parser.add_argument("--experiment", default=None,
                         help="run only this experiment (default: all)")
-    parser.add_argument("--model", default=None,
-                        help="restrict to one model string")
+    parser.add_argument("--model", action="append", default=None,
+                        help="restrict to this model string; repeat the flag "
+                             "to run a subset of the experiment's models "
+                             "(used to split long campaigns across jobs)")
     parser.add_argument("--scenario", default=None,
                         help="restrict to one scenario key")
     parser.add_argument("--runs", type=int, default=None,
@@ -80,8 +82,9 @@ def _apply_overrides(cfg: BenchmarkConfig, args: argparse.Namespace) -> Benchmar
         # Explicit selection also works for scenarios disabled in the config.
         changes["enabled_scenarios"] = [args.scenario]
     if args.model is not None:
+        # args.model is a list (action="append"): one entry per --model flag.
         experiments = {
-            name: dataclasses.replace(exp, models=[args.model])
+            name: dataclasses.replace(exp, models=list(args.model))
             for name, exp in cfg.experiments.items()
         }
         changes["experiments"] = experiments
