@@ -10,6 +10,9 @@ Why a factory?  ADK's ``LlmAgent`` accepts either a plain model-name string
 models we must construct a ``LiteLlm`` instance pointed at the local server.
 """
 
+import json
+import urllib.request
+
 from google.adk.models.lite_llm import LiteLlm
 
 from .config import BenchmarkConfig
@@ -56,3 +59,29 @@ def make_model(model_string: str, cfg: BenchmarkConfig):
         f"Unknown provider type '{cfg.provider_type}'. "
         "Add a branch in benchmark/model_factory.py to support it."
     )
+
+
+def unload_model(model_string: str, cfg: BenchmarkConfig) -> None:
+    """
+    Ask the Ollama server to evict a model from memory (best-effort).
+
+    Called when the benchmark switches models so that only the model under
+    test is resident on the GPU — otherwise ``OLLAMA_KEEP_ALIVE`` keeps
+    earlier models loaded and the per-model VRAM/RSS figures are inflated by
+    co-residency.  The reload of the next model lands in the excluded
+    warm-up runs.  Failures are swallowed (this is a measurement nicety, not
+    correctness-critical).
+    """
+    if cfg.provider_type != "ollama":
+        return
+    tag = model_string.split("/", 1)[-1]  # "ollama_chat/qwen3:8b" -> "qwen3:8b"
+    # keep_alive: 0 tells Ollama to unload the model immediately after this
+    # (empty) request.
+    payload = json.dumps({"model": tag, "keep_alive": 0}).encode("utf-8")
+    url = cfg.ollama_api_base.rstrip("/") + "/api/generate"
+    try:
+        req = urllib.request.Request(url, data=payload,
+                                     headers={"Content-Type": "application/json"})
+        urllib.request.urlopen(req, timeout=30).read()
+    except Exception as exc:  # noqa: BLE001 — best-effort cleanup
+        print(f"    (could not unload {tag}: {type(exc).__name__})")

@@ -29,6 +29,7 @@ from orchestrator.skill_loader import load_skills
 from .config import BenchmarkConfig, ExperimentConfig
 from .instrumentation import ResourceSampler
 from .metrics import RunResult
+from .model_factory import unload_model
 from .runner import execute_run
 from .scenarios import Scenario, load_scenarios
 
@@ -69,7 +70,15 @@ async def run_experiment(
     total_cells = len(exp.models) * len(exp.architectures) * len(scenarios)
     cell_no = 0
 
+    prev_model = None
     for model in exp.models:
+        # Evict the previous model so only the current one is resident on the
+        # GPU (clean per-model VRAM/RSS); the reload lands in the warm-ups.
+        # Skipped under --dry-run (no real Ollama server to talk to).
+        if (prev_model is not None and prev_model != model
+                and run_fn is execute_run):
+            unload_model(prev_model, cfg)
+        prev_model = model
         for architecture in exp.architectures:
             for scenario in scenarios:
                 cell_no += 1

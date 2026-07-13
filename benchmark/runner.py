@@ -35,6 +35,7 @@ from orchestrator.skill_loader import AssessmentSkill
 from .arch_multi import build_multi_agent
 from .arch_single import build_single_agent
 from .config import BenchmarkConfig
+from . import routing_analysis
 from .instrumentation import RunCollector
 from .metrics import RunResult
 from .scenarios import Scenario
@@ -231,5 +232,14 @@ async def execute_run(
         # Gatekeeping: the correct decision is to select NOTHING (the request
         # matches no available skill).  Any selection is over-triggering.
         result.routing_correct = result.selected is None
+
+    # ---- routing decomposition (decision vs native-call adherence) ---------------
+    intended, native_call, refused = routing_analysis.classify(
+        result.selected, result.final_text)
+    result.intended_skill = intended
+    result.native_call = native_call
+    result.decision_correct = routing_analysis.decision_correct(
+        intended, native_call, refused,
+        scenario.expected_skill, scenario.is_supported)
 
     return result

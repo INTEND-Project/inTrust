@@ -474,8 +474,10 @@ invoke the identical production skills).
 | Server CPU/RSS avg/peak | same sampler over the **Ollama process tree** on the host | the actual inference cost — this is the headline resource comparison.  RSS summed over the serve process and its runner children double-counts shared pages: read absolutes as an upper bound, deltas between cells as the signal |
 | GPU utilisation / VRAM avg/peak | `nvidia-smi` polled every 500 ms (when available) | accelerator cost per model size and architecture on GPU machines |
 | Prompt/completion/total tokens | `event.usage_metadata` (recorded as `N/A` when unavailable — never fails the run) | token economy differs: 1 shared context vs. several smaller ones |
-| Routing accuracy | selected skill/agent vs. expected per scenario | do smaller models route worse in one architecture? |
-| Gatekeeping accuracy | for `unsupported_request`: did the model correctly select NO skill? | does one architecture over-trigger (act when it should abstain) more than the other? |
+| Routing accuracy | native call/transfer to the expected skill/agent | the strict metric: right decision AND emitted natively |
+| Decision accuracy | correct capability identified, in a native call **or** described in text (heuristic — see `routing_analysis.py`) | separates *knowing where to route* from *emitting a native call*; decision is usually high even when routing is low |
+| Native-call adherence | did the model express its choice via the native function-calling protocol (vs. prose)? | the real axis of variation between models/architectures |
+| Gatekeeping accuracy | for `unsupported_request`: genuine refusal (declined to route anywhere) | corrected so a protocol-failure is NOT counted as a refusal; does one architecture over-trigger more? |
 | Throughput (req/s, failures) | waves of N concurrent runs via `asyncio.gather` | behaviour under load per architecture |
 
 Warm-up runs are excluded from every statistic.  Each run uses a **fresh
@@ -485,7 +487,10 @@ Resource-sampling caveats: server and GPU metrics require the benchmark
 and the Ollama server to share a host (as in the Slurm campaign jobs) —
 otherwise those fields are `N/A`; the GPU fields are `N/A` without
 `nvidia-smi`.  Under concurrency, server/GPU numbers reflect the shared
-load of the whole wave, not one isolated request.
+load of the whole wave, not one isolated request.  To keep per-model
+VRAM/RSS clean, the benchmark **unloads the previous model** whenever it
+switches models (via Ollama `keep_alive: 0`), so co-resident models do not
+inflate a later model's peak; the reload lands in the excluded warm-ups.
 
 ---
 
@@ -525,6 +530,22 @@ python -m benchmark.errors --experiment family_comparison [--run-id <run_id>]
 Add `--final-text` to also print one example final response per failing
 cell — i.e. what the model said instead of completing the assessment
 (useful for classifying protocol failures of borderline models).
+
+To recompute the **routing decomposition** (decision vs native-call
+adherence, corrected gatekeeping) for a run that was produced before these
+metrics existed — or to re-derive them from stored data without any GPU
+time — reprocess it:
+
+```bash
+python -m benchmark.reprocess --experiment family_comparison --run-id <run_id>
+```
+
+This reads the stored `selected` + `final_text`, backfills the
+decomposition, and writes a new `<experiment>_reprocessed_<stamp>` run with
+regenerated CSV, summary, plots (`routing_decomposition.png`), and LaTeX —
+leaving the original untouched.  Native-call adherence is exact; the
+text-derived decision/refusal is a documented heuristic and should be
+spot-checked against transcripts before publication.
 
 The `.tex` files are self-contained booktabs tables ready for `\input{}`
 (the paper preamble needs `\usepackage{booktabs}`).

@@ -70,6 +70,12 @@ class RunResult:
     # ---- routing -------------------------------------------------------------
     selected: Optional[str] = None   # tool fn (Arch B) / specialist agent (Arch A)
     expected: Optional[str] = None
+    # Routing decomposition (see routing_analysis.py): the DECISION separated
+    # from native-call adherence.  routing_correct = native_call AND correct
+    # target; decision_correct also credits a correct choice expressed in text.
+    intended_skill: Optional[str] = None
+    native_call: bool = False
+    decision_correct: bool = False
     routing_correct: bool = False
 
     # ---- raw event timeline (kept in the JSON for deep analysis) --------------

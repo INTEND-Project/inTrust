@@ -93,11 +93,14 @@ def _latest_run_id(raw_dir: Path) -> Optional[str]:
     return candidates[-1].stem if candidates else None
 
 
-def _load_rows(csv_path: Path) -> List[dict]:
+def _load_rows(csv_path: Path, ok_only: bool = True) -> List[dict]:
     """Read the flat benchmark CSV; numeric fields stay strings here and are
-    converted where used ('N/A' handled per metric)."""
+    converted where used ('N/A' handled per metric).  ``ok_only`` keeps only
+    successful runs (for latency/resource figures); pass False for routing
+    metrics, which are recorded regardless of execution success."""
     with open(csv_path, newline="", encoding="utf-8") as fh:
-        return [row for row in csv.DictReader(fh) if row.get("status") == "OK"]
+        rows = list(csv.DictReader(fh))
+    return [r for r in rows if r.get("status") == "OK"] if ok_only else rows
 
 
 def _float(row: dict, key: str) -> Optional[float]:
@@ -158,6 +161,10 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
                        metric_avg="vram_avg_mb", metric_peak="vram_peak_mb",
                        ylabel="GPU memory (MB)", filename="vram_usage.png")
     _token_bars(rows, plots_dir)
+
+    # Routing metrics are recorded even for failed runs, so read all rows.
+    _routing_decomposition(_load_rows(raw_dir / f"{run_id}.csv", ok_only=False),
+                           plots_dir)
 
     tp_path = raw_dir / f"{run_id}_throughput.csv"
     if tp_path.exists() and tp_path.stat().st_size > 0:
@@ -284,6 +291,55 @@ def _token_bars(rows: List[dict], plots_dir: Path) -> None:
     ax.legend()
     fig.tight_layout()
     fig.savefig(plots_dir / "token_usage.png")
+    plt.close(fig)
+
+
+def _routing_decomposition(rows: List[dict], plots_dir: Path) -> None:
+    """
+    Decision vs native-call adherence per model, averaged over the supported
+    scenarios, one panel per architecture (concurrency = 1).  Shows that
+    decision quality is uniform while native-call adherence is the axis of
+    variation between models and architectures.
+    """
+    # data[arch][model] = {"decision": [...], "native": [...]}
+    data: Dict[str, Dict[str, Dict[str, List[float]]]] = defaultdict(
+        lambda: defaultdict(lambda: {"decision": [], "native": []}))
+    for row in rows:
+        if row.get("concurrency") not in ("1", 1):
+            continue
+        if row.get("scenario") == "unsupported_request":
+            continue  # gatekeeping is a different axis; exclude here
+        arch, model = row["architecture"], row["model"]
+        data[arch][model]["decision"].append(1.0 if row.get("decision_correct") == "True" else 0.0)
+        data[arch][model]["native"].append(1.0 if row.get("native_call") == "True" else 0.0)
+    architectures = [a for a in ("single_agent", "multi_agent") if a in data]
+    if not architectures:
+        return
+    models = sorted({m for a in data for m in data[a]}, key=_model_sort_key)
+
+    fig, axes = plt.subplots(1, len(architectures),
+                             figsize=(max(6, 2.2 * len(models)) * len(architectures) / 2, 4),
+                             sharey=True, squeeze=False)
+    width = 0.38
+    for ax, arch in zip(axes[0], architectures):
+        x = range(len(models))
+        dec = [100 * (sum(v) / len(v)) if (v := data[arch][m]["decision"]) else 0
+               for m in models]
+        nat = [100 * (sum(v) / len(v)) if (v := data[arch][m]["native"]) else 0
+               for m in models]
+        ax.bar([i - width / 2 for i in x], dec, width, label="Decision",
+               color="#1f77b4", alpha=0.85)
+        ax.bar([i + width / 2 for i in x], nat, width, label="Native call",
+               color="#d62728", alpha=0.85)
+        ax.set_xticks(list(x))
+        ax.set_xticklabels([_short_model(m) for m in models], rotation=20, ha="right")
+        ax.set_title(_ARCH_LABELS.get(arch, arch))
+        ax.set_ylim(0, 105)
+    axes[0][0].set_ylabel("Supported-scenario accuracy (%)")
+    axes[0][0].legend(fontsize=8)
+    fig.suptitle("Routing decision vs native-call adherence (concurrency = 1)")
+    fig.tight_layout()
+    fig.savefig(plots_dir / "routing_decomposition.png")
     plt.close(fig)
 
 

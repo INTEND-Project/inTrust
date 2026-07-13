@@ -240,31 +240,32 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
         )
         (latex_dir / "tokens.tex").write_text(tex, encoding="utf-8")
 
-    # ---- routing accuracy table (concurrency = 1) --------------------------------------
+    # ---- routing decomposition table (concurrency = 1) ---------------------------------
+    def _pct(cell, col):
+        return 100.0 * sum(1 for r in cell if r.get(col) == "True") / len(cell)
+
     body = []
     for model, scenario in pairs:
-        accs = {}
         for arch in architectures:
             cell = cells_c1.get((model, scenario, arch), [])
-            if cell:
-                correct = sum(1 for r in cell if r.get("routing_correct") == "True")
-                accs[arch] = 100.0 * correct / len(cell)
-        if not accs:
-            continue
-        best = max(accs, key=accs.get)
-        for arch, acc in accs.items():
+            if not cell:
+                continue
             body.append([
                 _short_model(model),
                 f"{scenario.replace('_', ' ')} ({_ARCH_LABELS.get(arch, arch)})",
-                _bold_if(f"{acc:.0f}\\%", arch == best),
+                f"{_pct(cell, 'decision_correct'):.0f}\\%",
+                f"{_pct(cell, 'native_call'):.0f}\\%",
+                f"{_pct(cell, 'routing_correct'):.0f}\\%",
             ])
     tex = _table(
-        f"Routing accuracy at concurrency 1 — {experiment.replace('_', ' ')}."
-        f"  For the gatekeeping scenario (unsupported request) "
-        f"\\emph{{correct}} means the model selected no skill; otherwise it "
-        f"means the expected skill was selected.",
+        f"Routing decomposition at concurrency 1 — "
+        f"{experiment.replace('_', ' ')}.  \\emph{{Decision}} = the correct "
+        f"capability was identified (native call or described in text); "
+        f"\\emph{{Native}} = expressed via the native function-calling "
+        f"protocol; \\emph{{Routing}} = both.  For the gatekeeping scenario "
+        f"(unsupported request) \\emph{{Decision}} is genuine refusal.",
         f"tab:{exp_tex}-routing",
-        ["Model", "Scenario (architecture)", "Accuracy"],
+        ["Model", "Scenario (architecture)", "Decision", "Native", "Routing"],
         body,
     )
     (latex_dir / "routing.tex").write_text(tex, encoding="utf-8")

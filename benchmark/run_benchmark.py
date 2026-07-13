@@ -126,7 +126,9 @@ async def _dry_run_execute(architecture, model_string, scenario, skills, cfg,
         completion_tokens=random.randint(50, 400),
         total_tokens=random.randint(900, 2900),
         selected=expected, expected=expected,
-        routing_correct=random.random() > 0.1,
+        routing_correct=(rc := random.random() > 0.1),
+        intended_skill=scenario.expected_skill, native_call=True,
+        decision_correct=rc,
     )
 
 

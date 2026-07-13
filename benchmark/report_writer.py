@@ -39,7 +39,8 @@ _CSV_COLUMNS = [
     "server_cpu_avg", "server_cpu_peak", "server_rss_avg_mb", "server_rss_peak_mb",
     "gpu_util_avg", "gpu_util_peak", "vram_avg_mb", "vram_peak_mb",
     "prompt_tokens", "completion_tokens", "total_tokens",
-    "routing_correct", "status",
+    "routing_correct", "intended_skill", "native_call", "decision_correct",
+    "status",
 ]
 
 
@@ -192,6 +193,36 @@ def _summary_markdown(
             f"| {arch} | {model} | {scen} | {len(runs)} "
             f"{latency_cols}"
             f"| {acc:.0f}% | {len(runs) - len(ok)} |"
+        )
+    lines.append("")
+
+    # ---- routing decomposition -------------------------------------------------
+    lines.append("## Routing decomposition (concurrency = 1)")
+    lines.append("")
+    lines.append("Separates the routing **decision** from **protocol "
+                 "adherence**.  *Decision* = the model identified the correct "
+                 "capability (in a native call **or** described in text); "
+                 "*Native-call* = it expressed that via the native "
+                 "function-calling protocol (not prose); *Routing* = both "
+                 "(the strict metric above).  For `unsupported_request`, "
+                 "*Decision* is genuine gatekeeping (the model declined to "
+                 "route anywhere).  Native-call adherence is exact; the "
+                 "text-derived decision is a documented heuristic "
+                 "(see routing_analysis.py).")
+    lines.append("")
+    lines.append("| Architecture | Model | Scenario | n | Decision acc. | Native-call | Routing acc. |")
+    lines.append("|---|---|---|---|---|---|---|")
+    for (arch, model, scen), all_runs in sorted(cells.items()):
+        runs = [r for r in all_runs if r.concurrency == 1]
+        if not runs:
+            continue
+        n = len(runs)
+        dec = 100.0 * sum(r.decision_correct for r in runs) / n
+        native = 100.0 * sum(r.native_call for r in runs) / n
+        route = 100.0 * sum(r.routing_correct for r in runs) / n
+        lines.append(
+            f"| {arch} | {model} | {scen} | {n} "
+            f"| {dec:.0f}% | {native:.0f}% | {route:.0f}% |"
         )
     lines.append("")
 
