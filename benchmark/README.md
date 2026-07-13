@@ -478,6 +478,16 @@ invoke the identical production skills).
 | Decision accuracy | correct capability identified, in a native call **or** described in text (heuristic — see `routing_analysis.py`) | separates *knowing where to route* from *emitting a native call*; decision is usually high even when routing is low |
 | Native-call adherence | did the model express its choice via the native function-calling protocol (vs. prose)? | the real axis of variation between models/architectures |
 | Gatekeeping accuracy | for `unsupported_request`: genuine refusal (declined to route anywhere) | corrected so a protocol-failure is NOT counted as a refusal; does one architecture over-trigger more? |
+
+**Gatekeeping is interpretable only jointly with tool-calling ability.**  A
+model that cannot emit native tool calls (native-call adherence ≈ 0 on the
+supported scenarios) trivially "passes" gatekeeping — its correct answer is
+"call no tool", which it does by incapacity, not judgment.  The reports
+therefore **capability-gate** gatekeeping: for a model below
+`GATEKEEPING_MIN_NATIVE_CALL` (20%) native-call adherence on supported
+scenarios, gatekeeping is shown as `n/a (cannot act)` rather than a
+percentage (e.g. deepseek-r1, 0% native calls).  Always read gatekeeping
+next to the Native-call column.
 | Throughput (req/s, failures) | waves of N concurrent runs via `asyncio.gather` | behaviour under load per architecture |
 
 Warm-up runs are excluded from every statistic.  Each run uses a **fresh

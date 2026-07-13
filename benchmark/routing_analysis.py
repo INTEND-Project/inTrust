@@ -26,6 +26,15 @@ transcripts before publication.
 import re
 from typing import Optional, Tuple
 
+# Gatekeeping (refuse an unsupported request) is only interpretable for a
+# model that has DEMONSTRATED the ability to act — otherwise "refusing
+# everything" is indistinguishable from being unable to call tools at all.
+# A model's gatekeeping is reported only when its native-call adherence on
+# the SUPPORTED scenarios reaches this fraction; below it, gatekeeping is
+# marked "not interpretable" (e.g. deepseek-r1 emits no native calls, so its
+# 100% "refusal" is incapacity, not judgment).
+GATEKEEPING_MIN_NATIVE_CALL = 0.2
+
 # Per-skill signatures used to recover the intended capability from free text.
 # "native" — tool/agent identifiers as they appear in the ``selected`` field.
 # "explicit" — unambiguous phrases a model uses when naming this capability.

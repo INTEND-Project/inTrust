@@ -31,6 +31,7 @@ if str(_REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(_REPO_ROOT))
 
 from benchmark.config import BenchmarkConfig, load_config  # noqa: E402
+from benchmark.routing_analysis import GATEKEEPING_MIN_NATIVE_CALL  # noqa: E402
 from benchmark.metrics import summarize  # noqa: E402
 
 _ARCH_LABELS = {"single_agent": "Single agent + skills", "multi_agent": "Multi-agent"}
@@ -244,16 +245,33 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
     def _pct(cell, col):
         return 100.0 * sum(1 for r in cell if r.get(col) == "True") / len(cell)
 
+    # Capability gate: gatekeeping is interpretable only for models with
+    # demonstrated tool-calling ability (native-call adherence on supported
+    # scenarios >= threshold).  Compute per (model, architecture).
+    can_gatekeep = {}
+    for model, _s in pairs:
+        for arch in architectures:
+            sup = [r for (m, s, a), cell in cells_c1.items()
+                   if m == model and a == arch and s != "unsupported_request"
+                   for r in cell]
+            if sup:
+                rate = sum(1 for r in sup if r.get("native_call") == "True") / len(sup)
+                can_gatekeep[(model, arch)] = rate >= GATEKEEPING_MIN_NATIVE_CALL
+
     body = []
     for model, scenario in pairs:
         for arch in architectures:
             cell = cells_c1.get((model, scenario, arch), [])
             if not cell:
                 continue
+            if scenario == "unsupported_request" and not can_gatekeep.get((model, arch), False):
+                decision = "n/a"
+            else:
+                decision = f"{_pct(cell, 'decision_correct'):.0f}\\%"
             body.append([
                 _short_model(model),
                 f"{scenario.replace('_', ' ')} ({_ARCH_LABELS.get(arch, arch)})",
-                f"{_pct(cell, 'decision_correct'):.0f}\\%",
+                decision,
                 f"{_pct(cell, 'native_call'):.0f}\\%",
                 f"{_pct(cell, 'routing_correct'):.0f}\\%",
             ])
@@ -263,7 +281,10 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
         f"capability was identified (native call or described in text); "
         f"\\emph{{Native}} = expressed via the native function-calling "
         f"protocol; \\emph{{Routing}} = both.  For the gatekeeping scenario "
-        f"(unsupported request) \\emph{{Decision}} is genuine refusal.",
+        f"(unsupported request) \\emph{{Decision}} is genuine refusal, "
+        f"reported (\\emph{{n/a}} otherwise) only for models with native-call "
+        f"adherence $\\geq 20\\%$ on supported scenarios — a model that "
+        f"cannot emit native calls trivially refuses everything.",
         f"tab:{exp_tex}-routing",
         ["Model", "Scenario (architecture)", "Decision", "Native", "Routing"],
         body,

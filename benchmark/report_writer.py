@@ -29,6 +29,7 @@ from typing import Any, Dict, List
 
 from .config import BenchmarkConfig
 from .metrics import RunResult, summarize
+from .routing_analysis import GATEKEEPING_MIN_NATIVE_CALL
 
 # CSV columns, in the exact order they appear in the file.
 _CSV_COLUMNS = [
@@ -159,6 +160,26 @@ def _summary_markdown(
     for r in measured:
         cells.setdefault((r.architecture, r.model, r.scenario), []).append(r)
 
+    # Gatekeeping is only interpretable for a model that has DEMONSTRATED
+    # tool-calling ability: compute native-call adherence over the SUPPORTED,
+    # concurrency-1 runs per (architecture, model).  A model below the
+    # threshold (e.g. deepseek at 0%) "refuses" everything trivially, so its
+    # gatekeeping is reported as not interpretable.
+    _sup_native: Dict[tuple, List[bool]] = {}
+    for r in measured:
+        if r.concurrency == 1 and r.scenario != "unsupported_request":
+            _sup_native.setdefault((r.architecture, r.model), []).append(r.native_call)
+    can_gatekeep = {
+        key: (sum(v) / len(v)) >= GATEKEEPING_MIN_NATIVE_CALL
+        for key, v in _sup_native.items() if v
+    }
+
+    def _gatekeep_cell(arch, model, value_pct: float) -> str:
+        """Percentage string, or 'n/a (cannot act)' for tool-incapable models."""
+        if can_gatekeep.get((arch, model), False):
+            return f"{value_pct:.0f}%"
+        return "n/a (cannot act)"
+
     lines.append("## Latency and routing per cell (concurrency = 1)")
     lines.append("")
     lines.append("Isolated behaviour: this table uses **concurrency = 1** runs "
@@ -169,7 +190,11 @@ def _summary_markdown(
                  "(tool error, timeout).  For the `unsupported_request` "
                  "(gatekeeping) scenario \"correct\" means the model refused "
                  "(selected no skill); for the others it means the expected "
-                 "skill was selected.")
+                 "skill was selected.  Gatekeeping is only interpretable for "
+                 "models that demonstrate tool-calling ability (native-call "
+                 "adherence ≥ 20% on supported scenarios); a model that "
+                 "cannot emit native calls trivially \"refuses\" everything, "
+                 "so its gatekeeping is shown as `n/a (cannot act)`.")
     lines.append("")
     lines.append("| Architecture | Model | Scenario | n | Mean (ms) | Median | Stdev | p95 | Min | Max | Routing acc. | Failures |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
@@ -178,7 +203,9 @@ def _summary_markdown(
         if not runs:
             continue
         ok = [r for r in runs if r.status == "OK"]
-        acc = (sum(r.routing_correct for r in runs) / len(runs)) * 100.0
+        acc_pct = (sum(r.routing_correct for r in runs) / len(runs)) * 100.0
+        acc = (_gatekeep_cell(arch, model, acc_pct)
+               if scen == "unsupported_request" else f"{acc_pct:.0f}%")
         if ok:
             stats = summarize([r.e2e_ms for r in ok])
             latency_cols = (
@@ -192,7 +219,7 @@ def _summary_markdown(
         lines.append(
             f"| {arch} | {model} | {scen} | {len(runs)} "
             f"{latency_cols}"
-            f"| {acc:.0f}% | {len(runs) - len(ok)} |"
+            f"| {acc} | {len(runs) - len(ok)} |"
         )
     lines.append("")
 
@@ -206,7 +233,9 @@ def _summary_markdown(
                  "function-calling protocol (not prose); *Routing* = both "
                  "(the strict metric above).  For `unsupported_request`, "
                  "*Decision* is genuine gatekeeping (the model declined to "
-                 "route anywhere).  Native-call adherence is exact; the "
+                 "route anywhere) — reported only for tool-calling-capable "
+                 "models (native-call ≥ 20% on supported scenarios), else "
+                 "`n/a (cannot act)`.  Native-call adherence is exact; the "
                  "text-derived decision is a documented heuristic "
                  "(see routing_analysis.py).")
     lines.append("")
@@ -217,12 +246,14 @@ def _summary_markdown(
         if not runs:
             continue
         n = len(runs)
-        dec = 100.0 * sum(r.decision_correct for r in runs) / n
+        dec_pct = 100.0 * sum(r.decision_correct for r in runs) / n
         native = 100.0 * sum(r.native_call for r in runs) / n
         route = 100.0 * sum(r.routing_correct for r in runs) / n
+        dec = (_gatekeep_cell(arch, model, dec_pct)
+               if scen == "unsupported_request" else f"{dec_pct:.0f}%")
         lines.append(
             f"| {arch} | {model} | {scen} | {n} "
-            f"| {dec:.0f}% | {native:.0f}% | {route:.0f}% |"
+            f"| {dec} | {native:.0f}% | {route:.0f}% |"
         )
     lines.append("")
 
