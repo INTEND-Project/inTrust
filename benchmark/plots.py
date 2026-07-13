@@ -167,10 +167,17 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
 
 
 def _latency_boxplot(rows: List[dict], plots_dir: Path) -> None:
-    """End-to-end latency distribution per model, one box per architecture."""
+    """End-to-end latency distribution per model, one box per architecture.
+
+    Concurrency = 1 only, so the distribution reflects the architecture's
+    isolated latency rather than queueing under load (see the throughput
+    figure for behaviour under concurrency).
+    """
     # data[model][architecture] = [latencies...]
     data: Dict[str, Dict[str, List[float]]] = defaultdict(lambda: defaultdict(list))
     for row in rows:
+        if row.get("concurrency") not in ("1", 1):
+            continue
         value = _float(row, "e2e_ms")
         if value is not None:
             data[row["model"]][row["architecture"]].append(value)
@@ -196,7 +203,7 @@ def _latency_boxplot(rows: List[dict], plots_dir: Path) -> None:
     ax.set_xticks(range(len(models)))
     ax.set_xticklabels([_short_model(m) for m in models], rotation=20, ha="right")
     ax.set_ylabel("End-to-end latency (ms)")
-    ax.set_title("End-to-end latency by model and architecture")
+    ax.set_title("End-to-end latency by model and architecture (concurrency = 1)")
     handles = [plt.Rectangle((0, 0), 1, 1, fc=_ARCH_COLOURS[a], alpha=0.7)
                for a in architectures]
     ax.legend(handles, [_ARCH_LABELS[a] for a in architectures])

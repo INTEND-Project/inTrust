@@ -121,16 +121,19 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
         return
 
     cells = _group_cells(rows)
+    # Latency and routing tables use concurrency = 1 only (isolated
+    # behaviour, no queueing); resource/token tables use all runs.
+    cells_c1 = _group_cells([r for r in rows if r.get("concurrency") in ("1", 1)])
     # All (model, scenario) pairs, and which architectures exist.
     pairs = sorted({(m, s) for (m, s, _a) in cells})
     architectures = sorted({a for (_m, _s, a) in cells})
 
     exp_tex = experiment.replace("_", "-")
 
-    # ---- latency table --------------------------------------------------------
+    # ---- latency table (concurrency = 1) --------------------------------------
     body = []
     for model, scenario in pairs:
-        stats = {a: summarize(_values(cells.get((model, scenario, a), []), "e2e_ms"))
+        stats = {a: summarize(_values(cells_c1.get((model, scenario, a), []), "e2e_ms"))
                  for a in architectures}
         best = min(architectures, key=lambda a: stats[a]["mean"] or float("inf"))
         for arch in architectures:
@@ -144,7 +147,8 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
                 f"{s['median']:.0f}", f"{s['p95']:.0f}",
             ])
     tex = _table(
-        f"End-to-end latency (ms) — {experiment.replace('_', ' ')}.",
+        f"End-to-end latency (ms) at concurrency 1 — "
+        f"{experiment.replace('_', ' ')}.",
         f"tab:{exp_tex}-latency",
         ["Model", "Scenario (architecture)", "Mean $\\pm$ SD", "Median", "P95"],
         body,
@@ -236,12 +240,12 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
         )
         (latex_dir / "tokens.tex").write_text(tex, encoding="utf-8")
 
-    # ---- routing accuracy table --------------------------------------------------------
+    # ---- routing accuracy table (concurrency = 1) --------------------------------------
     body = []
     for model, scenario in pairs:
         accs = {}
         for arch in architectures:
-            cell = cells.get((model, scenario, arch), [])
+            cell = cells_c1.get((model, scenario, arch), [])
             if cell:
                 correct = sum(1 for r in cell if r.get("routing_correct") == "True")
                 accs[arch] = 100.0 * correct / len(cell)
@@ -255,10 +259,10 @@ def generate(experiment: str, run_id: Optional[str], cfg: BenchmarkConfig) -> No
                 _bold_if(f"{acc:.0f}\\%", arch == best),
             ])
     tex = _table(
-        f"Routing accuracy — {experiment.replace('_', ' ')}.  For the "
-        f"gatekeeping scenario (unsupported request) \\emph{{correct}} means "
-        f"the model selected no skill; otherwise it means the expected skill "
-        f"was selected.",
+        f"Routing accuracy at concurrency 1 — {experiment.replace('_', ' ')}."
+        f"  For the gatekeeping scenario (unsupported request) "
+        f"\\emph{{correct}} means the model selected no skill; otherwise it "
+        f"means the expected skill was selected.",
         f"tab:{exp_tex}-routing",
         ["Model", "Scenario (architecture)", "Accuracy"],
         body,

@@ -28,7 +28,10 @@ warmup_runs = 5
 measured_runs = 30
 
 # Per-run timeout in seconds.  A run exceeding this is recorded as failed.
-run_timeout_sec = 600
+# Sized for the slowest case — the 27B model in the multi-agent architecture,
+# whose 3-call chain can take many minutes per run.  Smaller models never
+# approach this, so the timeout is not a limiting variable for them.
+run_timeout_sec = 1800
 
 
 # ----------------------------------------------------------------------------
@@ -137,7 +140,7 @@ type = "ollama"
 # Client-side timeout (seconds) for one LLM request.  Kept below the
 # whole-run timeout so a stuck generation surfaces as a clear litellm
 # timeout error instead of a silent hang.
-request_timeout_sec = 300
+request_timeout_sec = 1200
 
 # Extra keyword arguments forwarded verbatim to every LiteLlm model.
 # These are part of the recorded methodology (the config is echoed into the

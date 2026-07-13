@@ -107,15 +107,25 @@ auto-download models on inference requests.
   this, or pre-cache it with `trivy image --download-db-only` (same DB).
 - **Trivy Docker image scan**: scans five pinned public images
   (python:3.9-slim, node:18-alpine, golang:1.20-alpine, nginx:1.21,
-  redis:6.2).  **No Docker engine is required** — Trivy pulls each image
-  straight from the registry.  The first scan of each image downloads its
-  layers (warm-up runs absorb this).  Note that unlike the bandit and
-  filesystem inputs these are not byte-frozen (registry contents and the
-  Trivy vulnerability DB evolve) — this does **not** affect the benchmark's
-  validity, because the compared variables are orchestration properties
-  (routing, gatekeeping, latency, tokens, resources); assessment-result
-  content is out of scope (see the metrics section).  Pre-cache the DB
-  with `trivy image --download-db-only` if desired.
+  redis:6.2).  **No Docker engine is required** — Trivy reads each image
+  from a local tarball.  Trivy would otherwise pull from the registry on
+  *every* scan, and a full campaign (~1000+ scans) blows Docker Hub's pull
+  rate limit, so pre-cache the images **once** into local tarballs and
+  point the tool at them by setting `INTRUST_IMAGE_CACHE_DIR`:
+
+  ```bash
+  export INTRUST_IMAGE_CACHE_DIR=$PWD/benchmark/data/image_cache
+  bash benchmark/slurm/prepare_docker_images.sh   # ≤5 pulls, uses `crane`
+  ```
+
+  With `INTRUST_IMAGE_CACHE_DIR` set, `scan_docker_image` scans
+  `trivy image --input <cached.tar>` (zero registry contact); unset, it
+  falls back to a normal registry pull.  Note these image inputs are not
+  byte-frozen (registry contents and the Trivy DB evolve) — this does
+  **not** affect validity, because the compared variables are
+  orchestration properties (routing, gatekeeping, latency, tokens,
+  resources); assessment-result content is out of scope (see the metrics
+  section).
 - **Gatekeeping (`unsupported_request`)**: needs nothing — five requests
   that match no available skill (network port scan, DAST, TLS audit,
   licence-compliance audit, penetration test).  The correct behaviour is
@@ -160,9 +170,9 @@ Key settings:
 | `warmup_runs` | 5 | unrecorded runs before measurement (model loading, caches) |
 | `measured_runs` | 30 | recorded runs per (architecture × model × scenario) cell |
 | `seed` | 42 | framework-side random seed (run ordering; LLM sampling is server-side) |
-| `run_timeout_sec` | 600 | a run exceeding this is recorded as failed |
+| `run_timeout_sec` | 1800 | a run exceeding this is recorded as failed (sized for 27B multi-agent; smaller models never approach it) |
 | `ollama_api_base` | `http://localhost:11434` | Ollama server URL |
-| `[provider].request_timeout_sec` | 300 | client-side timeout for one LLM request |
+| `[provider].request_timeout_sec` | 1200 | client-side timeout for one LLM request |
 | `[provider.model_kwargs]` | `think=false`, `num_predict=1024`, `num_ctx=8192`, `temperature=0` | generation settings forwarded to LiteLLM/Ollama; part of the recorded methodology (temperature 0 = greedy decoding for reproducibility) |
 | `[experiments.*].models` | see file | model list per experiment (LiteLLM `ollama_chat/<name>` strings) |
 | `[experiments.*].concurrency_levels` | 1 / 1,5,10,20 | throughput mode levels |
@@ -363,6 +373,26 @@ mkdir -p ~/ollama && tar -xf /tmp/ollama.tar.zst -C ~/ollama
 (`tar -xf` auto-detects the zstd compression; when upgrading an existing
 install, remove the old libraries first: `rm -rf ~/ollama/lib/ollama`.)
 
+**Running a full clean campaign (both experiments).**  After the one-time
+setup (venv, user-local Ollama, Trivy binary, and the docker image cache),
+the full re-run is:
+
+```bash
+git pull
+export INTRUST_IMAGE_CACHE_DIR=$HOME/SOCC/inTrust/benchmark/data/image_cache
+bash benchmark/slurm/prepare_docker_images.sh          # one-time, ≤5 pulls
+
+# family_comparison — one job (fast 8–12B models):
+sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama,\
+INTRUST_IMAGE_CACHE_DIR=$INTRUST_IMAGE_CACHE_DIR,EXPERIMENT=family_comparison \
+  benchmark/slurm/run_campaign.job
+
+# scaling_study — two chained jobs (27b split off), then merge (see below):
+OLLAMA_BIN=$HOME/ollama/bin/ollama \
+  INTRUST_IMAGE_CACHE_DIR=$INTRUST_IMAGE_CACHE_DIR \
+  benchmark/slurm/submit_split_campaign.sh
+```
+
 Then point the job scripts at it via the `OLLAMA_BIN` variable:
 
 ```bash
@@ -399,8 +429,13 @@ starts only once the first finishes.  The helper does this and prints the
 merge command:
 
 ```bash
-# From a login-node shell (submits two chained jobs; part 2 waits for part 1):
-OLLAMA_BIN=$HOME/ollama/bin/ollama benchmark/slurm/submit_split_campaign.sh
+# From a login-node shell (submits two chained jobs; part 2 waits for part 1).
+# INTRUST_IMAGE_CACHE_DIR is forwarded to both jobs so the docker scenario
+# scans locally (run prepare_docker_images.sh once first — see the Docker
+# image scan bullet under "scenario preparation"):
+OLLAMA_BIN=$HOME/ollama/bin/ollama \
+  INTRUST_IMAGE_CACHE_DIR=$PWD/benchmark/data/image_cache \
+  benchmark/slurm/submit_split_campaign.sh
 ```
 
 By default part 1 runs qwen3.5 0.8b/2b/4b/9b and part 2 runs 27b alone;

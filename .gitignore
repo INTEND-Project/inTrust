@@ -1,5 +1,8 @@
 /bin/trivy
 /bin/trivy.exe
+/bin/crane
+/bin/crane.exe
+/benchmark/data/image_cache/
 /.env
 /venv
 /tools/__pycache__

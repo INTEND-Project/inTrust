@@ -57,6 +57,13 @@ CONFIG="${CONFIG:-}"
 MODELS="${MODELS:-auto}"
 # Extra CLI flags for run_benchmark.py, e.g. "--runs 5 --warmup 1".
 EXTRA_ARGS="${EXTRA_ARGS:-}"
+# Optional: directory of pre-pulled docker-image tarballs so the docker
+# scenario scans locally instead of hitting a registry (see README and
+# prepare_docker_images.sh).  Exported below so the tool picks it up.
+INTRUST_IMAGE_CACHE_DIR="${INTRUST_IMAGE_CACHE_DIR:-}"
+if [ -n "${INTRUST_IMAGE_CACHE_DIR}" ]; then
+    export INTRUST_IMAGE_CACHE_DIR
+fi
 
 echo ""
 echo "***** LAUNCHING *****"
@@ -64,6 +71,7 @@ date '+%F %H:%M:%S'
 echo "Repo:       ${REPO_DIR}"
 echo "Experiment: ${EXPERIMENT}"
 echo "Ollama API: http://127.0.0.1:${PORT}"
+echo "Image cache: ${INTRUST_IMAGE_CACHE_DIR:-<none, docker scans pull from registry>}"
 # Record which Ollama serves this campaign (methodology provenance).
 echo "Ollama bin: ${OLLAMA_BIN} ($("${OLLAMA_BIN}" --version 2>&1))"
 echo ""

@@ -158,25 +158,39 @@ def _summary_markdown(
     for r in measured:
         cells.setdefault((r.architecture, r.model, r.scenario), []).append(r)
 
-    lines.append("## Latency and routing per cell")
+    lines.append("## Latency and routing per cell (concurrency = 1)")
     lines.append("")
-    lines.append("Routing accuracy = fraction of correct routing decisions. "
-                 "For the `unsupported_request` (gatekeeping) scenario "
-                 "\"correct\" means the model refused — it selected no skill; "
-                 "for the other scenarios it means the expected skill was "
-                 "selected.")
+    lines.append("Isolated behaviour: this table uses **concurrency = 1** runs "
+                 "only, so latency reflects the architecture itself, not "
+                 "queueing (the throughput section covers behaviour under "
+                 "load).  Routing accuracy is independent of run success — a "
+                 "run can route correctly and still fail during execution "
+                 "(tool error, timeout).  For the `unsupported_request` "
+                 "(gatekeeping) scenario \"correct\" means the model refused "
+                 "(selected no skill); for the others it means the expected "
+                 "skill was selected.")
     lines.append("")
     lines.append("| Architecture | Model | Scenario | n | Mean (ms) | Median | Stdev | p95 | Min | Max | Routing acc. | Failures |")
     lines.append("|---|---|---|---|---|---|---|---|---|---|---|---|")
-    for (arch, model, scen), runs in sorted(cells.items()):
+    for (arch, model, scen), all_runs in sorted(cells.items()):
+        runs = [r for r in all_runs if r.concurrency == 1]
+        if not runs:
+            continue
         ok = [r for r in runs if r.status == "OK"]
-        stats = summarize([r.e2e_ms for r in ok])
         acc = (sum(r.routing_correct for r in runs) / len(runs)) * 100.0
+        if ok:
+            stats = summarize([r.e2e_ms for r in ok])
+            latency_cols = (
+                f"| {stats['mean']:.0f} | {stats['median']:.0f} "
+                f"| {stats['stdev']:.0f} | {stats['p95']:.0f} "
+                f"| {stats['min']:.0f} | {stats['max']:.0f} "
+            )
+        else:
+            # No successful runs — latency is undefined, not zero.
+            latency_cols = "| N/A | N/A | N/A | N/A | N/A | N/A "
         lines.append(
             f"| {arch} | {model} | {scen} | {len(runs)} "
-            f"| {stats['mean']:.0f} | {stats['median']:.0f} "
-            f"| {stats['stdev']:.0f} | {stats['p95']:.0f} "
-            f"| {stats['min']:.0f} | {stats['max']:.0f} "
+            f"{latency_cols}"
             f"| {acc:.0f}% | {len(runs) - len(ok)} |"
         )
     lines.append("")

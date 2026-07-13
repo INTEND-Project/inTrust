@@ -162,6 +162,26 @@ def _summarize_trivy_results(data: Dict[str, Any]) -> Dict[str, int]:
     return summary
 
 
+def _cached_image_tar(image: str) -> "Path | None":
+    """
+    Return a locally cached OCI tarball for ``image`` if one exists.
+
+    When ``INTRUST_IMAGE_CACHE_DIR`` is set, Docker image scans read the
+    image from a pre-pulled local tarball instead of the registry — this
+    avoids per-scan registry pulls (and Docker Hub rate limits) during a
+    benchmark campaign.  The filename is the image reference with ``/`` and
+    ``:`` replaced by ``_`` (matches benchmark/slurm/prepare_docker_images.sh).
+    Returns ``None`` when caching is disabled or the tarball is absent, so
+    the caller falls back to a normal registry pull.
+    """
+    cache_dir = os.getenv("INTRUST_IMAGE_CACHE_DIR")
+    if not cache_dir:
+        return None
+    safe = image.replace("/", "_").replace(":", "_")
+    tar = Path(cache_dir) / f"{safe}.tar"
+    return tar if tar.exists() else None
+
+
 def scan_docker_image(
     intent_request: Dict[str, Any], logger: Any | None = None
 ) -> Dict[str, Any]:
@@ -201,8 +221,15 @@ def scan_docker_image(
             "--timeout", "12m0s",
             "--cache-dir", "cache/",
             "--severity", "HIGH,CRITICAL",
-            docker_image,
         ]
+        # Prefer a pre-pulled local tarball when available (no registry pull).
+        cached_tar = _cached_image_tar(docker_image)
+        if cached_tar is not None:
+            if logger:
+                logger.info("tool.trivy", f"Using cached image tarball: {cached_tar}")
+            cmd += ["--input", str(cached_tar)]
+        else:
+            cmd.append(docker_image)
 
         data, elapsed_time = _run_trivy_command(cmd, output_file, logger)
         summary = _summarize_trivy_results(data)

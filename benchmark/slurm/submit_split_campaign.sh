@@ -29,6 +29,8 @@ PART1="${PART1:-ollama_chat/qwen3.5:0.8b ollama_chat/qwen3.5:2b ollama_chat/qwen
 PART2="${PART2:-ollama_chat/qwen3.5:27b}"
 # Passed through to the jobs (unset by default -> job uses the system ollama).
 OLLAMA_BIN="${OLLAMA_BIN:-}"
+# Optional docker-image tarball cache, forwarded to both jobs (see README).
+INTRUST_IMAGE_CACHE_DIR="${INTRUST_IMAGE_CACHE_DIR:-}"
 
 # Build "--model A --model B ..." (for run_benchmark) and "A-tag B-tag ..."
 # (Ollama pull tags = the litellm string minus the ollama_chat/ prefix) for
@@ -50,6 +52,9 @@ submit_part() {
     local exports="ALL,EXPERIMENT=${EXPERIMENT},MODELS=${models},EXTRA_ARGS=${extra_args}"
     if [ -n "${OLLAMA_BIN}" ]; then
         exports="${exports},OLLAMA_BIN=${OLLAMA_BIN}"
+    fi
+    if [ -n "${INTRUST_IMAGE_CACHE_DIR}" ]; then
+        exports="${exports},INTRUST_IMAGE_CACHE_DIR=${INTRUST_IMAGE_CACHE_DIR}"
     fi
     sbatch --parsable ${2:+--dependency=$2} --export="${exports}" "${JOB}"
 }
