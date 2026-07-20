@@ -59,8 +59,14 @@ def _parse_args() -> argparse.Namespace:
                         help="restrict to this model string; repeat the flag "
                              "to run a subset of the experiment's models "
                              "(used to split long campaigns across jobs)")
-    parser.add_argument("--scenario", default=None,
-                        help="restrict to one scenario key")
+    parser.add_argument("--scenario", action="append", default=None,
+                        help="restrict to this scenario key; repeat the flag "
+                             "to run a subset of scenarios (used to split a "
+                             "long single-model campaign across jobs)")
+    parser.add_argument("--architecture", action="append", default=None,
+                        choices=["single_agent", "multi_agent"],
+                        help="restrict to this architecture; repeat the flag "
+                             "to run a subset (default: the experiment's list)")
     parser.add_argument("--runs", type=int, default=None,
                         help="override measured_runs")
     parser.add_argument("--warmup", type=int, default=None,
@@ -79,15 +85,25 @@ def _apply_overrides(cfg: BenchmarkConfig, args: argparse.Namespace) -> Benchmar
     if args.warmup is not None:
         changes["warmup_runs"] = args.warmup
     if args.scenario is not None:
-        # Explicit selection also works for scenarios disabled in the config.
-        changes["enabled_scenarios"] = [args.scenario]
-    if args.model is not None:
-        # args.model is a list (action="append"): one entry per --model flag.
-        experiments = {
-            name: dataclasses.replace(exp, models=list(args.model))
-            for name, exp in cfg.experiments.items()
+        # args.scenario is a list (action="append"): one entry per --scenario
+        # flag.  Explicit selection also works for scenarios disabled in the
+        # config.
+        changes["enabled_scenarios"] = list(args.scenario)
+    # --model and --architecture both narrow every experiment's grid; apply
+    # them together so a single dataclasses.replace carries both overrides.
+    if args.model is not None or args.architecture is not None:
+        def _narrow(exp):
+            repl = {}
+            if args.model is not None:
+                # one entry per --model flag.
+                repl["models"] = list(args.model)
+            if args.architecture is not None:
+                # one entry per --architecture flag.
+                repl["architectures"] = list(args.architecture)
+            return dataclasses.replace(exp, **repl)
+        changes["experiments"] = {
+            name: _narrow(exp) for name, exp in cfg.experiments.items()
         }
-        changes["experiments"] = experiments
     return dataclasses.replace(cfg, **changes) if changes else cfg
 
 

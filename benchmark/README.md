@@ -387,10 +387,19 @@ sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama,\
 INTRUST_IMAGE_CACHE_DIR=$INTRUST_IMAGE_CACHE_DIR,EXPERIMENT=family_comparison \
   benchmark/slurm/run_campaign.job
 
-# scaling_study — two chained jobs (27b split off), then merge (see below):
+# scaling_study — the four small models in one job (they fit the 24 h cap):
+sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama,\
+INTRUST_IMAGE_CACHE_DIR=$INTRUST_IMAGE_CACHE_DIR,EXPERIMENT=scaling_study,\
+MODELS="qwen3.5:0.8b qwen3.5:2b qwen3.5:4b qwen3.5:9b",\
+EXTRA_ARGS="--model ollama_chat/qwen3.5:0.8b --model ollama_chat/qwen3.5:2b --model ollama_chat/qwen3.5:4b --model ollama_chat/qwen3.5:9b" \
+  benchmark/slurm/run_campaign.job
+
+# scaling_study — the 27b model as two scenario-split jobs (it alone exceeds
+# the cap over all four scenarios); then a three-way merge with the small
+# part (see "Campaigns longer than 24 h" below):
 OLLAMA_BIN=$HOME/ollama/bin/ollama \
   INTRUST_IMAGE_CACHE_DIR=$INTRUST_IMAGE_CACHE_DIR \
-  benchmark/slurm/submit_split_campaign.sh
+  benchmark/slurm/submit_27b_split.sh
 ```
 
 Then point the job scripts at it via the `OLLAMA_BIN` variable:
@@ -452,6 +461,31 @@ python -m benchmark.merge_runs --experiment scaling_study \
 The parts must **partition** the models (each model in exactly one part);
 `merge_runs` warns if a cell appears in more than one part, since that
 would double-count its statistics.
+
+*Splitting one heavy model by scenario.*  A single model can be too large to
+finish all four scenarios × two architectures within the cap even on its
+own (the 27B model is the practical example).  For that case, split **by
+scenario pair** instead of by model with `submit_27b_split.sh`: it re-runs
+one model (`MODEL`, default `ollama_chat/qwen3.5:27b`) as two chained jobs,
+the first over `PART1_SCENARIOS` and the second over `PART2_SCENARIOS`, each
+covering both architectures.  This relies on `--scenario` being repeatable
+(`--scenario a --scenario b`), the scenario counterpart of `--model`.
+
+```bash
+OLLAMA_BIN=$HOME/ollama/bin/ollama \
+  INTRUST_IMAGE_CACHE_DIR=$PWD/benchmark/data/image_cache \
+  benchmark/slurm/submit_27b_split.sh
+```
+
+The two scenario pairs partition the four scenarios, so the 27B cells never
+overlap; merge them together with the already-completed small-model part in
+a single three-way `merge_runs` (all three are non-overlapping, so it is a
+plain concatenation):
+
+```bash
+python -m benchmark.merge_runs --experiment scaling_study \
+    --run-ids <small_models_run_id> <27b_part1_run_id> <27b_part2_run_id>
+```
 
 ---
 

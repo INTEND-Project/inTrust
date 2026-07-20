@@ -14,9 +14,13 @@ JSON/CSV, throughput CSV, JSONL log, summary.md — and freshly generated
 plots and LaTeX tables.  The part files are never modified: a merged run is
 just another run id, reproducible from its parts at any time.
 
-Parts are expected to PARTITION the experiment's models: if two parts
-contain the same (model, architecture, scenario) cell, its statistics would
-be double-counted, so the tool warns loudly.
+Parts are expected to PARTITION the experiment's grid: each part covers a
+disjoint set of (model, architecture, scenario) cells.  Parts may split by
+model (submit_split_campaign.sh) or, for a single heavy model, by scenario
+pair (submit_27b_split.sh) — and both kinds can be merged together in one
+call (e.g. the small-model part plus the two 27B scenario parts).  If two
+parts contain the same cell, its statistics would be double-counted, so the
+tool warns loudly.
 """
 
 import argparse

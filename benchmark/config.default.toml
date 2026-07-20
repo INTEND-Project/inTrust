@@ -31,7 +31,7 @@ measured_runs = 30
 # Sized for the slowest case — the 27B model in the multi-agent architecture,
 # whose 3-call chain can take many minutes per run.  Smaller models never
 # approach this, so the timeout is not a limiting variable for them.
-run_timeout_sec = 1800
+run_timeout_sec = 1500
 
 
 # ----------------------------------------------------------------------------
