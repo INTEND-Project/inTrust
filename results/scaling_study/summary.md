@@ -1,7 +1,7 @@
 # Benchmark summary — scaling_study
 
-- Run ID: `scaling_study_20260713-233112_25a954e3`
-- Generated: 2026-07-14T13:00:06.404270
+- Run ID: `scaling_study_merged_20260722-134305_11c9f8a3`
+- Generated: 2026-07-22T13:43:08.967996
 - Warm-up runs (excluded): 5
 - Measured runs per cell: 30
 - Seed: 42
@@ -17,6 +17,10 @@ Isolated behaviour: this table uses **concurrency = 1** runs only, so latency re
 | multi_agent | ollama_chat/qwen3.5:0.8b | trivy_docker_image | 30 | 147311 | 147311 | 8295 | 163148 | 141445 | 153176 | 100% | 28 |
 | multi_agent | ollama_chat/qwen3.5:0.8b | trivy_filesystem | 30 | 102754 | 140675 | 98069 | 334739 | 17771 | 477176 | 100% | 1 |
 | multi_agent | ollama_chat/qwen3.5:0.8b | unsupported_request | 30 | 5854 | 2932 | 6434 | 19320 | 1628 | 19528 | 80% | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 30 | 550742 | 562846 | 63528 | 606072 | 335331 | 606773 | 100% | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 30 | 433005 | 432856 | 3306 | 438003 | 419927 | 438238 | 100% | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 30 | 355627 | 456241 | 183753 | 459813 | 26414 | 460991 | 100% | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | unsupported_request | 30 | 9880 | 10705 | 2175 | 12114 | 6324 | 12165 | 100% | 0 |
 | multi_agent | ollama_chat/qwen3.5:2b | bandit_static_code | 30 | 10556 | 10730 | 2382 | 15768 | 6510 | 16405 | 100% | 0 |
 | multi_agent | ollama_chat/qwen3.5:2b | trivy_docker_image | 30 | 18651 | 21527 | 7279 | 29489 | 7754 | 32377 | 100% | 0 |
 | multi_agent | ollama_chat/qwen3.5:2b | trivy_filesystem | 30 | 11552 | 11136 | 2818 | 16790 | 7463 | 17038 | 100% | 0 |
@@ -33,6 +37,10 @@ Isolated behaviour: this table uses **concurrency = 1** runs only, so latency re
 | single_agent | ollama_chat/qwen3.5:0.8b | trivy_docker_image | 30 | N/A | N/A | N/A | N/A | N/A | N/A | 100% | 30 |
 | single_agent | ollama_chat/qwen3.5:0.8b | trivy_filesystem | 30 | 32878 | 19293 | 30978 | 105706 | 14114 | 105876 | 100% | 6 |
 | single_agent | ollama_chat/qwen3.5:0.8b | unsupported_request | 30 | 3014 | 3323 | 1044 | 4808 | 1660 | 4854 | 40% | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 30 | 17258 | 15282 | 3411 | 22402 | 13652 | 22422 | 100% | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 30 | 13840 | 13665 | 649 | 15432 | 13021 | 15881 | 100% | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 30 | 16511 | 16353 | 792 | 17835 | 15109 | 17843 | 100% | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | unsupported_request | 30 | 10062 | 9801 | 1171 | 11731 | 8091 | 11739 | 100% | 0 |
 | single_agent | ollama_chat/qwen3.5:2b | bandit_static_code | 30 | 11005 | 11093 | 1354 | 13669 | 8315 | 14668 | 100% | 0 |
 | single_agent | ollama_chat/qwen3.5:2b | trivy_docker_image | 30 | 25718 | 24997 | 5701 | 36826 | 8794 | 37113 | 100% | 2 |
 | single_agent | ollama_chat/qwen3.5:2b | trivy_filesystem | 30 | 15678 | 14941 | 1892 | 20277 | 13476 | 21201 | 100% | 0 |
@@ -56,6 +64,10 @@ Separates the routing **decision** from **protocol adherence**.  *Decision* = th
 | multi_agent | ollama_chat/qwen3.5:0.8b | trivy_docker_image | 30 | 100% | 100% | 100% |
 | multi_agent | ollama_chat/qwen3.5:0.8b | trivy_filesystem | 30 | 100% | 100% | 100% |
 | multi_agent | ollama_chat/qwen3.5:0.8b | unsupported_request | 30 | 40% | 20% | 80% |
+| multi_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 30 | 100% | 100% | 100% |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 30 | 100% | 100% | 100% |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 30 | 100% | 100% | 100% |
+| multi_agent | ollama_chat/qwen3.5:27b | unsupported_request | 30 | 100% | 0% | 100% |
 | multi_agent | ollama_chat/qwen3.5:2b | bandit_static_code | 30 | 100% | 100% | 100% |
 | multi_agent | ollama_chat/qwen3.5:2b | trivy_docker_image | 30 | 100% | 100% | 100% |
 | multi_agent | ollama_chat/qwen3.5:2b | trivy_filesystem | 30 | 100% | 100% | 100% |
@@ -72,6 +84,10 @@ Separates the routing **decision** from **protocol adherence**.  *Decision* = th
 | single_agent | ollama_chat/qwen3.5:0.8b | trivy_docker_image | 30 | 100% | 100% | 100% |
 | single_agent | ollama_chat/qwen3.5:0.8b | trivy_filesystem | 30 | 100% | 100% | 100% |
 | single_agent | ollama_chat/qwen3.5:0.8b | unsupported_request | 30 | 40% | 60% | 40% |
+| single_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 30 | 100% | 100% | 100% |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 30 | 100% | 100% | 100% |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 30 | 100% | 100% | 100% |
+| single_agent | ollama_chat/qwen3.5:27b | unsupported_request | 30 | 100% | 0% | 100% |
 | single_agent | ollama_chat/qwen3.5:2b | bandit_static_code | 30 | 100% | 100% | 100% |
 | single_agent | ollama_chat/qwen3.5:2b | trivy_docker_image | 30 | 100% | 100% | 100% |
 | single_agent | ollama_chat/qwen3.5:2b | trivy_filesystem | 30 | 100% | 100% | 100% |
@@ -95,6 +111,10 @@ Harness = benchmark client process (orchestration overhead); Server = Ollama pro
 | multi_agent | ollama_chat/qwen3.5:0.8b | trivy_docker_image | 5.9 | 352 | 64.5 | 9270 | 15.8 | 1663 | 212211 |
 | multi_agent | ollama_chat/qwen3.5:0.8b | trivy_filesystem | 5.8 | 351 | 63.2 | 9329 | 12.7 | 1663 | 154899 |
 | multi_agent | ollama_chat/qwen3.5:0.8b | unsupported_request | 6.5 | 355 | 111.5 | 9190 | 21.4 | 1663 | 4920 |
+| multi_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 5.3 | 361 | 99.8 | 10536 | 80.5 | 17541 | 238945 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 5.4 | 376 | 99.2 | 10115 | 81.1 | 17541 | 191489 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 5.3 | 344 | 89.4 | 10530 | 69.0 | 17541 | 112984 |
+| multi_agent | ollama_chat/qwen3.5:27b | unsupported_request | 5.2 | 345 | 103.1 | 9323 | 70.8 | 17541 | 1912 |
 | multi_agent | ollama_chat/qwen3.5:2b | bandit_static_code | 6.0 | 367 | 104.8 | 1394 | 25.4 | 3435 | 5849 |
 | multi_agent | ollama_chat/qwen3.5:2b | trivy_docker_image | 5.7 | 371 | 63.9 | 2053 | 17.4 | 3435 | 5445 |
 | multi_agent | ollama_chat/qwen3.5:2b | trivy_filesystem | 5.7 | 367 | 84.1 | 1573 | 21.4 | 3435 | 5284 |
@@ -110,6 +130,10 @@ Harness = benchmark client process (orchestration overhead); Server = Ollama pro
 | single_agent | ollama_chat/qwen3.5:0.8b | bandit_static_code | 7.4 | 307 | 102.1 | 922 | 17.2 | 1663 | 24718 |
 | single_agent | ollama_chat/qwen3.5:0.8b | trivy_filesystem | 7.3 | 318 | 93.8 | 2243 | 15.4 | 1663 | 63500 |
 | single_agent | ollama_chat/qwen3.5:0.8b | unsupported_request | 6.7 | 328 | 112.7 | 4195 | 22.1 | 1663 | 3188 |
+| single_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 5.3 | 313 | 101.1 | 1544 | 68.5 | 17539 | 4256 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 5.5 | 337 | 101.5 | 1576 | 67.6 | 17539 | 4144 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 5.3 | 309 | 91.6 | 1538 | 62.0 | 17539 | 4222 |
+| single_agent | ollama_chat/qwen3.5:27b | unsupported_request | 5.3 | 312 | 103.0 | 1571 | 70.5 | 17539 | 2069 |
 | single_agent | ollama_chat/qwen3.5:2b | bandit_static_code | 6.3 | 355 | 102.4 | 1228 | 24.6 | 3433 | 9048 |
 | single_agent | ollama_chat/qwen3.5:2b | trivy_docker_image | 5.6 | 367 | 42.3 | 1237 | 11.7 | 3433 | 8967 |
 | single_agent | ollama_chat/qwen3.5:2b | trivy_filesystem | 5.8 | 355 | 69.4 | 1232 | 16.2 | 3433 | 9610 |
@@ -255,6 +279,38 @@ Harness = benchmark client process (orchestration overhead); Server = Ollama pro
 | multi_agent | ollama_chat/qwen3.5:9b | unsupported_request | 5 | 0.215 | 13147 | 0 |
 | multi_agent | ollama_chat/qwen3.5:9b | unsupported_request | 10 | 0.222 | 23151 | 0 |
 | multi_agent | ollama_chat/qwen3.5:9b | unsupported_request | 20 | 0.222 | 36991 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 1 | 0.058 | 17258 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 5 | 0.064 | 55277 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 10 | 0.064 | 102931 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 20 | 0.065 | 170122 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 1 | 0.072 | 13840 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 5 | 0.083 | 42879 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 10 | 0.083 | 81450 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 20 | 0.084 | 132288 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 1 | 0.002 | 550742 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 5 | 0.000 | 71173 | 29 |
+| multi_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 10 | 0.000 | 0 | 30 |
+| multi_agent | ollama_chat/qwen3.5:27b | bandit_static_code | 20 | 0.000 | 0 | 30 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 1 | 0.002 | 433005 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 5 | 0.000 | 0 | 30 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 10 | 0.000 | 155109 | 28 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_docker_image | 20 | 0.000 | 0 | 30 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 1 | 0.061 | 16511 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 5 | 0.077 | 47191 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 10 | 0.078 | 87506 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 20 | 0.077 | 144384 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | unsupported_request | 1 | 0.099 | 10062 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | unsupported_request | 5 | 0.106 | 29008 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | unsupported_request | 10 | 0.107 | 52149 | 0 |
+| single_agent | ollama_chat/qwen3.5:27b | unsupported_request | 20 | 0.107 | 83820 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 1 | 0.003 | 355627 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 5 | 0.002 | 957193 | 17 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 10 | 0.001 | 111543 | 26 |
+| multi_agent | ollama_chat/qwen3.5:27b | trivy_filesystem | 20 | 0.002 | 176609 | 25 |
+| multi_agent | ollama_chat/qwen3.5:27b | unsupported_request | 1 | 0.101 | 9880 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | unsupported_request | 5 | 0.108 | 27475 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | unsupported_request | 10 | 0.109 | 50314 | 0 |
+| multi_agent | ollama_chat/qwen3.5:27b | unsupported_request | 20 | 0.109 | 81009 | 0 |
 
 ---
 Regenerate figures:  `python -m benchmark.plots --experiment scaling_study`

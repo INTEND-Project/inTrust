@@ -122,10 +122,15 @@ async def execute_run(
     final_ts: Optional[float] = None
     prompt_tokens = completion_tokens = total_tokens = 0
     saw_token_data = False
+    # Number of LLM responses observed (one usage event == one model call).
+    # For a converged run this is 2 (single-agent) or 3 (multi-agent); a much
+    # larger value means the agent looped instead of terminating.
+    llm_calls = 0
 
     async def _consume() -> None:
         nonlocal selection_ts, last_fn_response_ts, final_ts
         nonlocal prompt_tokens, completion_tokens, total_tokens, saw_token_data
+        nonlocal llm_calls
 
         async for event in runner.run_async(
             user_id=_USER_ID, session_id=session_id, new_message=user_message
@@ -159,6 +164,7 @@ async def execute_run(
             usage = getattr(event, "usage_metadata", None)
             if usage is not None:
                 saw_token_data = True
+                llm_calls += 1
                 prompt_tokens += usage.prompt_token_count or 0
                 completion_tokens += usage.candidates_token_count or 0
                 total_tokens += usage.total_token_count or 0
@@ -220,6 +226,12 @@ async def execute_run(
         result.completion_tokens = completion_tokens
         result.total_tokens = total_tokens
     # else: leave as None -> reported as "N/A" downstream.
+
+    # Call counts: how many LLM responses and tool executions this run took.
+    # Well above the intended 2 (single-agent) / 3 (multi-agent) indicates a
+    # non-convergent loop (see RunResult.llm_call_count).
+    result.llm_call_count = llm_calls
+    result.tool_call_count = len(collector.tool_calls)
 
     # ---- routing accuracy --------------------------------------------------------
     if scenario.is_supported:

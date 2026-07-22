@@ -1,0 +1,113 @@
+#!/bin/bash
+# ============================================================================
+# Slurm job: confirm the 27B multi-agent re-invocation loop.
+#
+# Starts Ollama inside a GPU allocation, pulls the probe model, and runs
+# benchmark/probe_multiagent_calls.py for a handful of runs under BOTH
+# architectures on ONE scenario:
+#   - multi_agent  : expected to loop (llm_call_count >> 3)
+#   - single_agent : the clean contrast (llm_call_count ~ 2)
+# Then it shuts Ollama down.  It writes NOTHING under results/ (the probe only
+# prints), so it cannot disturb the merged scaling-study outputs — everything
+# lands in this job's Slurm .out log.
+#
+# Submit (defaults: qwen3.5:27b, bandit_static_code, 5 runs):
+#   sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama \
+#          benchmark/slurm/probe_27b_loop.job
+#
+# Override without editing:
+#   sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama,\
+#          MODEL=ollama_chat/qwen3.5:27b,SCENARIO=trivy_filesystem,RUNS=5 \
+#          benchmark/slurm/probe_27b_loop.job
+# ============================================================================
+#SBATCH --output /home/rustemd/logs/slurm/probe_%j.out
+#SBATCH --job-name intrust/probe27b
+#SBATCH --partition sintef
+#SBATCH --ntasks 1
+#SBATCH --mem=32GB
+#SBATCH --cpus-per-task=8
+#SBATCH --gres gpu:a30:1
+#SBATCH --time 00-02:00:00
+
+# ---- parameters (override via sbatch --export=ALL,NAME=value) --------------
+REPO_DIR="${REPO_DIR:-/home/rustemd/SOCC/inTrust}"
+CONDA_ENV="${CONDA_ENV:-venv}"
+VENV="${VENV:-${REPO_DIR}/venv}"
+OLLAMA_BIN="${OLLAMA_BIN:-ollama}"
+PORT="${PORT:-33112}"
+MODEL="${MODEL:-ollama_chat/qwen3.5:27b}"
+SCENARIO="${SCENARIO:-bandit_static_code}"
+RUNS="${RUNS:-5}"
+CONFIG="${CONFIG:-}"
+
+# Ollama pull tag = the litellm string minus the ollama_chat/ prefix.
+MODEL_TAG="${MODEL#ollama_chat/}"
+
+echo ""
+echo "***** PROBE: 27B multi-agent loop *****"
+date '+%F %H:%M:%S'
+echo "Repo:       ${REPO_DIR}"
+echo "Model:      ${MODEL}   Scenario: ${SCENARIO}   Runs: ${RUNS}"
+echo "Ollama API: http://127.0.0.1:${PORT}"
+echo "Ollama bin: ${OLLAMA_BIN} ($("${OLLAMA_BIN}" --version 2>&1))"
+echo ""
+
+# ---- activate the Python environment ---------------------------------------
+cd "${REPO_DIR}"
+if [ -n "${CONDA_ENV}" ]; then
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate "${CONDA_ENV}"
+elif [ -n "${VENV}" ]; then
+    source "${VENV}/bin/activate"
+fi
+echo "Using python: $(which python)"
+
+# ---- start Ollama in the background inside this allocation ------------------
+export OLLAMA_HOST=127.0.0.1:${PORT}
+export OLLAMA_NUM_PARALLEL=4
+export OLLAMA_KEEP_ALIVE=30m
+# The probe reads this to reach the job's Ollama without editing the config.
+export INTRUST_OLLAMA_API_BASE="http://127.0.0.1:${PORT}"
+
+# Serve to a temp log (NOT under results/, to keep this job side-effect free).
+SERVE_LOG="$(mktemp -t ollama_probe_XXXX.log)"
+"${OLLAMA_BIN}" serve > "${SERVE_LOG}" 2>&1 &
+OLLAMA_PID=$!
+trap 'kill ${OLLAMA_PID} 2>/dev/null' EXIT
+
+for i in $(seq 1 60); do
+    if curl -s --max-time 2 "http://127.0.0.1:${PORT}/api/version" > /dev/null; then
+        echo "Ollama is up (after ${i}s)."
+        break
+    fi
+    if [ "$i" -eq 60 ]; then
+        echo "ERROR: Ollama did not come up within 60 s — aborting." >&2
+        exit 1
+    fi
+    sleep 1
+done
+
+echo "Pulling ${MODEL_TAG} ..."
+"${OLLAMA_BIN}" pull "${MODEL_TAG}"
+
+CONFIG_ARG=""
+if [ -n "${CONFIG}" ]; then
+    CONFIG_ARG="--config ${CONFIG}"
+fi
+
+# ---- run the probe: the loop case, then the clean contrast -----------------
+echo ""
+echo "===== multi_agent (expected to loop) ====="
+python -m benchmark.probe_multiagent_calls ${CONFIG_ARG} \
+    --model "${MODEL}" --scenario "${SCENARIO}" \
+    --architecture multi_agent --runs "${RUNS}"
+
+echo ""
+echo "===== single_agent (clean contrast) ====="
+python -m benchmark.probe_multiagent_calls ${CONFIG_ARG} \
+    --model "${MODEL}" --scenario "${SCENARIO}" \
+    --architecture single_agent --runs "${RUNS}"
+
+echo ""
+echo "***** PROBE DONE *****"
+date '+%F %H:%M:%S'

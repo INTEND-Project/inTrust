@@ -67,6 +67,14 @@ class RunResult:
     completion_tokens: Optional[int] = None
     total_tokens: Optional[int] = None
 
+    # ---- call counts (loop / re-invocation diagnostics) ----------------------
+    # The intended flow is fixed (single-agent: 2 LLM calls; multi-agent: 3).
+    # A count far above that means the agent looped (re-invoked the model /
+    # re-called its tool) instead of converging — the mechanism behind the
+    # 27B multi-agent latency/token blow-up.  None on runs predating this field.
+    llm_call_count: Optional[int] = None    # LLM responses (usage events) seen
+    tool_call_count: Optional[int] = None   # tool executions in this run
+
     # ---- routing -------------------------------------------------------------
     selected: Optional[str] = None   # tool fn (Arch B) / specialist agent (Arch A)
     expected: Optional[str] = None
