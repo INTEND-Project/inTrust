@@ -35,9 +35,14 @@ from typing import Any, Dict, Optional
 from google.adk.agents import LlmAgent
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
+from google import genai
 from google.genai import types as genai_types
 
 from .skill_loader import AssessmentSkill, SkillRegistry, load_skills
+
+# Deterministic post-processing tools invoked from _standardize_report.
+from tools.formal_report_generation import build_formal_report
+from tools.formal_report_validation import validate_formal_report
 
 
 AGENT_NAME = "InTrustRuntimeOrchestrator"
@@ -256,7 +261,9 @@ class RuntimeOrchestrator:
         # its metadata in the report provenance section.
         skill_obj = self.registry.get(chosen_skill_name) if chosen_skill_name else None
 
-        return self._standardize_report(intent, skill_obj, skill_result, final_text)
+        return await self._standardize_report(
+            intent, skill_obj, skill_result, final_text, logger
+        )
 
     def execute(self, intent: Any, logger: Any) -> Dict[str, Any]:
         """
@@ -269,12 +276,13 @@ class RuntimeOrchestrator:
         """
         return asyncio.run(self.execute_async(intent, logger))
 
-    def _standardize_report(
+    async def _standardize_report(
         self,
         intent: Any,
         skill: Optional[AssessmentSkill],
         result: Dict[str, Any],
         agent_summary: Optional[str] = None,
+        logger: Any = None,
     ) -> Dict[str, Any]:
         """
         Wrap the skill's raw result in a TM Forum-aligned envelope.
@@ -285,6 +293,15 @@ class RuntimeOrchestrator:
 
         The ``agent_summary`` field contains the LLM's natural-language
         interpretation of the result, useful for human-readable reporting.
+
+         As a deterministic post-processing step, every report is also run
+        through formal report *composition* (LLM-authored tmfIntentReport.v1)
+        and SHACL *validation*.  This is wired in here — rather than as a
+        chained skill — because the ADK event loop only captures the first
+        tool call/result, so a follow-up report-generation skill would never
+        reach this envelope.  Both sub-steps degrade gracefully: any failure
+        is recorded in the report rather than raised, so report shaping never
+        fails an otherwise-successful assessment.
         """
         if isinstance(intent, dict):
             intent_id = intent.get("intentId") or intent.get("id") or "unknown"
@@ -299,10 +316,12 @@ class RuntimeOrchestrator:
             parameters = {}
             assessment_type = result.get("assessment_type")
 
-        raw_status = result.get("status", "")
-        lifecycle_status = "completed" if raw_status in _SUCCESS_STATUSES else "failed"
-
-        return {
+        raw_status = str(result.get("status", ""))
+        lifecycle_status = (
+            "completed" if raw_status.upper() in _SUCCESS_STATUSES else "failed"
+        )
+        
+        report = {
             "intentId": intent_id,
             "lifecycleStatus": lifecycle_status,
             "assessmentType": result.get("assessment_type") or assessment_type,
@@ -322,3 +341,187 @@ class RuntimeOrchestrator:
             "agentSummary": agent_summary,
             "recommendations": result.get("recommendations"),
         }
+
+        # Deterministic post-processing: compose a formal TMF report from the
+        # raw result and validate it against the InTrust SHACL shapes.  Never
+        # raises — failures are attached to the report envelope instead.
+        composed, validation = await self._compose_and_validate_report(
+            intent, skill, result, logger
+        )
+        report["formalReport"] = composed
+        report["formalReportValidation"] = validation
+
+        return report
+
+    async def _compose_and_validate_report(
+        self,
+        intent: Any,
+        skill: Optional[AssessmentSkill],
+        result: Dict[str, Any],
+        logger: Any = None,
+    ) -> tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
+        """
+        Compose a tmfIntentReport.v1 report and validate it via SHACL.
+
+        Three stages, each isolated so a failure only nulls its own output:
+
+        1. ``build_formal_report`` — deterministic ontology scaffold (classes,
+           properties, composition instructions) from intent + raw result.
+        2. Gateway LLM call — authors the actual TMF report JSON using that
+           scaffold as the authoritative vocabulary.
+        3. ``validate_formal_report`` — SHACL conformance check of the composed
+           report against the InTrust shapes.
+
+        Returns
+        -------
+        (composed_report, validation_result)
+            ``composed_report`` is the parsed TMF JSON (or a ``{"status":
+            "FAILED", "error": ...}`` dict when a stage fails).
+            ``validation_result`` is the SHACL conformance report, or ``None``
+            when there was no valid composed report to validate.
+        """
+        def _log_error(message: str) -> None:
+            if logger is not None:
+                logger.error("orchestrator.formal_report", message)
+
+        # Stage 1 — deterministic scaffold.
+        try:
+            scaffold = build_formal_report({"intent": intent, "raw_result": result})
+        except Exception as exc:  # noqa: BLE001
+            _log_error(f"formal report scaffold error: {exc}")
+            return {"status": "FAILED", "error": f"scaffold error: {exc}"}, None
+        if scaffold.get("status") != "SUCCESS":
+            _log_error(f"formal report scaffold failed: {scaffold.get('error')}")
+            return scaffold, None
+
+        # Stage 2 — LLM composes the TMF report JSON from the scaffold.
+        prompt = (
+            "You compose TM Forum assessment reports for the InTrust framework.\n"
+            "Using ONLY the ontology vocabulary, the intent, the raw result and "
+            "the instructions in the JSON below, produce a single "
+            "tmfIntentReport.v1 report.\n"
+            "Respond with the report as raw JSON only — no markdown fences, no "
+            "commentary.\n\n"
+            f"{json.dumps(scaffold, indent=2, default=str)}"
+        )
+        try:
+            client = genai.Client()
+            response = await client.aio.models.generate_content(
+                model="gemini-3.5-flash",
+                contents=prompt,
+            )
+            raw_text = response.text
+            composed = self._parse_report_json(raw_text)
+        except Exception as exc:  # noqa: BLE001
+            _log_error(f"formal report composition error: {exc}")
+            return {"status": "FAILED", "error": f"composition error: {exc}"}, None
+
+        if composed is None:
+            _log_error("formal report composition returned unparseable JSON")
+            return {
+                "status": "FAILED",
+                "error": "LLM did not return valid JSON",
+                "raw": raw_text,
+            }, None
+
+        # Deterministic backfill: the fields we already know authoritatively
+        # (intentId, status, reportType) are not left to the LLM, which tends
+        # to emit placeholders like "fill" or omit required fields entirely.
+        composed = self._backfill_required_fields(composed, intent, skill, result)
+
+        # Stage 3 — SHACL validation of the composed report.
+        try:
+            validation = validate_formal_report({"report": composed})
+        except Exception as exc:  # noqa: BLE001
+            _log_error(f"formal report validation error: {exc}")
+            validation = {"status": "FAILED", "error": f"validation error: {exc}"}
+
+        return composed, validation
+
+    @staticmethod
+    def _backfill_required_fields(
+        composed: Dict[str, Any],
+        intent: Any,
+        skill: Optional[AssessmentSkill],
+        result: Dict[str, Any],
+    ) -> Dict[str, Any]:
+        """
+        Overwrite the SHACL-required fields we know authoritatively.
+
+        The composing LLM frequently emits placeholders (e.g. ``intentId:
+        "fill"``) or omits ``reportType`` / ``status`` entirely, which fails the
+        AssessmentReportShape MinCount constraints.  We own these three values,
+        so we set them deterministically rather than trusting the model:
+
+        - ``intentId``  — from the intent (never a placeholder).
+        - ``status``    — from the raw result, normalised to the SHACL enum
+          (``SUCCESS`` / ``FAILED`` / ``INCONCLUSIVE``).
+        - ``reportType``— from the skill name, defaulting to a valid label when
+          the model left it blank.
+
+        These always overwrite the model's values for ``intentId`` and
+        ``status`` (we are the source of truth); ``reportType`` is only filled
+        when missing/blank so a sensible model-provided type is preserved.
+        """
+        if not isinstance(composed, dict):
+            return composed
+
+        # intentId — authoritative, always overwrite.
+        if isinstance(intent, dict):
+            intent_id = intent.get("intentId") or intent.get("id") or "unknown"
+        else:
+            intent_id = "unknown"
+        composed["intentId"] = intent_id
+
+        # status — normalise the raw tool status to the SHACL enum.
+        raw_status = str(result.get("status", "")).upper()
+        if raw_status in _SUCCESS_STATUSES:
+            composed["status"] = "SUCCESS"
+        elif raw_status in {"FAILED", "ERROR", "FAILURE"}:
+            composed["status"] = "FAILED"
+        else:
+            composed["status"] = "INCONCLUSIVE"
+
+        # reportType — fill only if the model omitted it.
+        existing_type = composed.get("reportType")
+        if not (isinstance(existing_type, str) and existing_type.strip()):
+            skill_name = skill.name if skill else None
+            if skill_name:
+                # e.g. "mia-privacy" -> "MiaPrivacyAssessmentReport"
+                camel = "".join(part.capitalize() for part in skill_name.split("-"))
+                composed["reportType"] = f"{camel}AssessmentReport"
+            else:
+                composed["reportType"] = "AssessmentReport"
+
+        return composed
+
+    @staticmethod
+    def _parse_report_json(text: str) -> Optional[Dict[str, Any]]:
+        """
+        Parse an LLM response into a report dict.
+
+        Handles the common cases where the model wraps JSON in ```json fences
+        or adds surrounding prose, by falling back to the outermost brace span.
+        Returns ``None`` if nothing parseable is found.
+        """
+        if not text:
+            return None
+        candidate = text.strip()
+        if candidate.startswith("```"):
+            # Strip a leading ```json / ``` fence and the trailing ```.
+            candidate = candidate.split("```", 2)[1] if "```" in candidate else candidate
+            if candidate.lower().startswith("json"):
+                candidate = candidate[4:]
+            candidate = candidate.strip().rstrip("`").strip()
+        try:
+            parsed = json.loads(candidate)
+        except json.JSONDecodeError:
+            start, end = candidate.find("{"), candidate.rfind("}")
+            if start == -1 or end == -1 or end <= start:
+                return None
+            try:
+                parsed = json.loads(candidate[start : end + 1])
+            except json.JSONDecodeError:
+                return None
+        return parsed if isinstance(parsed, dict) else None
+
