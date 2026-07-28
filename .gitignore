@@ -17,4 +17,10 @@
 /trivy-report.json
 /SOCC_paper
 /ICSOC_paper
-/results
+/results/*
+!/results/family_comparison/
+/results/family_comparison/*
+!/results/family_comparison/summary.md
+!/results/scaling_study/
+/results/scaling_study/*
+!/results/scaling_study/summary.md
