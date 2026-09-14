@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-006",
+  "name": "Runtime Image CVE Check",
+  "description": "Check the python:3.9-slim image our workers run on for known vulnerabilities in its packages.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "PlatformEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "worker-runtime-image"
+  },
+  "parameters": {
+    "dockerImage": "python:3.9-slim"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

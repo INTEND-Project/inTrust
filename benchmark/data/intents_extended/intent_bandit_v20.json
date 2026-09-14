@@ -1,0 +1,25 @@
+{
+  "intentId": "bench-bandit-020",
+  "name": "Code Hygiene Security Pass",
+  "description": "Do a security hygiene pass over the Python implementation of the rate-limiter and grade the result.",
+  "category": "trustworthinessAssessment",
+  "intentType": "securityReview",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "rate-limiter"
+  },
+  "parameters": {
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_5",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

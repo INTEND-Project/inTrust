@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-011",
+  "name": "Legacy Python Utility Audit",
+  "description": "An old Python utility inherited from another team needs an audit of its source for dangerous calls before we reuse it.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "legacy-utility"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_1",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

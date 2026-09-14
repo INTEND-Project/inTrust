@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-008",
+  "name": "Wireless Site Survey",
+  "description": "Survey the Wi-Fi networks broadcast at the warehouse for rogue access points and weak encryption.",
+  "category": "trustworthinessAssessment",
+  "intentType": "wirelessSurvey",
+  "actor": {
+    "role": "NetworkEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Site",
+    "name": "central-warehouse"
+  },
+  "parameters": {
+    "site": "central-warehouse",
+    "bands": "2.4GHz,5GHz"
+  },
+  "reporting": {
+    "expectedOutput": "Detected access points with encryption status",
+    "format": "application/json"
+  }
+}

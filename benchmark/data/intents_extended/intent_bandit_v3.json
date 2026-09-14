@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-003",
+  "name": "Source Code Vulnerability Audit",
+  "description": "Audit the session-handling Python sources for known dangerous constructs such as unsafe deserialization.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "session-handling-service"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_3",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

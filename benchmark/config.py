@@ -15,7 +15,7 @@ import os
 import tomllib
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Dict, List
+from typing import Dict, List, Optional
 
 
 # Repository root = parent of the benchmark/ directory.
@@ -35,6 +35,12 @@ class ExperimentConfig:
     models: List[str]
     architectures: List[str]
     concurrency_levels: List[int]
+    # Registry-size experiment: number of synthetic distractor skills added on
+    # top of the production registry (see benchmark/distractors.py).  0 = none.
+    extra_distractor_skills: int = 0
+    # Optional alternative directory of request variants, relative to the
+    # repository root.  None = the frozen five-variant set (data/intents/).
+    intents_dir: Optional[str] = None
 
 
 @dataclass(frozen=True)
@@ -118,11 +124,18 @@ def load_config(config_path: Path | None = None) -> BenchmarkConfig:
             )
         if not exp.get("models"):
             raise ValueError(f"{path}: experiment '{name}' has an empty models list")
+        extra_distractors = int(exp.get("extra_distractor_skills", 0))
+        if extra_distractors < 0:
+            raise ValueError(
+                f"{path}: experiment '{name}' has a negative extra_distractor_skills"
+            )
         experiments[name] = ExperimentConfig(
             name=name,
             models=list(exp["models"]),
             architectures=list(architectures),
             concurrency_levels=list(exp.get("concurrency_levels", [1])),
+            extra_distractor_skills=extra_distractors,
+            intents_dir=exp.get("intents_dir"),
         )
     if not experiments:
         raise ValueError(f"{path}: no [experiments.*] sections defined")

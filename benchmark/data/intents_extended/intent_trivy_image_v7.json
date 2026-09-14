@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-007",
+  "name": "Published Image Review",
+  "description": "Before we publish a service based on node:18-alpine, review that image for vulnerable OS packages.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "DevOpsEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "service-base-image"
+  },
+  "parameters": {
+    "dockerImage": "node:18-alpine"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-017",
+  "name": "Refactoring Safety Review",
+  "description": "We refactored the auth-helpers Python module; verify that the new code did not introduce insecure patterns.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "DeveloperLead",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "auth-helpers"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_2",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

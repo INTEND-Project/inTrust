@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-013",
+  "name": "Dependency Audit of a Code Checkout",
+  "description": "In the code checkout of the mailer service, audit the third-party requirements (not our own code) for vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dependencyReview",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_3"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_3"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

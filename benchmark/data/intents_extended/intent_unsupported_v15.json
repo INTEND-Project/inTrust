@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-015",
+  "name": "Vendor Security Questionnaire Review",
+  "description": "Review the security questionnaire returned by a new payroll vendor and flag unacceptable answers.",
+  "category": "trustworthinessAssessment",
+  "intentType": "vendorRiskReview",
+  "actor": {
+    "role": "ProcurementSecurity",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Vendor",
+    "name": "payroll-vendor"
+  },
+  "parameters": {
+    "vendor": "payroll-vendor"
+  },
+  "reporting": {
+    "expectedOutput": "Vendor risk rating with flagged answers",
+    "format": "application/json"
+  }
+}

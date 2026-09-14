@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-015",
+  "name": "Release Folder CVE Sweep",
+  "description": "Sweep the release-candidate folder for dependencies with HIGH or CRITICAL vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "ReleaseManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_5"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_5"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

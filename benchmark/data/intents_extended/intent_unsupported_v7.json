@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-007",
+  "name": "Physical Access Control Audit",
+  "description": "Audit physical access controls at the main office, including badge readers, visitor logging and tailgating risk.",
+  "category": "trustworthinessAssessment",
+  "intentType": "physicalSecurityAudit",
+  "actor": {
+    "role": "FacilitiesSecurity",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Site",
+    "name": "main-office"
+  },
+  "parameters": {
+    "site": "main-office"
+  },
+  "reporting": {
+    "expectedOutput": "Physical access weaknesses with risk ratings",
+    "format": "application/json"
+  }
+}

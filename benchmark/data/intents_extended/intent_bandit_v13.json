@@ -1,0 +1,25 @@
+{
+  "intentId": "bench-bandit-013",
+  "name": "Batch Job Source Review",
+  "description": "This Python batch job later runs on our cluster; before that, analyse the job source code for injection and unsafe file handling.",
+  "category": "trustworthinessAssessment",
+  "intentType": "codeReview",
+  "actor": {
+    "role": "DataEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "nightly-batch-job"
+  },
+  "parameters": {
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_3",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

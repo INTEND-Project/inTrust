@@ -91,7 +91,9 @@ echo "Using python: $(which python)"
 # ---- start Ollama in the background inside this allocation -----------------
 export OLLAMA_HOST=127.0.0.1:${PORT}
 # See ollama_serve.job for why these two matter for the benchmark.
-export OLLAMA_NUM_PARALLEL=4
+# Overridable: the registry-size sweep uses a larger num_ctx, and Ollama
+# reserves KV cache for num_ctx x OLLAMA_NUM_PARALLEL.
+export OLLAMA_NUM_PARALLEL="${OLLAMA_NUM_PARALLEL:-4}"
 export OLLAMA_KEEP_ALIVE=30m
 
 mkdir -p "${REPO_DIR}/results"

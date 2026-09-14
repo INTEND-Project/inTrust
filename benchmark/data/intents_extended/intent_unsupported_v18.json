@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-018",
+  "name": "Bluetooth Device Assessment",
+  "description": "Assess the Bluetooth Low Energy interface of the smart-lock prototype for pairing and replay weaknesses.",
+  "category": "trustworthinessAssessment",
+  "intentType": "bluetoothAssessment",
+  "actor": {
+    "role": "HardwareSecurityEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Device",
+    "name": "smart-lock-proto"
+  },
+  "parameters": {
+    "device": "smart-lock-proto"
+  },
+  "reporting": {
+    "expectedOutput": "Radio-interface weaknesses with exploitability",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-011",
+  "name": "Base Layer Vulnerability Audit",
+  "description": "Audit the base layers of the python:3.9-slim image for vulnerable system libraries.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "base-layer-image"
+  },
+  "parameters": {
+    "dockerImage": "python:3.9-slim"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

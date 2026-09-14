@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-005",
+  "name": "Datastore Image Vulnerability Review",
+  "description": "Review the Redis datastore container image for HIGH and CRITICAL vulnerabilities in its packages.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "redis-cache-image"
+  },
+  "parameters": {
+    "dockerImage": "redis:6.2"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

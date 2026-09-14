@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-013",
+  "name": "Perimeter Firewall Rule Review",
+  "description": "Review the rule base of the perimeter firewall appliance for shadowed and overly permissive rules.",
+  "category": "trustworthinessAssessment",
+  "intentType": "firewallRuleReview",
+  "actor": {
+    "role": "NetworkEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "NetworkDevice",
+    "name": "edge-fw-01"
+  },
+  "parameters": {
+    "device": "edge-fw-01"
+  },
+  "reporting": {
+    "expectedOutput": "Rule findings with recommended changes",
+    "format": "application/json"
+  }
+}

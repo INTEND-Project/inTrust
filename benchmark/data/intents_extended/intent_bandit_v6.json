@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-006",
+  "name": "Pre-merge Python Security Review",
+  "description": "Before this branch is merged, look through the Python package of the payments-adapter for risky patterns such as eval, hard-coded passwords, or weak hashing.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "DeveloperLead",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "payments-adapter"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_1",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

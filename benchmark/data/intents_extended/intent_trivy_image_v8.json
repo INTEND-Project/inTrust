@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-008",
+  "name": "Toolchain Image Assessment",
+  "description": "Assess the golang:1.20-alpine build image for CVEs in its layers.",
+  "category": "trustworthinessAssessment",
+  "intentType": "imageReview",
+  "actor": {
+    "role": "PlatformEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "toolchain-image"
+  },
+  "parameters": {
+    "dockerImage": "golang:1.20-alpine"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

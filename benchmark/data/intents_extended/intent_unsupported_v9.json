@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-009",
+  "name": "Data Protection Impact Assessment",
+  "description": "Prepare a GDPR data protection impact assessment for the new customer-analytics process.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dpiaAssessment",
+  "actor": {
+    "role": "DataProtectionOfficer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "BusinessProcess",
+    "name": "customer-analytics"
+  },
+  "parameters": {
+    "process": "customer-analytics"
+  },
+  "reporting": {
+    "expectedOutput": "DPIA document with identified privacy risks",
+    "format": "application/json"
+  }
+}

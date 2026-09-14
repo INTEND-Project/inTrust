@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-008",
+  "name": "Requirements Health Check",
+  "description": "Check whether the pinned requirements in the reporting-tool checkout are affected by security advisories.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dependencyReview",
+  "actor": {
+    "role": "DeveloperLead",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_3"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_3"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

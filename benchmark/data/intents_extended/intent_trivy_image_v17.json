@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-017",
+  "name": "Image Package Advisory Review",
+  "description": "Review the packages inside node:18-alpine for published security advisories.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "package-review-image"
+  },
+  "parameters": {
+    "dockerImage": "node:18-alpine"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

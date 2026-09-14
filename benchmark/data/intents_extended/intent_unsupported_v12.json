@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-012",
+  "name": "Email Authentication Check",
+  "description": "Check the SPF, DKIM and DMARC setup of the corporate mail domain against spoofing.",
+  "category": "trustworthinessAssessment",
+  "intentType": "emailAuthenticationCheck",
+  "actor": {
+    "role": "MessagingAdministrator",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "MailDomain",
+    "name": "example.com"
+  },
+  "parameters": {
+    "domain": "example.com"
+  },
+  "reporting": {
+    "expectedOutput": "Email authentication posture with misconfigurations",
+    "format": "application/json"
+  }
+}

@@ -98,7 +98,8 @@ def _resolve_paths(intent: Dict[str, Any]) -> Dict[str, Any]:
     return intent
 
 
-def load_scenarios(enabled: List[str]) -> List[Scenario]:
+def load_scenarios(enabled: List[str],
+                   intents_dir: Optional[str] = None) -> List[Scenario]:
     """
     Load the Scenario objects for the scenario keys enabled in the config.
 
@@ -106,6 +107,9 @@ def load_scenarios(enabled: List[str]) -> List[Scenario]:
     ----------
     enabled : list of str
         Scenario keys from the config file (e.g. ["bandit_static_code"]).
+    intents_dir : str, optional
+        Alternative directory of request variants; relative paths resolve
+        against the repository root.  None = the frozen default set.
 
     Returns
     -------
@@ -113,14 +117,20 @@ def load_scenarios(enabled: List[str]) -> List[Scenario]:
         In the deterministic order of the scenario table (not config order),
         so run ordering is identical across benchmark executions.
     """
+    base_dir = _INTENTS_DIR
+    if intents_dir:
+        base_dir = Path(intents_dir)
+        if not base_dir.is_absolute():
+            base_dir = REPO_ROOT / base_dir
+
     scenarios: List[Scenario] = []
     for key, (prefix, skill_name) in _SCENARIO_TABLE.items():
         if key not in enabled:
             continue
-        intent_paths = sorted(_INTENTS_DIR.glob(f"{prefix}*.json"))
+        intent_paths = sorted(base_dir.glob(f"{prefix}*.json"))
         if not intent_paths:
             raise FileNotFoundError(
-                f"No intent files matching '{prefix}*.json' in {_INTENTS_DIR}"
+                f"No intent files matching '{prefix}*.json' in {base_dir}"
             )
         intents = []
         for intent_path in intent_paths:

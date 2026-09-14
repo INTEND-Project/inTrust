@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-020",
+  "name": "Local Workspace Vulnerability Review",
+  "description": "Review the local workspace of the search-indexer project for dependency vulnerabilities and rate the risk.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_5"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_5"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-015",
+  "name": "Image Compliance Evidence",
+  "description": "Produce evidence for our compliance file that the redis:6.2 image was checked for known vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "compliance-image"
+  },
+  "parameters": {
+    "dockerImage": "redis:6.2"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

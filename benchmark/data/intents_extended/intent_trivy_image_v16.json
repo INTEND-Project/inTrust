@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-016",
+  "name": "Quick Image Check",
+  "description": "Is python:3.9-slim safe to use?",
+  "category": "trustworthinessAssessment",
+  "intentType": "imageReview",
+  "actor": {
+    "role": "EngineeringManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "candidate-image"
+  },
+  "parameters": {
+    "dockerImage": "python:3.9-slim"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

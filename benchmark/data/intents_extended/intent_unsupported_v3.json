@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-003",
+  "name": "TLS Configuration Audit",
+  "description": "Audit the TLS/SSL configuration of a live HTTPS endpoint, checking cipher suites, protocol versions, and certificate validity.",
+  "category": "trustworthinessAssessment",
+  "intentType": "tlsConfigurationAudit",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "NetworkEndpoint",
+    "endpoint": "api.example.com:443"
+  },
+  "parameters": {
+    "endpoint": "api.example.com:443"
+  },
+  "reporting": {
+    "expectedOutput": "TLS configuration grade with weak ciphers and protocol issues",
+    "format": "application/json"
+  }
+}

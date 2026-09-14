@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-010",
+  "name": "SOC 2 Evidence Collection",
+  "description": "Collect and organise evidence from process owners for the upcoming SOC 2 Type II audit.",
+  "category": "trustworthinessAssessment",
+  "intentType": "auditEvidenceCollection",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "AuditProgram",
+    "name": "soc2-type2"
+  },
+  "parameters": {
+    "framework": "SOC2",
+    "period": "2026"
+  },
+  "reporting": {
+    "expectedOutput": "Evidence index mapped to trust services criteria",
+    "format": "application/json"
+  }
+}

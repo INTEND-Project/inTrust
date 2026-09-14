@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-009",
+  "name": "Supply-Chain Exposure on Disk",
+  "description": "Assess the supply-chain exposure of the scheduler project on disk: which of its libraries are vulnerable?",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_4"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_4"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

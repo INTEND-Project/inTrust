@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-018",
+  "name": "Image Upgrade Decision",
+  "description": "Decide whether golang:1.20-alpine must be replaced by checking it for critical CVEs.",
+  "category": "trustworthinessAssessment",
+  "intentType": "imageReview",
+  "actor": {
+    "role": "ReleaseManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "upgrade-candidate-image"
+  },
+  "parameters": {
+    "dockerImage": "golang:1.20-alpine"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

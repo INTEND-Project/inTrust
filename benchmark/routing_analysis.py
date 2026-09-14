@@ -64,6 +64,28 @@ SKILL_SIGNATURES = {
     },
 }
 
+def register_skill_signature(skill_name: str) -> None:
+    """
+    Register a capability that is not in SKILL_SIGNATURES — e.g. a synthetic
+    distractor added by the registry-size experiment — so the decomposition
+    can report WHICH capability a model chose.
+
+    Native identifiers and the exact name are registered; the name is also an
+    explicit phrase so free text naming the distractor is attributed to it
+    rather than to a real skill sharing a weak keyword (e.g. "dockerfile").
+    No keywords are added, so the heuristics for the original skills are
+    unchanged.  Idempotent.
+    """
+    if skill_name in SKILL_SIGNATURES:
+        return
+    snake = skill_name.replace("-", "_")
+    SKILL_SIGNATURES[skill_name] = {
+        "native": [snake, f"{snake}_agent"],
+        "explicit": [snake, skill_name, skill_name.replace("-", " ")],
+        "keywords": [],
+    }
+
+
 # Phrases that indicate the model DECLINED to route (genuine gatekeeping).
 REFUSAL_PHRASES = [
     "no direct match", "no matching", "no suitable", "no appropriate",

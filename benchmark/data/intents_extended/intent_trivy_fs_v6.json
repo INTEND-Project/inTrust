@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-006",
+  "name": "Third-Party Package Risk Check",
+  "description": "List any third-party packages in the invoice-api project folder that have published CVEs.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "DevOpsEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_1"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_1"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

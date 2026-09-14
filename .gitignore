@@ -17,6 +17,7 @@
 /trivy-report.json
 /SOCC_paper
 /ICSOC_paper
+/INTEND_slides
 /results/*
 !/results/family_comparison/
 /results/family_comparison/*

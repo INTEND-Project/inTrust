@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-014",
+  "name": "Security Lint of Python Sources",
+  "description": "Run a security-focused lint of the Python sources in the ingestion-worker and summarise the issues by severity.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "DeveloperLead",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "ingestion-worker"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_4",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

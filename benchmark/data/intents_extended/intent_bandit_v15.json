@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-015",
+  "name": "Auditor Request: Code Weaknesses",
+  "description": "External auditors asked for evidence that the invoicing Python code has been checked for common weaknesses; produce that assessment.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "invoicing-module"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_5",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

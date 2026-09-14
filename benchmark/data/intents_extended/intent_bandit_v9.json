@@ -1,0 +1,25 @@
+{
+  "intentId": "bench-bandit-009",
+  "name": "Secure Coding Gate",
+  "description": "Apply our secure-coding gate to the Python modules of the metrics-exporter and report anything that violates it.",
+  "category": "trustworthinessAssessment",
+  "intentType": "secureCodeReview",
+  "actor": {
+    "role": "PlatformEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "metrics-exporter"
+  },
+  "parameters": {
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_4",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

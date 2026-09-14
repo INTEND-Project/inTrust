@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-010",
+  "name": "Source Review Before Containerisation",
+  "description": "The notification-service will be packaged into a container next sprint; for now, only review its Python source files for insecure constructs.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "DevOpsEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "notification-service"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_5",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

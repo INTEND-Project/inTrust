@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-010",
+  "name": "Cache Image Risk Read-out",
+  "description": "Give a security risk read-out on the redis:6.2 image we pull for caching.",
+  "category": "trustworthinessAssessment",
+  "intentType": "imageReview",
+  "actor": {
+    "role": "SiteReliabilityEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "cache-image"
+  },
+  "parameters": {
+    "dockerImage": "redis:6.2"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-006",
+  "name": "Phishing Simulation Campaign",
+  "description": "Run a simulated phishing campaign against the finance department and report click-through rates.",
+  "category": "trustworthinessAssessment",
+  "intentType": "phishingSimulation",
+  "actor": {
+    "role": "SecurityAwarenessLead",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "OrganisationUnit",
+    "name": "finance"
+  },
+  "parameters": {
+    "department": "finance",
+    "templates": 3
+  },
+  "reporting": {
+    "expectedOutput": "Click and report rates per template",
+    "format": "application/json"
+  }
+}

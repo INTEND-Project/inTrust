@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-011",
+  "name": "Outdated Library Report",
+  "description": "Report outdated libraries with known security fixes in the analytics project directory.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "DataEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_1"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_1"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

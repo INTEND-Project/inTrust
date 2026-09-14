@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-020",
+  "name": "Industrial Protocol Assessment",
+  "description": "Assess the Modbus traffic on the factory OT network for unauthenticated control commands.",
+  "category": "trustworthinessAssessment",
+  "intentType": "otProtocolAssessment",
+  "actor": {
+    "role": "OTSecurityEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "IndustrialNetwork",
+    "name": "factory-ot"
+  },
+  "parameters": {
+    "network": "factory-ot",
+    "protocol": "modbus"
+  },
+  "reporting": {
+    "expectedOutput": "Unauthenticated control paths with risk ratings",
+    "format": "application/json"
+  }
+}

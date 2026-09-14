@@ -27,6 +27,7 @@ from typing import Any, Dict, List, Tuple
 from orchestrator.skill_loader import load_skills
 
 from .config import BenchmarkConfig, ExperimentConfig
+from .distractors import make_distractor_skills
 from .instrumentation import ResourceSampler
 from .metrics import RunResult
 from .model_factory import unload_model
@@ -62,7 +63,12 @@ async def run_experiment(
     # Production skills are loaded ONCE; per-run instrumentation copies are
     # created inside the architecture builders.
     skills = load_skills().list()
-    scenarios = load_scenarios(cfg.enabled_scenarios)
+    # Registry-size experiment: append synthetic distractor capabilities.
+    # 0 by default, so ordinary experiments see exactly the production skills.
+    skills += make_distractor_skills(exp.extra_distractor_skills)
+    # An experiment may use an alternative request-variant set; the default is
+    # the frozen five-variant set used by the published campaigns.
+    scenarios = load_scenarios(cfg.enabled_scenarios, exp.intents_dir)
 
     results: List[RunResult] = []
     throughput_records: List[Dict[str, Any]] = []

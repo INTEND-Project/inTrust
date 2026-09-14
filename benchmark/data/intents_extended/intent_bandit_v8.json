@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-008",
+  "name": "Code-Level Weakness Hunt",
+  "description": "Look for code-level weaknesses such as SQL built from strings, subprocess calls with shell=True, or insecure randomness in the admin-tools Python sources.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "admin-tools"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_3",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

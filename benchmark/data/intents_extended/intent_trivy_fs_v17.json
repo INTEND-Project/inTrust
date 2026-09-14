@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-017",
+  "name": "Audit Evidence: Dependency Scan",
+  "description": "Auditors want evidence that the payments project's dependency tree on disk was checked for known vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_2"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_2"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

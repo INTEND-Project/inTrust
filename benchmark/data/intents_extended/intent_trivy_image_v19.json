@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-019",
+  "name": "Web Tier Image Audit",
+  "description": "Audit the nginx:1.21 image used by the web tier and summarise vulnerabilities by severity.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "web-tier-image"
+  },
+  "parameters": {
+    "dockerImage": "nginx:1.21"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

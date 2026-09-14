@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-001",
+  "name": "Static Code Security Analysis",
+  "description": "Perform static code analysis on a Python source directory to identify security vulnerabilities using Bandit.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "crypto-utils-module"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_1",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

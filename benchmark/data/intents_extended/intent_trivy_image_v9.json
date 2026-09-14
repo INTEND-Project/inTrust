@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-009",
+  "name": "Rollout Image Gate",
+  "description": "Before rolling this out to the cluster, gate the nginx:1.21 image on HIGH and CRITICAL vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "ReleaseManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "rollout-image"
+  },
+  "parameters": {
+    "dockerImage": "nginx:1.21"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

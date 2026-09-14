@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-012",
+  "name": "Deployment Readiness: Dependencies",
+  "description": "Before this app is deployed to the cluster, verify that the project directory's dependencies carry no critical CVEs.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "ReleaseManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_2"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_2"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

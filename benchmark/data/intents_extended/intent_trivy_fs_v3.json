@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-003",
+  "name": "Repository Security Sweep",
+  "description": "Sweep the checked-out http-client repository directory for vulnerable dependency pins before deployment.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "ReleaseManager",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_3"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_3"
+  },
+  "reporting": {
+    "expectedOutput": "Consolidated JSON report of detected issues and severity levels",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-013",
+  "name": "Builder Image Supply-Chain Check",
+  "description": "Check the supply-chain risk of the golang:1.20-alpine image used by our CI builds.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "PlatformEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "ci-builder-image"
+  },
+  "parameters": {
+    "dockerImage": "golang:1.20-alpine"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-016",
+  "name": "Smart Contract Audit",
+  "description": "Audit the Solidity smart contracts of the loyalty-token project for reentrancy and overflow issues.",
+  "category": "trustworthinessAssessment",
+  "intentType": "smartContractAudit",
+  "actor": {
+    "role": "BlockchainEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SmartContract",
+    "name": "loyalty-token"
+  },
+  "parameters": {
+    "repository": "loyalty-token-contracts",
+    "language": "solidity"
+  },
+  "reporting": {
+    "expectedOutput": "Contract vulnerabilities with severities",
+    "format": "application/json"
+  }
+}

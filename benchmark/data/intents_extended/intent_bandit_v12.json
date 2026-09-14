@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-012",
+  "name": "Unsafe Deserialisation Review",
+  "description": "Check whether the cache-loader Python code deserialises untrusted data or uses pickle or YAML loading unsafely.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "cache-loader"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_2",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

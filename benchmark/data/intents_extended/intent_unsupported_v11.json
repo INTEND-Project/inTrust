@@ -1,0 +1,23 @@
+{
+  "intentId": "bench-unsupported-011",
+  "name": "DDoS Resilience Test",
+  "description": "Stress the public API with a controlled distributed denial-of-service simulation to measure resilience.",
+  "category": "trustworthinessAssessment",
+  "intentType": "ddosResilienceTest",
+  "actor": {
+    "role": "SiteReliabilityEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "NetworkEndpoint",
+    "endpoint": "api.example.com"
+  },
+  "parameters": {
+    "endpoint": "api.example.com",
+    "peakRps": 50000
+  },
+  "reporting": {
+    "expectedOutput": "Degradation thresholds and mitigation effectiveness",
+    "format": "application/json"
+  }
+}

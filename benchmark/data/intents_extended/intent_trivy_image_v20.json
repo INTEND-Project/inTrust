@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-020",
+  "name": "Inherited Image Review",
+  "description": "We inherited deployments using redis:6.2; tell us which vulnerabilities that image carries.",
+  "category": "trustworthinessAssessment",
+  "intentType": "imageReview",
+  "actor": {
+    "role": "EngineeringManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "inherited-image"
+  },
+  "parameters": {
+    "dockerImage": "redis:6.2"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

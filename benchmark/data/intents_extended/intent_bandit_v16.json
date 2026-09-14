@@ -1,0 +1,25 @@
+{
+  "intentId": "bench-bandit-016",
+  "name": "Quick Code Risk Check",
+  "description": "Give me a quick security risk read-out on the Python code in this directory.",
+  "category": "trustworthinessAssessment",
+  "intentType": "securityReview",
+  "actor": {
+    "role": "EngineeringManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "internal-tooling"
+  },
+  "parameters": {
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_1",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-014",
+  "name": "Security Awareness Effectiveness",
+  "description": "Assess how effective last quarter's security awareness training was, using staff quizzes and interviews.",
+  "category": "trustworthinessAssessment",
+  "intentType": "awarenessAssessment",
+  "actor": {
+    "role": "SecurityAwarenessLead",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "OrganisationUnit",
+    "name": "all-staff"
+  },
+  "parameters": {
+    "quarter": "Q2"
+  },
+  "reporting": {
+    "expectedOutput": "Knowledge scores and improvement areas",
+    "format": "application/json"
+  }
+}

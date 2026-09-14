@@ -1,0 +1,25 @@
+{
+  "intentId": "bench-bandit-007",
+  "name": "Is This Module Safe to Ship?",
+  "description": "The reporting-service team wants to know whether the Python code they wrote is safe to ship. Review the source itself, not its third-party packages.",
+  "category": "trustworthinessAssessment",
+  "intentType": "securityReview",
+  "actor": {
+    "role": "ProductOwner",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "reporting-service"
+  },
+  "parameters": {
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_2",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

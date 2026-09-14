@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-017",
+  "name": "Memory Forensics of an Incident",
+  "description": "Analyse the memory dump captured from a compromised workstation to reconstruct attacker activity.",
+  "category": "trustworthinessAssessment",
+  "intentType": "memoryForensics",
+  "actor": {
+    "role": "IncidentResponder",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ForensicArtefact",
+    "name": "ws-4411-memdump"
+  },
+  "parameters": {
+    "artefact": "ws-4411-memdump.raw"
+  },
+  "reporting": {
+    "expectedOutput": "Timeline of malicious processes and indicators",
+    "format": "application/json"
+  }
+}

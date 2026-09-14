@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-002",
+  "name": "Python SAST Review",
+  "description": "Check the Python codebase of the user-database component for insecure coding patterns before release.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "ReleaseManager",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "user-database-layer"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_2",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "List of insecure code findings with severities and a release recommendation",
+    "format": "application/json"
+  }
+}

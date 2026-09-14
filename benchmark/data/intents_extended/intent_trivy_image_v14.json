@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-image-014",
+  "name": "Proxy Image Patch Status",
+  "description": "Determine whether the nginx:1.21 proxy image contains unpatched vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "containerImageScan",
+  "actor": {
+    "role": "SiteReliabilityEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "ContainerImage",
+    "name": "proxy-image"
+  },
+  "parameters": {
+    "dockerImage": "nginx:1.21"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

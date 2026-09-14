@@ -1,0 +1,25 @@
+{
+  "intentId": "bench-bandit-019",
+  "name": "Third-Party Contribution Review",
+  "description": "An outside contributor submitted Python code to the parser module; inspect that source for malicious or insecure constructs.",
+  "category": "trustworthinessAssessment",
+  "intentType": "codeReview",
+  "actor": {
+    "role": "Maintainer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "parser-module"
+  },
+  "parameters": {
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_4",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

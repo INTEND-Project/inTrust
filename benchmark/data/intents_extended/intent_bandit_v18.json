@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-018",
+  "name": "Maintenance Script Review",
+  "description": "Before scheduling these maintenance scripts, statically check the Python for shell injection and temporary-file races.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "SiteReliabilityEngineer",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "maintenance-scripts"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_3",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Security findings with severities and an overall verdict",
+    "format": "application/json"
+  }
+}

@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-unsupported-019",
+  "name": "Incident Response Tabletop Exercise",
+  "description": "Facilitate a tabletop exercise that walks the leadership team through a ransomware scenario.",
+  "category": "trustworthinessAssessment",
+  "intentType": "tabletopExercise",
+  "actor": {
+    "role": "CISO",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Team",
+    "name": "leadership"
+  },
+  "parameters": {
+    "scenario": "ransomware"
+  },
+  "reporting": {
+    "expectedOutput": "Exercise report with response gaps",
+    "format": "application/json"
+  }
+}

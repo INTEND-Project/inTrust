@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-010",
+  "name": "Vendor Delivery Inspection",
+  "description": "A vendor delivered a source folder; before we build it, inspect its dependency manifests for vulnerable versions.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "ProcurementSecurity",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_5"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_5"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}

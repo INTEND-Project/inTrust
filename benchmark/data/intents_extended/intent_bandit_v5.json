@@ -1,0 +1,26 @@
+{
+  "intentId": "bench-bandit-005",
+  "name": "Shell Invocation Safety Check",
+  "description": "Evaluate the backup-scripts Python code for command injection and unsafe temporary file handling.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeAnalysis",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "backup-scripts"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "codeReference": {
+      "path": "benchmark/data/bandit_targets/target_5",
+      "language": "python"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerability counts by severity and an overall security verdict",
+    "format": "application/json"
+  }
+}

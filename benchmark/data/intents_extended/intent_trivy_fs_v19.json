@@ -1,0 +1,22 @@
+{
+  "intentId": "bench-trivy-fs-019",
+  "name": "Inherited Project Review",
+  "description": "We inherited a project folder from another team; tell us which of its package versions are known to be vulnerable.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dependencyReview",
+  "actor": {
+    "role": "EngineeringManager",
+    "organization": "ExampleOrg"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "benchmark/data/fs_targets/project_4"
+  },
+  "parameters": {
+    "fsPath": "benchmark/data/fs_targets/project_4"
+  },
+  "reporting": {
+    "expectedOutput": "Vulnerable dependencies with CVE identifiers and severities",
+    "format": "application/json"
+  }
+}
