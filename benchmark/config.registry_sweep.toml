@@ -77,6 +77,69 @@ concurrency_levels = [1]
 extra_distractor_skills = 28
 intents_dir = "benchmark/data/intents_extended"
 
+# ---- scaling study: Qwen3.5 sizes (9B is covered by registry_*) ------------
+# The 4- and 32-skill endpoints are run first; 08 and 16 are defined so the
+# grid can be completed later without a config change
+# (see benchmark/slurm/submit_registry_sweep.sh, SCALING_SIZES).
+[experiments.scaling_registry_04]
+models = ["ollama_chat/qwen3.5:0.8b", "ollama_chat/qwen3.5:2b", "ollama_chat/qwen3.5:4b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 0
+intents_dir = "benchmark/data/intents_extended"
+
+[experiments.scaling_registry_08]
+models = ["ollama_chat/qwen3.5:0.8b", "ollama_chat/qwen3.5:2b", "ollama_chat/qwen3.5:4b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 4
+intents_dir = "benchmark/data/intents_extended"
+
+[experiments.scaling_registry_16]
+models = ["ollama_chat/qwen3.5:0.8b", "ollama_chat/qwen3.5:2b", "ollama_chat/qwen3.5:4b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 12
+intents_dir = "benchmark/data/intents_extended"
+
+[experiments.scaling_registry_32]
+models = ["ollama_chat/qwen3.5:0.8b", "ollama_chat/qwen3.5:2b", "ollama_chat/qwen3.5:4b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 28
+intents_dir = "benchmark/data/intents_extended"
+
+# 27B runs on its own and is submitted as two scenario-pair jobs per registry
+# size: its multi-agent flow loops (~500 s per request), so a full grid could
+# approach the 24 h Slurm cap.
+[experiments.scaling27b_registry_04]
+models = ["ollama_chat/qwen3.5:27b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 0
+intents_dir = "benchmark/data/intents_extended"
+
+[experiments.scaling27b_registry_08]
+models = ["ollama_chat/qwen3.5:27b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 4
+intents_dir = "benchmark/data/intents_extended"
+
+[experiments.scaling27b_registry_16]
+models = ["ollama_chat/qwen3.5:27b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 12
+intents_dir = "benchmark/data/intents_extended"
+
+[experiments.scaling27b_registry_32]
+models = ["ollama_chat/qwen3.5:27b"]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1]
+extra_distractor_skills = 28
+intents_dir = "benchmark/data/intents_extended"
+
 [scenarios]
 bandit_static_code = true
 trivy_filesystem = true
