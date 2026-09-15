@@ -74,6 +74,11 @@ class RunResult:
     # 27B multi-agent latency/token blow-up.  None on runs predating this field.
     llm_call_count: Optional[int] = None    # LLM responses (usage events) seen
     tool_call_count: Optional[int] = None   # tool executions in this run
+    # Multi-agent only: a function call by the root that was neither the
+    # hand-off nor accepted by the framework (e.g. the specialist's name called
+    # as if it were a tool).  Lets the routing decomposition credit the
+    # decision while still counting the protocol failure.  None otherwise.
+    attempted_call: Optional[str] = None
 
     # ---- routing -------------------------------------------------------------
     selected: Optional[str] = None   # tool fn (Arch B) / specialist agent (Arch A)

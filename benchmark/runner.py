@@ -46,6 +46,8 @@ _USER_ID = "benchmark"
 
 # Name of the delegation function ADK injects for multi-agent routing.
 _TRANSFER_FN = "transfer_to_agent"
+# Name of the multi-agent root agent (see arch_multi.build_multi_agent).
+_ROOT_AGENT = "orchestrator"
 
 # Tool result statuses that count as a successful assessment (matches the
 # production convention in orchestrator/agent.py).
@@ -148,6 +150,14 @@ async def execute_run(
                     # skill selection.
                     result.selected = fn_call.name
                     selection_ts = event.timestamp
+                elif (architecture == "multi_agent" and result.selected is None
+                      and result.attempted_call is None
+                      and event.author == _ROOT_AGENT):
+                    # Multi-agent root emitted a call that is not the hand-off
+                    # (e.g. the specialist name called as a tool).  The
+                    # framework rejects it, but the name still reveals the
+                    # routing decision; native-call adherence stays failed.
+                    result.attempted_call = fn_call.name
                 result.timeline.append(
                     {"t": event.timestamp, "author": event.author,
                      "kind": "function_call", "name": fn_call.name}
@@ -247,7 +257,7 @@ async def execute_run(
 
     # ---- routing decomposition (decision vs native-call adherence) ---------------
     intended, native_call, refused = routing_analysis.classify(
-        result.selected, result.final_text)
+        result.selected, result.final_text, result.attempted_call)
     result.intended_skill = intended
     result.native_call = native_call
     result.decision_correct = routing_analysis.decision_correct(

@@ -134,18 +134,29 @@ def _has_refusal(text: str) -> bool:
 
 
 def classify(selected: Optional[str],
-             final_text: Optional[str]) -> Tuple[Optional[str], bool, bool]:
+             final_text: Optional[str],
+             attempted_call: Optional[str] = None) -> Tuple[Optional[str], bool, bool]:
     """
     Return ``(intended_skill, native_call, refused)`` for one run.
 
     - ``intended_skill`` — the capability the model chose (from the native
-      call if there was one, else recovered from the text), or None.
+      call if there was one, else from a malformed call attempt, else
+      recovered from the text), or None.
     - ``native_call`` — whether a native tool call / transfer happened.
     - ``refused`` — whether the text explicitly declined to route.
+
+    ``attempted_call`` is a function the multi-agent root called that the
+    framework rejected — typically the specialist's own name instead of the
+    hand-off function.  It is exact evidence of the decision (stronger than
+    free text) but not protocol adherence, so ``native_call`` stays False.
     """
     native_call = selected is not None
     if native_call:
         return _skill_from_native(selected), True, False
+    if attempted_call:
+        skill = _skill_from_native(attempted_call)
+        if skill is not None:
+            return skill, False, False
     text = final_text or ""
     return _skill_from_text(text), False, _has_refusal(text)
 
