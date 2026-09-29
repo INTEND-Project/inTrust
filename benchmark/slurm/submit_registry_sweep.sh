@@ -34,6 +34,11 @@ CONFIG="${CONFIG:-benchmark/config.registry_sweep.toml}"
 PHASES="${PHASES:-family scaling scaling27b}"
 FAMILY_SIZES="${FAMILY_SIZES:-04 08 16 32}"
 SCALING_SIZES="${SCALING_SIZES:-04 32}"
+# The scaling phase is split into one job per model by default: qwen3.5:0.8b
+# loops the most and dominates the runtime, so a per-model split bounds each
+# job and keeps a misbehaving model from costing the whole grid.
+SCALING_SPLIT_BY_MODEL="${SCALING_SPLIT_BY_MODEL:-1}"
+SCALING_MODELS="${SCALING_MODELS:-ollama_chat/qwen3.5:0.8b ollama_chat/qwen3.5:2b ollama_chat/qwen3.5:4b}"
 OLLAMA_BIN="${OLLAMA_BIN:-}"
 INTRUST_IMAGE_CACHE_DIR="${INTRUST_IMAGE_CACHE_DIR:-}"
 
@@ -52,18 +57,27 @@ fi
 PAIR_A="--scenario bandit_static_code --scenario trivy_docker_image"
 PAIR_B="--scenario trivy_filesystem --scenario unsupported_request"
 
-# Build the chain as "EXPERIMENT|EXTRA_ARGS" entries.
+# Build the chain as "EXPERIMENT|EXTRA_ARGS|MODELS" entries (MODELS = the
+# Ollama pull list, or "auto" to take every model of the experiment).
 ENTRIES=()
 for phase in ${PHASES}; do
     case "${phase}" in
         family)
-            for size in ${FAMILY_SIZES}; do ENTRIES+=("registry_${size}|"); done ;;
+            for size in ${FAMILY_SIZES}; do ENTRIES+=("registry_${size}||auto"); done ;;
         scaling)
-            for size in ${SCALING_SIZES}; do ENTRIES+=("scaling_registry_${size}|"); done ;;
+            for size in ${SCALING_SIZES}; do
+                if [ "${SCALING_SPLIT_BY_MODEL}" = "1" ]; then
+                    for model in ${SCALING_MODELS}; do
+                        ENTRIES+=("scaling_registry_${size}|--model ${model}|${model#ollama_chat/}")
+                    done
+                else
+                    ENTRIES+=("scaling_registry_${size}||auto")
+                fi
+            done ;;
         scaling27b)
             for size in ${SCALING_SIZES}; do
-                ENTRIES+=("scaling27b_registry_${size}|${PAIR_A}")
-                ENTRIES+=("scaling27b_registry_${size}|${PAIR_B}")
+                ENTRIES+=("scaling27b_registry_${size}|${PAIR_A}|auto")
+                ENTRIES+=("scaling27b_registry_${size}|${PAIR_B}|auto")
             done ;;
         *)
             echo "ERROR: unknown phase '${phase}' (use family, scaling, scaling27b)." >&2
@@ -72,9 +86,9 @@ for phase in ${PHASES}; do
 done
 
 submit() {
-    # $1 = experiment, $2 = extra run_benchmark args, $3 = dependency or ""
-    # MODELS=auto: run_campaign.job pulls exactly the models of $1 from CONFIG.
-    local exports="ALL,CONFIG=${CONFIG},EXPERIMENT=$1,EXTRA_ARGS=$2,MODELS=auto"
+    # $1 = experiment, $2 = extra run_benchmark args, $3 = dependency or "",
+    # $4 = Ollama pull list ("auto" = every model of the experiment in CONFIG).
+    local exports="ALL,CONFIG=${CONFIG},EXPERIMENT=$1,EXTRA_ARGS=$2,MODELS=$4"
     exports="${exports},OLLAMA_NUM_PARALLEL=1,INTRUST_IMAGE_CACHE_DIR=${INTRUST_IMAGE_CACHE_DIR}"
     if [ -n "${OLLAMA_BIN}" ]; then
         exports="${exports},OLLAMA_BIN=${OLLAMA_BIN}"
@@ -93,19 +107,21 @@ echo ""
 
 prev=""
 for entry in "${ENTRIES[@]}"; do
-    exp="${entry%%|*}"
-    extra="${entry#*|}"
+    IFS="|" read -r exp extra models <<< "${entry}"
     dep=""
     if [ -n "${prev}" ]; then
         dep="afterany:${prev}"
     fi
-    jid="$(submit "${exp}" "${extra}" "${dep}")"
+    jid="$(submit "${exp}" "${extra}" "${dep}" "${models}")"
     printf "  job %-10s %-26s %s\n" "${jid}" "${exp}" "${extra:-all scenarios}"
     prev="${jid}"
 done
 
 echo ""
 echo "When the chain has finished:"
+echo "  0. If the scaling phase was split per model, merge its parts, e.g."
+echo "       python -m benchmark.merge_runs --config ${CONFIG} \\"
+echo "           --experiment scaling_registry_04 --run-ids <0.8b> <2b> <4b>"
 echo "  1. Merge the two scenario-pair parts of each 27B registry size, e.g."
 echo "       ls -t results/scaling27b_registry_04/raw/*.json"
 echo "       python -m benchmark.merge_runs --config ${CONFIG} \\"

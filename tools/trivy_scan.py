@@ -34,6 +34,14 @@ _BIN_DIR = Path(__file__).parent.parent / "bin"
 # Trivy version embedded in result records for traceability.
 TRIVY_VERSION = "0.59.1"
 
+# Hard wall-clock limit for one Trivy invocation.  Trivy has its own
+# --timeout flag for the scan phase, but that does not cover a stalled
+# vulnerability-DB download or a registry wait.  Without a Python-level
+# timeout a stuck scan blocks the benchmark event loop forever: the per-run
+# asyncio timeout cannot interrupt a synchronous subprocess.  Overridable
+# with INTRUST_TOOL_TIMEOUT_SEC.
+_SUBPROCESS_TIMEOUT_SEC = int(os.getenv("INTRUST_TOOL_TIMEOUT_SEC", "900"))
+
 # Directory where Trivy writes its raw JSON output files.
 # Each scan produces a separate file named after the intent ID.
 OUTPUT_DIR = Path(__file__).resolve().parent.parent / os.getenv(
@@ -111,7 +119,15 @@ def _run_trivy_command(
         )
 
     start_time = time.time()
-    process = subprocess.run(cmd, capture_output=True, text=True, check=False)
+    try:
+        process = subprocess.run(
+            cmd, capture_output=True, text=True, check=False,
+            timeout=_SUBPROCESS_TIMEOUT_SEC,
+        )
+    except subprocess.TimeoutExpired:
+        raise RuntimeError(
+            f"Trivy scan timed out after {_SUBPROCESS_TIMEOUT_SEC}s"
+        ) from None
     elapsed_time = round(time.time() - start_time, 2)
 
     # Trivy exits with 0 on success.  Unlike Bandit it does not use exit

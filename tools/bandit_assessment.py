@@ -22,6 +22,13 @@ import time
 from typing import Any, Dict
 
 
+# Hard wall-clock limit for one Bandit invocation.  Without it a stuck scan
+# blocks the benchmark event loop forever: the per-run asyncio timeout cannot
+# interrupt a synchronous subprocess.  Overridable with
+# INTRUST_TOOL_TIMEOUT_SEC.
+_SUBPROCESS_TIMEOUT_SEC = int(os.getenv("INTRUST_TOOL_TIMEOUT_SEC", "900"))
+
+
 def _log_subprocess(logger: Any, command: list[str]) -> None:
     """Log the command that is about to be executed, if a logger is provided."""
     if logger:
@@ -76,12 +83,18 @@ def run_bandit_assessment(
         command = ["bandit", "-r", code_path, "-f", "json", "-q"]
         _log_subprocess(logger, command)
         start_time = time.time()
-        process = subprocess.run(
-            command,
-            capture_output=True,
-            text=True,
-            check=False,
-        )
+        try:
+            process = subprocess.run(
+                command,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=_SUBPROCESS_TIMEOUT_SEC,
+            )
+        except subprocess.TimeoutExpired:
+            raise RuntimeError(
+                f"Bandit execution timed out after {_SUBPROCESS_TIMEOUT_SEC}s"
+            ) from None
         elapsed_time = time.time() - start_time
 
         if process.returncode not in [0, 1]:
