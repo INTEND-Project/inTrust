@@ -1,0 +1,75 @@
+# ============================================================================
+# InTrust architecture benchmark — 27B multi-agent under a capped call budget
+#
+# WHY THIS FILE EXISTS
+# Under the multi-agent architecture, qwen3.5:27b does not converge on the
+# intended three-call flow: it re-invokes its own assessment tool and issues a
+# median of ~54-70 LLM calls per run, consuming ~250-460k prompt tokens and
+# ~650 s of wall clock.  Every campaign so far left the per-invocation call
+# budget at the framework default (ADK's 500), so that behaviour was measured
+# as it actually unfolds.
+#
+# This config caps the budget at 6 calls — twice the intended three — to
+# measure the MITIGATION rather than the structural cost.  Note what it does
+# and does not show: capping does not make the model converge, it aborts the
+# run, so the expected outcome is that runaways become fast failures and only
+# the minority of genuinely converging runs succeed.  The structural cost of
+# delegation at this scale is measured separately, from the 8-10% of uncapped
+# runs that converge naturally (Table 5 of the paper).
+#
+# Everything except max_llm_calls matches config.default.toml, so the capped
+# and uncapped runs differ in exactly one variable.
+#
+# Submit:
+#   sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama,\
+#   INTRUST_IMAGE_CACHE_DIR=$INTRUST_IMAGE_CACHE_DIR,\
+#   CONFIG=benchmark/config.capped27b.toml,EXPERIMENT=scaling27b_capped \
+#     benchmark/slurm/run_campaign.job
+# ============================================================================
+
+[general]
+results_dir = "results"
+ollama_api_base = "http://localhost:11434"
+
+seed = 42
+warmup_runs = 5
+measured_runs = 30
+run_timeout_sec = 1500
+
+# THE ONE VARIABLE UNDER TEST.  Passed to ADK's RunConfig; unset elsewhere,
+# which leaves ADK's own default of 500 and reproduces all earlier campaigns.
+# 6 = the intended three calls plus the same again as headroom.
+max_llm_calls = 6
+
+
+# ----------------------------------------------------------------------------
+# 27B, multi-agent only, concurrency 1.  The single-agent architecture
+# converges in two calls at every scale and needs no cap; concurrency is held
+# at 1 because the question here is per-run behaviour, not throughput.
+# ----------------------------------------------------------------------------
+[experiments.scaling27b_capped]
+models = ["ollama_chat/qwen3.5:27b"]
+architectures = ["multi_agent"]
+concurrency_levels = [1]
+
+
+# ----------------------------------------------------------------------------
+# The three supported scenarios.  Gatekeeping is excluded: it completes in a
+# single LLM call under both architectures, so a 6-call cap cannot affect it.
+# ----------------------------------------------------------------------------
+[scenarios]
+bandit_static_code = true
+trivy_filesystem = true
+trivy_docker_image = true
+unsupported_request = false
+
+
+[provider]
+type = "ollama"
+request_timeout_sec = 1200
+
+[provider.model_kwargs]
+think = false
+num_predict = 1024
+num_ctx = 8192
+temperature = 0

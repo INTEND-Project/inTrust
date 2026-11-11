@@ -1,0 +1,80 @@
+# ============================================================================
+# InTrust architecture benchmark — container-image scenario re-run
+#
+# WHY THIS FILE EXISTS
+# The July 2026 scaling-study campaign ran before the local image cache was
+# introduced, so its `trivy_docker_image` cells repeatedly exceeded the public
+# container-registry pull rate limit: 385 runs failed with "Trivy scan failed"
+# for reasons unrelated to either orchestration architecture.  The static-code
+# and filesystem scenarios of that campaign are unaffected and are NOT re-run.
+#
+# This config re-measures ONLY the container-image scenario, with
+# INTRUST_IMAGE_CACHE_DIR set so Trivy scans pre-pulled local tarballs instead
+# of hitting the registry.
+#
+# It writes to results/scaling_study_ci/ — a separate experiment name on
+# purpose, so the committed results/scaling_study/ summary is never overwritten
+# and the two sources stay independently auditable.  Do NOT merge the two with
+# benchmark/merge_runs.py: the cells overlap and the merge only warns rather
+# than resolving precedence.  Table 4 of the paper is recomputed from
+# SC + FS of the July merge and CI of this run.
+#
+# Every other knob below is identical to config.default.toml so the re-measured
+# cells remain comparable with the campaign they replace.
+#
+# Submit (see benchmark/README.md for the one-time cache preparation):
+#   export INTRUST_IMAGE_CACHE_DIR=$HOME/SOCC/inTrust/benchmark/data/image_cache
+#   bash benchmark/slurm/prepare_docker_images.sh
+#   sbatch --export=ALL,OLLAMA_BIN=$HOME/ollama/bin/ollama,\
+#   INTRUST_IMAGE_CACHE_DIR=$INTRUST_IMAGE_CACHE_DIR,\
+#   CONFIG=benchmark/config.ci_rerun.toml,EXPERIMENT=scaling_study_ci \
+#     benchmark/slurm/run_campaign.job
+# ============================================================================
+
+[general]
+results_dir = "results"
+ollama_api_base = "http://localhost:11434"
+
+# Identical to the campaign being replaced — do not change these, or the
+# re-measured CI cells stop being comparable with its SC/FS cells.
+seed = 42
+warmup_runs = 5
+measured_runs = 30
+run_timeout_sec = 1500
+
+
+# ----------------------------------------------------------------------------
+# The scaling-study grid, container-image scenario only.
+# ----------------------------------------------------------------------------
+[experiments.scaling_study_ci]
+models = [
+    "ollama_chat/qwen3.5:0.8b",
+    "ollama_chat/qwen3.5:2b",
+    "ollama_chat/qwen3.5:4b",
+    "ollama_chat/qwen3.5:9b",
+    "ollama_chat/qwen3.5:27b",
+]
+architectures = ["single_agent", "multi_agent"]
+concurrency_levels = [1, 5, 10, 20]
+
+
+# ----------------------------------------------------------------------------
+# Only the container-image scenario.  The Kubernetes skill stays loaded in both
+# architectures as the routing distractor, exactly as in every other campaign.
+# ----------------------------------------------------------------------------
+[scenarios]
+bandit_static_code = false
+trivy_filesystem = false
+trivy_docker_image = true
+unsupported_request = false
+
+
+[provider]
+type = "ollama"
+request_timeout_sec = 1200
+
+[provider.model_kwargs]
+think = false
+num_predict = 1024
+num_ctx = 8192
+temperature = 0

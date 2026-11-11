@@ -58,6 +58,11 @@ class BenchmarkConfig:
     provider_type: str = "ollama"
     # Client-side timeout for a single LLM request (litellm 'timeout' kwarg).
     request_timeout_sec: int = 300
+    # Hard ceiling on LLM calls per run, passed to ADK's RunConfig.  None =
+    # leave ADK's own default (500) in place, which is what every campaign up
+    # to and including the registry sweep used; a small value converts a
+    # non-convergent agent loop into a fast failure instead of a timeout.
+    max_llm_calls: Optional[int] = None
     # Extra kwargs forwarded verbatim to every LiteLlm model instance
     # (e.g. think=false, num_predict, num_ctx for Ollama).
     model_kwargs: dict = field(default_factory=dict)
@@ -173,6 +178,8 @@ def load_config(config_path: Path | None = None) -> BenchmarkConfig:
         enabled_scenarios=enabled_scenarios,
         provider_type=provider.get("type", "ollama"),
         request_timeout_sec=int(provider.get("request_timeout_sec", 300)),
+        max_llm_calls=(int(general["max_llm_calls"])
+                       if general.get("max_llm_calls") is not None else None),
         model_kwargs=dict(provider.get("model_kwargs", {})),
         extra=raw,
     )

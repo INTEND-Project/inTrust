@@ -26,6 +26,7 @@ import time
 import uuid
 from typing import List, Optional
 
+from google.adk.agents.run_config import RunConfig
 from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google.genai import types as genai_types
@@ -134,8 +135,11 @@ async def execute_run(
         nonlocal prompt_tokens, completion_tokens, total_tokens, saw_token_data
         nonlocal llm_calls
 
+        # max_llm_calls defaults to ADK's own 500 when unset, so every
+        # campaign run before this knob existed is reproduced exactly.
         async for event in runner.run_async(
-            user_id=_USER_ID, session_id=session_id, new_message=user_message
+            user_id=_USER_ID, session_id=session_id, new_message=user_message,
+            run_config=RunConfig(max_llm_calls=cfg.max_llm_calls or 500),
         ):
             # -- routing detection --------------------------------------------
             for fn_call in event.get_function_calls():
