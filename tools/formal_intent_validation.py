@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 """Tool backing the `formal-intent-validation` skill.
 
 Validates a TM Forum intent (JSON or Turtle) against the InTrust SHACL shapes

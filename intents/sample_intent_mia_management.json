@@ -1,0 +1,36 @@
+{
+  "intentId": "fill",
+  "name": "Membership Inference Privacy Assessment (management rendition)",
+  "description": "Evaluate a machine learning model's resilience to membership inference attacks before deployment to a remote edge node. Reported as a release decision.",
+  "category": "trustworthinessAssessment",
+  "intentType": "membershipInferencePrivacyAssessment",
+  "actor": {
+    "role": "CISO",
+    "organization": "Fill GmbH"
+  },
+  "target": {
+    "type": "mlModel",
+    "name": "predictive_maint_v2"
+  },
+  "parameters": {
+    "model": {
+      "type": "classification model",
+      "path": "s3://models/fill/predictive_maint_v2.pt"
+    },
+    "shadowData": {
+      "type": "synthetic",
+      "path": "s3://datasets/fill/synthetic_vib_v1.zip"
+    }
+  },
+  "criteria": [
+    "gdpr",
+    "internal_privacy_policy:v2"
+  ],
+  "reporting": {
+    "profile": "management",
+    "expectedOutput": "Release verdict, worst observed case against its threshold, and the compliance headline",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/mia-assessments/"
+  },
+  "notes": "Sibling of sample_intent_mia_technical.json with the same target and parameters. The management profile reports the verdict, the worst configuration and where it occurs, and the compliance headline, but not the per-configuration matrix. Its severity floor is MEDIUM, so lower-severity findings are omitted and counted in reportProfile.findingsOmitted rather than dropped silently. Note that the worst case is reported, not the average: on the observed MIA sweep the median advantage is roughly twelve times smaller than the worst and would read as safe."
+}

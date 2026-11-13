@@ -1,3 +1,8 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: normalises Trivy output into canonical facts before it leaves
+#     the skill.
+# SPDX-License-Identifier: MIT
 """
 Trivy Kubernetes cluster scanning skill.
 
@@ -18,6 +23,8 @@ See also: docs/skills/trivy-kubernetes.md
 from typing import Any, Dict
 
 from orchestrator.skill_loader import AssessmentSkill
+from orchestrator.skill_result import normalised_result
+from tools.trivy_normalizer import normalize
 from tools.trivy_scan import scan_k8_cluster
 
 
@@ -35,8 +42,9 @@ def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
     Returns
     -------
     dict
-        Assessment result with security findings across cluster resources,
-        along with verdict, explanation, and recommendations.
+        ``{status, assessment_type, tool, facts, raw}`` — the canonical facts
+        every audience rendition is projected from, beside the unmodified Trivy
+        output they were derived from.
     """
     target = intent.get("parameters", {}).get("clusterName")
     logger.info(
@@ -50,10 +58,25 @@ def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
 
     if result.get("status") == "FAILED":
         logger.error("skill.trivy_k8s", result.get("error", "Trivy Kubernetes scan failed"))
-    else:
-        logger.info("skill.trivy_k8s", result.get("explanation", "Trivy Kubernetes scan completed"))
+        return result
 
-    return result
+    logger.info("skill.trivy_k8s", result.get("explanation", "Trivy Kubernetes scan completed"))
+
+    # Normalise before the result leaves the skill.  Deriving the findings here
+    # rather than leaving Trivy's raw cluster report for the report-composing
+    # model to read is what keeps every audience rendition traceable to the same
+    # findings — and it is where the scan's severity filter (HIGH,CRITICAL only)
+    # is recorded as a stated scope limitation, so a clean result is never
+    # reported as an unqualified all-clear.
+    facts = normalize(result, intent=intent)
+    return normalised_result(
+        facts,
+        raw_result=result,
+        assessment_type="kubernetes_security",
+        tool="Trivy",
+        logger=logger,
+        component="skill.trivy_k8s",
+    )
 
 
 SKILL = AssessmentSkill(

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 """Tool backing the `formal-report-validation` skill.
 
 The validator in `formal_intent_validation` is already shape-agnostic — it

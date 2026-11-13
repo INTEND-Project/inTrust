@@ -1,0 +1,31 @@
+{
+  "intentId": "intent-k8s-scan-002",
+  "name": "Kubernetes Cluster Security Scan (engineer rendition)",
+  "description": "Run a Trivy scan on a Kubernetes cluster to detect security misconfigurations and vulnerabilities. Reported for the engineer who will act on the result.",
+  "category": "trustworthinessAssessment",
+  "intentType": "kubernetesSecurityScan",
+  "actor": {
+    "role": "DevOpsEngineer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "KubernetesCluster",
+    "name": "staging-cluster"
+  },
+  "parameters": {
+    "clusterName": "staging-cluster"
+  },
+  "criteria": [
+    "iso27001",
+    "nis2",
+    "linddun",
+    "internal_cluster_hardening:v2"
+  ],
+  "reporting": {
+    "profile": "technical",
+    "expectedOutput": "Security scan summary, complete list of detected findings with technical detail, evidence and remediation steps",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/k8s-scans/"
+  },
+  "notes": "One of four sibling intents (technical, management, compliance, external) that differ only in actor.role, reporting.profile and expectedOutput. Target, parameters and criteria are identical, so all four produce the same canonical facts and differ only in rendition. The technical profile keeps all findings with no omissions: findingsOmitted = 0, and each carries the check id, the Rego namespace and query behind it, the resource it fired on, and Trivy's own Resolution text as the remediation step (see _finding_from_misconfiguration in tools/trivy_normalizer.py). The resolution is quoted rather than paraphrased, so the report does not overstate what the check establishes. Against the trivy-kubernetes skill: iso27001 resolves to assessed (evidence bears on 3 of 6 recorded requirements — A.8.8 technical vulnerability management, A.8.27 secure system architecture and engineering principles, A.8.9 configuration management); nis2 resolves to assessed (1 of 5 requirements — Art. 21(2)(e) vulnerability handling); linddun resolves to declaredNotAssessed, since no requirement under it is evaluable by a cluster scanner; internal_cluster_hardening:v2 resolves to unrecognised. regulatoryCoverage.complete is therefore false, with byStatus {assessed: 2, declaredNotAssessed: 1, unrecognised: 1}. This family is unverified: no scan was run, so the outcome depends on the cluster. If the cluster returns findings, they will appear here with full technical detail; if it returns none, the report states no HIGH or CRITICAL finding was detected, not that the cluster is clean."
+}

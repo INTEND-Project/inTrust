@@ -1,3 +1,7 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: serves the demo page (static/demo.html) at the root URL.
+# SPDX-License-Identifier: MIT
 """
 InTrust Runtime Service — application entry point.
 
@@ -24,7 +28,10 @@ from dotenv import load_dotenv
 # DATABASE_TYPE at module level).
 load_dotenv()
 
+from pathlib import Path
+
 from fastapi import FastAPI
+from fastapi.responses import FileResponse
 
 from api.database import database_backend_name, init_db, mark_interrupted_jobs_failed
 from api.routes import router
@@ -78,3 +85,15 @@ async def startup() -> None:
 
 # Register all HTTP route handlers (defined in api/routes.py).
 app.include_router(router)
+
+
+# Serve the interactive demo page (static/demo.html) at the root URL.  Serving
+# it from the app itself keeps it same-origin with the API, so the browser
+# makes plain fetch() calls without any CORS configuration.
+_DEMO_PAGE = Path(__file__).parent / "static" / "demo.html"
+
+
+@app.get("/", include_in_schema=False)
+async def demo_page() -> FileResponse:
+    """Return the InTrust API demo page."""
+    return FileResponse(_DEMO_PAGE)

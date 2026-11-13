@@ -1,4 +1,6 @@
 ---
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 name: formal-report-validation
 description: Validates a TM Forum assessment report against the InTrust SHACL shapes and returns conformance violations.
 ---

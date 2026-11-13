@@ -1,3 +1,7 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: tables for release approvals and cached audience summaries.
+# SPDX-License-Identifier: MIT
 """
 Database configuration and ORM models for InTrust.
 
@@ -11,7 +15,7 @@ environment variable:
 
 An explicit ``DATABASE_URL`` environment variable overrides both.
 
-The database stores five kinds of records:
+The database stores six kinds of records:
 
 - ``JobRecord`` — lifecycle of each assessment job (status, timestamps).
 - ``IntentRecord`` — the original intent payload as submitted by the caller.
@@ -19,6 +23,8 @@ The database stores five kinds of records:
 - ``ExecutionLogRecord`` — structured log entries emitted during execution.
 - ``ExecutionMetadataRecord`` — environment details (host, Python version,
   tool versions, timing) captured after each job completes.
+- ``ReleaseApprovalRecord`` — who cleared an assessment result to leave the
+  organisation, and when.
 """
 
 import os
@@ -185,6 +191,74 @@ class ExecutionMetadataRecord(Base):
     tool_versions = Column(JSON, nullable=True)    # e.g. {"bandit": "1.8.0", "trivy": "0.70.0"}
     input_parameters = Column(JSON, nullable=True) # the intent's parameters field
     output_summary = Column(JSON, nullable=True)   # brief summary of the result
+
+
+class ReleaseApprovalRecord(Base):
+    """
+    A human decision to let one assessment result leave the organisation.
+
+    Stored server-side rather than accepted alongside the report request, which
+    is the whole point: an approval a caller can assert in the body of the
+    request it authorises is not a control.  A statement is released only if a
+    row here says someone cleared it, so the default — no row — withholds.
+
+    One row per job.  Re-approving overwrites, and ``recorded_at`` moves with
+    it; there is no rejected state, because a refused release is simply a job
+    with no row and the reason belongs in the withholding reasons the projector
+    already reports.
+    """
+
+    __tablename__ = "release_approvals"
+
+    job_id = Column(String(64), primary_key=True, index=True)
+    # Who approved.  Free text, and deliberately not validated here: InTrust has
+    # no identity system, so recording an unverified name that an audit can
+    # question later is honest, whereas checking it against nothing would only
+    # look like verification.
+    approved_by = Column(String(255), nullable=False)
+    recorded_at = Column(DateTime(timezone=True), server_default=func.now())
+    # A ticket, change request, or minute — the external record of the decision.
+    # The one part of an approval InTrust cannot check.
+    reference = Column(String(512), nullable=True)
+    note = Column(Text, nullable=True)
+
+
+class RenditionSummaryRecord(Base):
+    """
+    The prose summary for one job's rendition of one audience profile.
+
+    Cached rather than regenerated per read, because the prose is LLM-authored
+    and so not a pure function of its input the way the rendition it describes
+    is.  Without a cache, two reads of the same profile could return differently
+    worded summaries of identical facts — the drift this whole mechanism exists
+    to prevent, reintroduced one level up.
+
+    Keyed by job *and* profile: one assessment has up to one summary per
+    audience, each composed from that audience's rendition alone.
+
+    ``fingerprint`` hashes the rendition's content with the fields that vary
+    between two reads of the same view removed (see
+    ``orchestrator.rendition_summary.rendition_fingerprint``).  A stored summary
+    is reused only while it still matches, so a change to the projector
+    invalidates the prose automatically instead of leaving a summary describing a
+    rendition that no longer exists.
+    """
+
+    __tablename__ = "rendition_summaries"
+
+    job_id = Column(String(64), primary_key=True, index=True)
+    profile_name = Column(String(32), primary_key=True)
+    markdown = Column(Text, nullable=False)
+    # Recorded so a summary can be attributed and re-examined after a model
+    # change; the prose is a model output, not a derivation, and which model
+    # produced it is part of reading it critically.
+    model = Column(String(128), nullable=True)
+    register = Column(String(32), nullable=True)
+    generated_at = Column(DateTime(timezone=True), server_default=func.now())
+    fingerprint = Column(String(64), nullable=False)
+    # Non-conformance and other notices raised when the summary was composed,
+    # travelling with the prose rather than beside it.
+    warnings = Column(JSON, nullable=True)
 
 
 def init_db() -> None:

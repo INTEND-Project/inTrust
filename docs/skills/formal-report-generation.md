@@ -1,4 +1,6 @@
 ---
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 name: formal-report-generation
 description: Generates a formal TM Forum assessment report (tmfIntentReport.v1) from a raw assessment result, grounded in the InTrust ontology.
 ---
@@ -72,7 +74,11 @@ The report must include at least:
 - `findings` — structured list, each item using ontology properties for its
   fields (severity, metric, value, …)
 - `recommendations` — list of remediations, if applicable
-- `provenance` — `{ "skillId": ..., "executedAt": ..., "rawResultRef": ... }`
+- `provenance` — `{ "skillId": ..., "executionTimestamp": ..., "rawResultRef":
+  ... }`.  Copy `executionTimestamp` verbatim from the `execution_timestamp`
+  field of this tool's output — that is the real time the assessment ran.  Never
+  compose the value yourself and never leave the field out; a report that
+  misstates when it was produced cannot be shown to have expired.
 - `lifecycle.state = "Completed"` (or `"Failed"`)
 
 Map raw result fields onto ontology properties wherever possible. If the

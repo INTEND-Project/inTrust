@@ -1,3 +1,8 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: fixed HIGH/CRITICAL severity filter and scanner scope,
+#     reported in each result.
+# SPDX-License-Identifier: MIT
 """
 Trivy tool wrappers.
 
@@ -17,6 +22,13 @@ All scan functions write Trivy's JSON output to a file in the storage
 directory (configurable via INTRUST_STORAGE_DIR) and then parse it.
 Writing to a file rather than reading stdout avoids issues with large
 outputs that might be truncated in a pipe.
+
+Every scan requests only HIGH and CRITICAL severities (``SEVERITY_FILTER``).
+This bounds what any result can possibly say: a scan that finds nothing has
+established that no HIGH or CRITICAL issue was detected, not that the target is
+clean.  Each result therefore reports the filter it ran under, and
+``tools/trivy_normalizer.py`` turns that into a stated scope limitation so the
+distinction survives into the report.
 """
 
 import json
@@ -33,6 +45,18 @@ _BIN_DIR = Path(__file__).parent.parent / "bin"
 
 # Trivy version embedded in result records for traceability.
 TRIVY_VERSION = "0.59.1"
+
+# Severity levels every scan collects.  LOW and MEDIUM findings are therefore
+# never gathered, which means an empty result says "no HIGH or CRITICAL issue",
+# not "no issue".  The value is echoed into each result as ``severityFilter`` so
+# the normalizer can state that boundary from what the scan actually did rather
+# than from an assumption about this file, and so changing it here changes the
+# reported scope with it.
+SEVERITY_FILTER = "HIGH,CRITICAL"
+
+# Scanners enabled for a filesystem scan.  Licence detection is not among them,
+# so a filesystem result carries no licence findings by construction.
+FS_SCANNERS = "vuln,secret,misconfig"
 
 # Directory where Trivy writes its raw JSON output files.
 # Each scan produces a separate file named after the intent ID.
@@ -214,7 +238,7 @@ def scan_docker_image(
             "-o", output_file,
             "--timeout", "12m0s",
             "--cache-dir", "cache/",
-            "--severity", "HIGH,CRITICAL",
+            "--severity", SEVERITY_FILTER,
             docker_image,
         ]
 
@@ -232,6 +256,8 @@ def scan_docker_image(
             "execution_time_sec": elapsed_time,
             "target": docker_image,
             "metrics": summary,
+            "severityFilter": SEVERITY_FILTER,
+            "raw": data,
             "assessment": assessment,
             "explanation": (
                 f"Detected {vuln_count} vulnerable component(s) in image {docker_image}."
@@ -290,8 +316,8 @@ def scan_fs(
             "-o", output_file,
             "--timeout", "12m0s",
             "--cache-dir", "cache/",
-            "--severity", "HIGH,CRITICAL",
-            "--scanners", "vuln,secret,misconfig",  # Enable all three scanner types.
+            "--severity", SEVERITY_FILTER,
+            "--scanners", FS_SCANNERS,  # Enable all three scanner types.
             fs_path,
         ]
 
@@ -309,6 +335,9 @@ def scan_fs(
             "execution_time_sec": elapsed_time,
             "target": fs_path,
             "metrics": summary,
+            "severityFilter": SEVERITY_FILTER,
+            "scanners": FS_SCANNERS,
+            "raw": data,
             "assessment": assessment,
             "explanation": (
                 f"Detected {issue_count} potential issue(s) in {fs_path}."
@@ -369,7 +398,7 @@ def scan_k8_cluster(
             "-o", output_file,
             "--timeout", "12m0s",
             "--cache-dir", "cache/",
-            "--severity", "HIGH,CRITICAL",
+            "--severity", SEVERITY_FILTER,
             "--report", "all",  # Include findings for every resource, not just a summary.
             cluster_name,
         ]
@@ -388,6 +417,8 @@ def scan_k8_cluster(
             "execution_time_sec": elapsed_time,
             "target": cluster_name,
             "metrics": summary,
+            "severityFilter": SEVERITY_FILTER,
+            "raw": data,
             "assessment": assessment,
             "explanation": (
                 f"Detected {issue_count} security finding(s) in cluster {cluster_name}."

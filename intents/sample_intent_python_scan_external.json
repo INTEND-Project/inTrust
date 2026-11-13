@@ -1,0 +1,33 @@
+{
+  "intentId": "intent-sec-analysis-002",
+  "name": "Python Static Security Analysis (external statement)",
+  "description": "Run Bandit static security analysis over the InTrust tool layer, for a customer-facing assurance statement.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeSecurityAnalysis",
+  "actor": {
+    "role": "Sales",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "intrust-tools"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "tool": "bandit",
+    "codeReference": {
+      "path": "./tools",
+      "language": "python"
+    }
+  },
+  "criteria": [
+    "iso27001"
+  ],
+  "reporting": {
+    "profile": "external",
+    "expectedOutput": "Allowlisted assurance statement, released only for a clean assessment",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/static-analysis/"
+  },
+  "notes": "Sibling of sample_intent_python_scan_technical.json with the same target and parameters. Expect no artifact: the four LOW findings against ./tools are enough to fail verdictMustBeClean, so the rendition is {\"released\": false, \"withheldBecause\": [\"assessment found a LOW-severity result; ...\"]} with no counts, paths or test ids. Worth reading beside the management sibling, which reports the same four findings as an empty list: internally a LOW finding is below the decision floor, externally it still blocks the statement. The two thresholds are set for different purposes and are not required to agree. For the case where the gate opens, see sample_intent_python_scan_external_release.json."
+}

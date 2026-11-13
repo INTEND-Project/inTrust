@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<!-- Copyright (c) 2026 Ericsson AB · SPDX-License-Identifier: MIT -->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>InTrust API Demo</title>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #1e293b;
+    --panel-2: #273449;
+    --border: #334155;
+    --text: #e2e8f0;
+    --muted: #94a3b8;
+    --accent: #38bdf8;
+    --accent-2: #22d3ee;
+    --green: #4ade80;
+    --amber: #fbbf24;
+    --red: #f87171;
+    --json-key: #7dd3fc;
+    --json-string: #86efac;
+    --json-number: #fca5a5;
+    --json-bool: #c4b5fd;
+    --json-null: #94a3b8;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.5;
+  }
+  header {
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, #16233c, #0f172a);
+  }
+  header h1 { margin: 0; font-size: 20px; letter-spacing: .3px; }
+  header p { margin: 4px 0 0; color: var(--muted); font-size: 13px; }
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 24px;
+    display: grid;
+    gap: 24px;
+  }
+  .card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .card > h2 {
+    margin: 0;
+    padding: 14px 20px;
+    font-size: 15px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card > h2 .step {
+    background: var(--accent);
+    color: #06263a;
+    font-weight: 700;
+    border-radius: 999px;
+    width: 22px; height: 22px;
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 12px;
+  }
+  .card .body { padding: 20px; }
+  .row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  button, .btn {
+    background: var(--accent);
+    color: #06263a;
+    border: none;
+    border-radius: 8px;
+    padding: 9px 16px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: filter .15s, opacity .15s;
+  }
+  button:hover:not(:disabled) { filter: brightness(1.08); }
+  button:disabled { opacity: .5; cursor: not-allowed; }
+  button.secondary { background: var(--panel-2); color: var(--text); border: 1px solid var(--border); }
+  select {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 8px 10px;
+    font-size: 14px;
+  }
+  label.field { font-size: 13px; color: var(--muted); display: inline-flex; align-items: center; gap: 6px; }
+  input[type=file] { display: none; }
+  .muted { color: var(--muted); font-size: 13px; }
+  .filename { font-size: 13px; color: var(--accent-2); font-family: ui-monospace, monospace; }
+  pre.json {
+    margin: 0;
+    padding: 16px;
+    background: #0b1220;
+    border-radius: 8px;
+    overflow: auto;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.55;
+    max-height: 520px;
+  }
+  .json-key { color: var(--json-key); }
+  .json-string { color: var(--json-string); }
+  .json-number { color: var(--json-number); }
+  .json-bool { color: var(--json-bool); }
+  .json-null { color: var(--json-null); }
+  .toggle { cursor: pointer; user-select: none; }
+  .toggle .arrow {
+    display: inline-block;
+    width: 1em;
+    margin-left: -1em;   /* hang the arrow in the gutter, keep braces aligned */
+    color: var(--muted);
+    transition: transform .1s;
+  }
+  .toggle:hover .arrow { color: var(--accent); }
+  .fold-preview { color: var(--muted); font-style: italic; cursor: pointer; }
+  .json-toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+  }
+  .json-toolbar .muted { margin-right: auto; }
+  .mini {
+    background: var(--panel-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12.5px;
+    cursor: pointer;
+  }
+  .mini:hover:not(:disabled) { border-color: var(--accent); }
+  .mini:disabled { opacity: .45; cursor: not-allowed; }
+  .mini.accent { background: var(--accent); color: #06263a; border-color: var(--accent); font-weight: 600; }
+
+  /* modal ("extra window") for the rendered agent summary */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(2, 6, 23, .72);
+    display: flex; align-items: center; justify-content: center;
+    padding: 24px; z-index: 50;
+  }
+  .modal {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    width: min(760px, 100%);
+    max-height: 85vh;
+    display: flex; flex-direction: column;
+    box-shadow: 0 24px 64px rgba(0,0,0,.5);
+  }
+  .modal-head {
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--panel-2);
+    display: flex; align-items: center; justify-content: space-between;
+    font-size: 15px; font-weight: 600;
+    border-radius: 14px 14px 0 0;
+  }
+  .modal-body { padding: 8px 24px 24px; overflow: auto; }
+
+  /* rendered markdown */
+  .markdown { font-size: 14.5px; line-height: 1.65; }
+  .markdown h1, .markdown h2, .markdown h3 { line-height: 1.3; margin: 1.1em 0 .5em; }
+  .markdown h1 { font-size: 20px; border-bottom: 1px solid var(--border); padding-bottom: .3em; }
+  .markdown h2 { font-size: 17px; }
+  .markdown h3 { font-size: 15px; color: var(--accent-2); }
+  .markdown p { margin: .6em 0; }
+  .markdown ul, .markdown ol { margin: .5em 0; padding-left: 1.5em; }
+  .markdown li { margin: .25em 0; }
+  .markdown code {
+    background: #0b1220; padding: 1px 5px; border-radius: 4px;
+    font-family: ui-monospace, monospace; font-size: 13px; color: var(--json-string);
+  }
+  .markdown pre {
+    background: #0b1220; padding: 12px 14px; border-radius: 8px;
+    overflow: auto; margin: .7em 0;
+  }
+  .markdown pre code { background: none; padding: 0; color: var(--text); }
+  .markdown blockquote {
+    margin: .7em 0; padding: .2em 14px;
+    border-left: 3px solid var(--accent); color: var(--muted);
+  }
+  .markdown a { color: var(--accent); }
+  .markdown strong { color: #f1f5f9; }
+  .markdown table { border-collapse: collapse; margin: .7em 0; }
+  .markdown th, .markdown td { border: 1px solid var(--border); padding: 6px 10px; }
+  .summary-grid {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin-bottom: 16px;
+    font-size: 14px;
+  }
+  .summary-grid dt { color: var(--muted); }
+  .summary-grid dd { margin: 0; word-break: break-word; }
+  .badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    border: 1px solid transparent;
+  }
+  .badge.QUEUED   { background: #334155; color: #cbd5e1; }
+  .badge.RUNNING  { background: #422006; color: var(--amber); border-color: #78500f; }
+  .badge.COMPLETED{ background: #052e16; color: var(--green); border-color: #166534; }
+  .badge.FAILED   { background: #450a0a; color: var(--red); border-color: #7f1d1d; }
+  .jobs { display: grid; gap: 10px; }
+  .job {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 12px 14px;
+    background: var(--panel-2);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .job .jid { font-family: ui-monospace, monospace; font-size: 12.5px; color: var(--accent-2); }
+  .job .meta { font-size: 12px; color: var(--muted); }
+  .job .spacer { flex: 1; }
+  .empty { color: var(--muted); font-size: 14px; padding: 8px 0; }
+  .toast {
+    position: fixed; bottom: 20px; right: 20px;
+    background: var(--panel-2); border: 1px solid var(--border);
+    padding: 12px 16px; border-radius: 10px; font-size: 14px;
+    box-shadow: 0 8px 24px rgba(0,0,0,.4);
+    opacity: 0; transform: translateY(10px); transition: .25s;
+    max-width: 360px;
+  }
+  .toast.show { opacity: 1; transform: translateY(0); }
+  .toast.error { border-color: #7f1d1d; }
+  .hint { font-size: 12.5px; color: var(--muted); margin-top: 10px; }
+  code { font-family: ui-monospace, monospace; background: #0b1220; padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<header>
+  <h1>InTrust API Demo</h1>
+  <p>Submit a TM Forum intent from a local file, then fetch its assessment result — no <code>curl</code> required.</p>
+</header>
+
+<main>
+  <!-- STEP 1: submit intent -->
+  <section class="card">
+    <h2><span class="step">1</span> Submit an intent</h2>
+    <div class="body">
+      <div class="row">
+        <button id="pickBtn">Choose intent file…</button>
+        <input type="file" id="fileInput" accept=".json,application/json">
+        <span id="fileName" class="filename"></span>
+        <div class="spacer"></div>
+        <button id="submitBtn" disabled>Submit intent →</button>
+      </div>
+      <div id="intentView" class="hidden" style="margin-top:16px;">
+        <dl class="summary-grid" id="intentSummary"></dl>
+        <div class="json-toolbar">
+          <span class="muted">Intent JSON — click any <span style="color:var(--accent)">▾</span> to fold a section</span>
+          <button class="mini" data-expand="intentJson">Expand all</button>
+          <button class="mini" data-collapse="intentJson">Collapse all</button>
+        </div>
+        <pre class="json" id="intentJson"></pre>
+      </div>
+      <p class="hint">The file must contain a JSON intent (see the <code>intents/</code> folder for samples).</p>
+    </div>
+  </section>
+
+  <!-- STEP 2: jobs / results -->
+  <section class="card">
+    <h2><span class="step">2</span> Jobs &amp; assessment results</h2>
+    <div class="body">
+      <div class="row" style="margin-bottom:12px;">
+        <label class="field">View as
+          <select id="profileSelect">
+            <option value="">issuer default</option>
+            <option value="technical">technical</option>
+            <option value="management">management</option>
+            <option value="compliance">compliance</option>
+            <option value="external">external</option>
+          </select>
+        </label>
+        <div class="spacer"></div>
+        <button class="secondary" id="refreshBtn">Refresh statuses</button>
+        <button class="secondary" id="clearBtn">Clear list</button>
+      </div>
+      <div class="jobs" id="jobsList"></div>
+
+      <div id="resultView" class="hidden" style="margin-top:20px;">
+        <div class="muted" style="margin-bottom:8px;">Assessment result — <span id="resultJobId" class="filename"></span></div>
+        <dl class="summary-grid" id="resultSummary"></dl>
+        <div class="json-toolbar">
+          <span class="muted">Result JSON — click any <span style="color:var(--accent)">▾</span> to fold a section</span>
+          <button class="mini accent" id="summaryBtn" disabled>📄 Agent summary</button>
+          <button class="mini" data-expand="resultJson">Expand all</button>
+          <button class="mini" data-collapse="resultJson">Collapse all</button>
+        </div>
+        <pre class="json" id="resultJson"></pre>
+      </div>
+    </div>
+  </section>
+</main>
+
+<!-- extra window: rendered agent summary -->
+<div class="modal-overlay hidden" id="summaryModal">
+  <div class="modal">
+    <div class="modal-head">
+      <span>📄 Agent summary</span>
+      <button class="secondary" id="summaryClose">Close ✕</button>
+    </div>
+    <div class="modal-body markdown" id="summaryContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+"use strict";
+
+// Same-origin: the page is served by the FastAPI app itself.
+const API = "";
+const STORE_KEY = "intrust.jobs";
+
+/* ---------- tiny helpers ---------- */
+const $ = (id) => document.getElementById(id);
+
+function toast(msg, isError) {
+  const t = $("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (isError ? " error" : "");
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => { t.className = "toast"; }, 4000);
+}
+
+function loadJobs() {
+  try { return JSON.parse(localStorage.getItem(STORE_KEY)) || []; }
+  catch { return []; }
+}
+function saveJobs(jobs) { localStorage.setItem(STORE_KEY, JSON.stringify(jobs)); }
+
+function addJob(entry) {
+  const jobs = loadJobs();
+  if (!jobs.some(j => j.jobId === entry.jobId)) {
+    jobs.unshift(entry);
+    saveJobs(jobs);
+  }
+  renderJobs();
+}
+
+function esc(s) {
+  return String(s).replace(/[&<>]/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
+
+/* ---------- pretty, collapsible JSON renderer ---------- */
+function renderJson(value, indent) {
+  indent = indent || 0;
+  const pad = "  ".repeat(indent);
+  const pad1 = "  ".repeat(indent + 1);
+
+  if (value === null) return '<span class="json-null">null</span>';
+  const t = typeof value;
+  if (t === "number") return '<span class="json-number">' + value + '</span>';
+  if (t === "boolean") return '<span class="json-bool">' + value + '</span>';
+  if (t === "string") return '<span class="json-string">"' + esc(value) + '"</span>';
+
+  if (Array.isArray(value)) {
+    if (value.length === 0) return "[]";
+    const items = value.map(v => pad1 + renderJson(v, indent + 1)).join(",\n");
+    return wrapCollapsible("[", "]", items, pad, value.length + " items");
+  }
+
+  // object
+  const keys = Object.keys(value);
+  if (keys.length === 0) return "{}";
+  const items = keys.map(k =>
+    pad1 + '<span class="json-key">"' + esc(k) + '"</span>: ' + renderJson(value[k], indent + 1)
+  ).join(",\n");
+  return wrapCollapsible("{", "}", items, pad, keys.length + " keys");
+}
+
+let _cid = 0;
+function wrapCollapsible(open, close, inner, pad, preview) {
+  const id = "c" + (_cid++);
+  // The arrow hangs in the left gutter so braces stay column-aligned.  Clicking
+  // the arrow/brace folds this node; clicking the "… N items" preview unfolds it.
+  return '<span class="toggle" data-target="' + id + '"><span class="arrow">▾</span>' + open + '</span>' +
+         '<span id="' + id + '" class="fold-body">\n' + inner + '\n' + pad + close + '</span>' +
+         '<span class="fold-preview hidden" data-for="' + id + '"> … ' + preview + ' ' + close + '</span>';
+}
+
+// Fold or unfold a single node by id.
+function setFold(container, id, collapsed) {
+  const body = container.querySelector("#" + id);
+  const prev = container.querySelector('[data-for="' + id + '"]');
+  const tog = container.querySelector('[data-target="' + id + '"]');
+  if (!body || !prev || !tog) return;
+  body.classList.toggle("hidden", collapsed);
+  prev.classList.toggle("hidden", !collapsed);
+  tog.querySelector(".arrow").textContent = collapsed ? "▸" : "▾";
+}
+
+function attachToggles(container) {
+  const flip = (el) => {
+    const id = el.dataset.target || el.dataset.for;
+    const collapsed = !container.querySelector("#" + id).classList.contains("hidden");
+    setFold(container, id, collapsed);
+  };
+  container.querySelectorAll(".toggle").forEach(el =>
+    el.onclick = (e) => { e.stopPropagation(); flip(el); });
+  // Clicking the collapsed preview expands the node again.
+  container.querySelectorAll(".fold-preview").forEach(el =>
+    el.onclick = (e) => { e.stopPropagation(); flip(el); });
+}
+
+// Fold/unfold every node in a viewer (used by the Expand/Collapse all buttons).
+function foldAll(container, collapsed) {
+  container.querySelectorAll(".toggle").forEach(el =>
+    setFold(container, el.dataset.target, collapsed));
+}
+
+function showJson(el, obj) {
+  el.innerHTML = renderJson(obj);
+  attachToggles(el);
+}
+
+/* ---------- fold toolbar buttons ---------- */
+document.querySelectorAll("[data-expand]").forEach(b =>
+  b.onclick = () => foldAll($(b.dataset.expand), false));
+document.querySelectorAll("[data-collapse]").forEach(b =>
+  b.onclick = () => foldAll($(b.dataset.collapse), true));
+
+/* ---------- minimal markdown renderer (self-contained, no CDN) ---------- */
+function renderMarkdown(md) {
+  if (!md) return '<p class="muted">No agent summary was provided for this result.</p>';
+  const lines = String(md).replace(/\r\n?/g, "\n").split("\n");
+  const inline = (s) => esc(s)
+    .replace(/`([^`]+)`/g, (_, c) => "<code>" + c + "</code>")
+    .replace(/\*\*([^*]+)\*\*/g, "<strong>$1</strong>")
+    .replace(/(^|[^*])\*([^*]+)\*/g, "$1<em>$2</em>")
+    .replace(/\[([^\]]+)\]\(([^)]+)\)/g,
+      '<a href="$2" target="_blank" rel="noopener">$1</a>');
+
+  let html = "", i = 0, listType = null;
+  const closeList = () => { if (listType) { html += "</" + listType + ">"; listType = null; } };
+
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // fenced code block
+    if (/^```/.test(line)) {
+      closeList();
+      const buf = [];
+      i++;
+      while (i < lines.length && !/^```/.test(lines[i])) buf.push(lines[i++]);
+      i++; // skip closing fence
+      html += "<pre><code>" + esc(buf.join("\n")) + "</code></pre>";
+      continue;
+    }
+    // heading
+    const h = line.match(/^(#{1,3})\s+(.*)$/);
+    if (h) { closeList(); html += "<h" + h[1].length + ">" + inline(h[2]) + "</h" + h[1].length + ">"; i++; continue; }
+    // blockquote
+    if (/^>\s?/.test(line)) { closeList(); html += "<blockquote>" + inline(line.replace(/^>\s?/, "")) + "</blockquote>"; i++; continue; }
+    // unordered list
+    if (/^\s*[-*]\s+/.test(line)) {
+      if (listType !== "ul") { closeList(); html += "<ul>"; listType = "ul"; }
+      html += "<li>" + inline(line.replace(/^\s*[-*]\s+/, "")) + "</li>"; i++; continue;
+    }
+    // ordered list
+    if (/^\s*\d+\.\s+/.test(line)) {
+      if (listType !== "ol") { closeList(); html += "<ol>"; listType = "ol"; }
+      html += "<li>" + inline(line.replace(/^\s*\d+\.\s+/, "")) + "</li>"; i++; continue;
+    }
+    // blank line
+    if (/^\s*$/.test(line)) { closeList(); i++; continue; }
+    // paragraph (merge consecutive non-blank lines)
+    closeList();
+    const buf = [line]; i++;
+    while (i < lines.length && !/^\s*$/.test(lines[i]) &&
+           !/^(#{1,3}\s|>\s?|```|\s*[-*]\s+|\s*\d+\.\s+)/.test(lines[i])) buf.push(lines[i++]);
+    html += "<p>" + inline(buf.join(" ")) + "</p>";
+  }
+  closeList();
+  return html;
+}
+
+/* ---------- summary modal ("extra window") ---------- */
+// { md, label, warnings[] } — see pickSummary().
+let currentSummary = null;
+
+function openSummary() {
+  const s = currentSummary || {};
+  let head = "";
+  if (s.label) head += '<p class="muted" style="margin-top:12px">' + esc(s.label) + "</p>";
+  (s.warnings || []).forEach(w => {
+    head += '<blockquote style="border-left-color:var(--amber);color:var(--amber)">⚠ ' +
+            esc(w) + "</blockquote>";
+  });
+  $("summaryContent").innerHTML = head + renderMarkdown(s.md);
+  $("summaryModal").classList.remove("hidden");
+}
+function closeSummary() { $("summaryModal").classList.add("hidden"); }
+
+// Which prose to show, and how to label it honestly.
+//
+// `renditionSummary` is composed from the rendition the caller is looking at, so
+// it speaks for this audience.  `agentSummary` is the agent's own final text from
+// execution time — written for whichever profile the intent resolved to, in a
+// technical register — so it is offered only as a fallback and labelled as what
+// it is, never presented as this audience's summary.
+function pickSummary(result) {
+  if (!result) return null;
+  const rs = result.renditionSummary;
+  if (rs && rs.status === "SUCCESS" && rs.markdown) {
+    const bits = [rs.profile + " rendition", rs.register + " register"];
+    if (rs.cached === false) bits.push("newly composed");
+    return { md: rs.markdown, label: bits.join(" · "), warnings: rs.warnings || [] };
+  }
+  const why = rs && (rs.reason || rs.error);
+  if (result.agentSummary) {
+    return {
+      md: result.agentSummary,
+      label: "execution narrative from submission — not an audience rendition" +
+             (why ? " (no rendition summary: " + why + ")" : ""),
+      warnings: [],
+    };
+  }
+  return why ? { md: "", label: "No summary available: " + why, warnings: [] } : null;
+}
+
+$("summaryBtn").onclick = openSummary;
+$("summaryClose").onclick = closeSummary;
+$("summaryModal").onclick = (e) => { if (e.target === $("summaryModal")) closeSummary(); };
+document.addEventListener("keydown", (e) => { if (e.key === "Escape") closeSummary(); });
+
+/* ---------- human-readable summaries ---------- */
+function summaryRows(dl, pairs) {
+  dl.innerHTML = pairs
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => "<dt>" + esc(k) + "</dt><dd>" + v + "</dd>")
+    .join("");
+}
+
+function intentSummary(intent) {
+  const t = intent.target || {};
+  const p = intent.parameters || {};
+  const a = intent.actor || {};
+  summaryRows($("intentSummary"), [
+    ["Intent ID", intent.intentId || intent.id || intent["@id"]],
+    ["Name", intent.name],
+    ["Description", intent.description],
+    ["Type", intent.intentType || intent.type],
+    ["Actor", [a.role, a.organization].filter(Boolean).join(" · ")],
+    ["Target", [t.type, t.name].filter(Boolean).join(": ")],
+    ["Parameters", Object.keys(p).length ? Object.entries(p).map(([k, v]) =>
+        "<code>" + esc(k) + "</code>=" + esc(Array.isArray(v) ? v.join(", ") : v)).join("  ") : ""],
+  ]);
+}
+
+function resultSummary(res) {
+  const r = res.result || {};
+  const rend = r.rendition || {};
+  summaryRows($("resultSummary"), [
+    ["Status", '<span class="badge ' + res.status + '">' + res.status + "</span>"],
+    ["Job ID", esc(res.jobId)],
+    ["Verdict", esc(rend.verdict || rend.decision || rend.status || r.verdict || "")],
+    ["Summary", esc(rend.summary || rend.headline || r.summary || "")],
+    ["Error", res.error ? '<span style="color:var(--red)">' + esc(res.error) + "</span>" : ""],
+  ]);
+}
+
+/* ---------- current parsed intent ---------- */
+let currentIntent = null;
+
+$("pickBtn").onclick = () => $("fileInput").click();
+
+$("fileInput").onchange = (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  $("fileName").textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      currentIntent = JSON.parse(reader.result);
+      intentSummary(currentIntent);
+      showJson($("intentJson"), currentIntent);
+      $("intentView").classList.remove("hidden");
+      $("submitBtn").disabled = false;
+    } catch (err) {
+      currentIntent = null;
+      $("submitBtn").disabled = true;
+      $("intentView").classList.add("hidden");
+      toast("Invalid JSON: " + err.message, true);
+    }
+  };
+  reader.readAsText(file);
+};
+
+/* ---------- submit intent ---------- */
+$("submitBtn").onclick = async () => {
+  if (!currentIntent) return;
+  $("submitBtn").disabled = true;
+  try {
+    const resp = await fetch(API + "/intent", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(currentIntent),
+    });
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+    addJob({
+      jobId: data.jobId,
+      status: data.status,
+      intentId: currentIntent.intentId || currentIntent.id || "",
+      name: currentIntent.name || "",
+      submittedAt: new Date().toLocaleString(),
+    });
+    toast("Submitted — job " + data.jobId + " stored.");
+  } catch (err) {
+    toast("Submission failed: " + err.message, true);
+  } finally {
+    $("submitBtn").disabled = false;
+  }
+};
+
+/* ---------- jobs list ---------- */
+function renderJobs() {
+  const jobs = loadJobs();
+  const list = $("jobsList");
+  if (jobs.length === 0) {
+    list.innerHTML = '<div class="empty">No jobs yet. Submit an intent above.</div>';
+    return;
+  }
+  list.innerHTML = jobs.map(j => `
+    <div class="job">
+      <span class="badge ${j.status}">${j.status}</span>
+      <div>
+        <div class="jid">${esc(j.jobId)}</div>
+        <div class="meta">${esc(j.name || j.intentId || "intent")} · submitted ${esc(j.submittedAt || "")}</div>
+      </div>
+      <div class="spacer"></div>
+      <button data-result="${esc(j.jobId)}">Get result</button>
+      <button class="secondary" data-remove="${esc(j.jobId)}">✕</button>
+    </div>`).join("");
+
+  list.querySelectorAll("[data-result]").forEach(b =>
+    b.onclick = () => fetchResult(b.dataset.result));
+  list.querySelectorAll("[data-remove]").forEach(b =>
+    b.onclick = () => {
+      saveJobs(loadJobs().filter(j => j.jobId !== b.dataset.remove));
+      renderJobs();
+    });
+}
+
+/* ---------- fetch a single result ---------- */
+async function fetchResult(jobId) {
+  const profile = $("profileSelect").value;
+  const url = API + "/result/" + encodeURIComponent(jobId) + (profile ? "?profile=" + profile : "");
+  try {
+    const resp = await fetch(url);
+    const data = await resp.json();
+    if (!resp.ok) throw new Error(data.detail || resp.statusText);
+
+    // Keep the stored status in sync.
+    const jobs = loadJobs();
+    const j = jobs.find(x => x.jobId === jobId);
+    if (j) { j.status = data.status; saveJobs(jobs); renderJobs(); }
+
+    $("resultJobId").textContent = jobId + (profile ? "  (" + profile + " view)" : "");
+    resultSummary(data);
+    showJson($("resultJson"), data);
+
+    currentSummary = pickSummary(data.result);
+    $("summaryBtn").disabled = !(currentSummary && currentSummary.md);
+    $("summaryBtn").title = currentSummary && currentSummary.md
+      ? currentSummary.label
+      : "This result has no summary yet";
+
+    $("resultView").classList.remove("hidden");
+    $("resultView").scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+    if (data.status === "RUNNING" || data.status === "QUEUED")
+      toast("Job is still " + data.status + " — try again shortly.");
+  } catch (err) {
+    toast("Could not fetch result: " + err.message, true);
+  }
+}
+
+/* ---------- refresh all statuses ---------- */
+$("refreshBtn").onclick = async () => {
+  const jobs = loadJobs();
+  await Promise.all(jobs.map(async j => {
+    try {
+      const resp = await fetch(API + "/result/" + encodeURIComponent(j.jobId));
+      if (resp.ok) j.status = (await resp.json()).status;
+    } catch { /* ignore */ }
+  }));
+  saveJobs(jobs);
+  renderJobs();
+  toast("Statuses refreshed.");
+};
+
+$("clearBtn").onclick = () => {
+  if (confirm("Remove all stored jobs from this browser? (does not delete them on the server)")) {
+    localStorage.removeItem(STORE_KEY);
+    renderJobs();
+    $("resultView").classList.add("hidden");
+  }
+};
+
+/* ---------- init ---------- */
+renderJobs();
+</script>
+</body>
+</html>

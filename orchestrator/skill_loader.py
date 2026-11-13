@@ -211,7 +211,7 @@ def _make_skill_tool(
         }
         # ``intentId`` is not a skill parameter — it belongs at the top level of
         # the intent.  When a skill declares it (e.g. mia-privacy, which queries
-        # ACAT by intent id), the LLM supplies it here; promote it so it
+        # the MIA service by intent id), the LLM supplies it here; promote it so it
         # overrides the closure's job id.  This is the only way the ``adk web``
         # path — where the closure id is the fixed "interactive" — can reach the
         # real intent id.  Fall back to the closure id when not provided.

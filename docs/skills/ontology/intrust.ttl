@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 @prefix spa:      <https://intend-project.eu/ontology/spa#> .
 @prefix owl:      <http://www.w3.org/2002/07/owl#> .
 @prefix rdf:      <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
@@ -326,6 +328,17 @@ spa:AssessmentReport
     rdfs:label "Assessment Report"@en ;
     rdfs:comment "A formal report document communicating the outcome of an assessment, aligned with TM Forum intent reporting (e.g. tmfIntentReport.v1). It carries the report type, terminal status, a human-readable summary, the findings produced, recommended remediations, and provenance back to the originating intent."@en .
 
+spa:ReportRendition
+    rdf:type owl:Class ;
+    rdfs:label "Report Rendition"@en ;
+    rdfs:comment "One audience's view of an assessment, produced by projecting the canonical fact model. A rendition selects and aggregates fields; it never recomputes a figure, so several renditions of one assessment cannot disagree. Modelled as its own class rather than as an AssessmentReport because the constraints differ: a report is validated for completeness, a rendition for whether the fields it carries are permitted to the audience it was built for."@en .
+
+spa:ExternalStatement
+    rdf:type owl:Class ;
+    rdfs:subClassOf spa:ReportRendition ;
+    rdfs:label "External Statement"@en ;
+    rdfs:comment "A rendition intended to leave the organisation. Built by allowlist rather than by removing fields, and produced only for an assessment that satisfied every release gate; otherwise it records that it was withheld and why. Declared as a subclass so the rendition constraints apply to it as well as the external-specific ones."@en .
+
 #################################################################
 # Object properties
 #################################################################
@@ -605,6 +618,13 @@ spa:hasThreshold
     rdfs:range spa:Threshold ;
     rdfs:comment "Links a metric, condition, baseline, requirement, or intent to a threshold."@en .
 
+spa:impliesSeverity
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "implies severity"@en ;
+    rdfs:domain spa:Threshold ;
+    rdfs:range spa:Severity ;
+    rdfs:comment "The severity classification implied by a metric observation crossing this threshold. Declaring the mapping here makes severity a derived, reviewable property of the ontology rather than a judgement made during report authoring."@en .
+
 spa:hasFulfillmentCondition
     rdf:type owl:ObjectProperty ;
     rdfs:label "has fulfillment condition"@en ;
@@ -865,6 +885,34 @@ spa:thresholdValue
     rdfs:range xsd:decimal ;
     rdfs:comment "The numeric value of a threshold."@en .
 
+spa:thresholdProvisional
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "threshold provisional"@en ;
+    rdfs:domain spa:Threshold ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether this threshold value is awaiting confirmation by the party that owns the metric's semantics. Stated as a property rather than only in rdfs:comment so that a normalizer can carry it into every report: a threshold converts a measurement into a severity word, so a reader deciding on the basis of that word needs to know the boundary is unconfirmed. Absent means confirmed. See spa:thresholdProvisionalReason for what is outstanding."@en .
+
+spa:thresholdProvisionalReason
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "threshold provisional reason"@en ;
+    rdfs:domain spa:Threshold ;
+    rdfs:range xsd:string ;
+    rdfs:comment "What must be settled before the threshold value can be relied on, and by whom. Phrased for a report reader rather than for the maintainer, because this text is carried into the assessment output verbatim."@en .
+
+spa:metricSemanticsProvisional
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "metric semantics provisional"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether how this metric's values are to be read is still awaiting confirmation by the party that owns the measurement. Distinct from spa:thresholdProvisional, which qualifies where a boundary sits: this qualifies what the measured value means before any boundary is applied, so it survives the confirmation of every threshold on the metric and cannot be recorded on one. Absent means confirmed. See spa:metricSemanticsProvisionalReason for what is outstanding."@en .
+
+spa:metricSemanticsProvisionalReason
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "metric semantics provisional reason"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "What about the metric's interpretation is outstanding, by whom it would be settled, and which way the normalizer currently reads it. Phrased for a report reader rather than for the maintainer, because this text is carried into the assessment output verbatim."@en .
+
 spa:comparisonOperator
     rdf:type owl:DatatypeProperty ;
     rdfs:label "comparison operator"@en ;
@@ -927,6 +975,259 @@ spa:intentId
     rdfs:domain spa:AssessmentReport ;
     rdfs:range xsd:string ;
     rdfs:comment "Identifier of the intent this report fulfils, carried over from the originating intent."@en .
+
+spa:metricIdentifier
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "metric identifier"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A stable machine-readable key for a metric definition, used by skill normalizers to bind a raw tool output column to this definition."@en .
+
+spa:higherIsWorse
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "higher is worse"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether a larger metric value indicates a worse outcome. Stated explicitly because the polarity of privacy and security metrics is not inferable from the value alone: an attack advantage worsens as it rises, while an attacker-accuracy score can worsen as it falls away from chance level."@en .
+
+spa:derivedFromMetric
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "derived from metric"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range spa:MetricDefinition ;
+    rdfs:comment "Marks a metric definition as an algebraic restatement of another, so reporting can avoid presenting it as independent corroborating evidence."@en .
+
+spa:derivationExpression
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "derivation expression"@en ;
+    rdfs:domain spa:MetricDefinition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The expression by which a derived metric definition is computed from the metric it is derived from."@en .
+
+spa:SweepDimension
+    rdf:type owl:Class ;
+    rdfs:label "Sweep Dimension"@en ;
+    rdfs:comment "A varied input parameter of a parameter-sweep assessment, along which metric observations are indexed. Dimensions are what make a sweep result a matrix rather than a list, and they are the axes along which reporting aggregates."@en .
+
+spa:hasDimension
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "has dimension"@en ;
+    rdfs:domain spa:Metric ;
+    rdfs:range spa:SweepDimension ;
+    rdfs:comment "Links a metric observation to the sweep dimension values under which it was observed."@en .
+
+spa:dimensionName
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "dimension name"@en ;
+    rdfs:domain spa:SweepDimension ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The name of a swept input parameter, such as a learning rate or batch size."@en .
+
+spa:dimensionValue
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "dimension value"@en ;
+    rdfs:domain spa:SweepDimension ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The value of a swept input parameter for one observation, held as a string so heterogeneous parameter types share one representation."@en .
+
+spa:scopeLimitation
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "scope limitation"@en ;
+    rdfs:domain spa:AssessmentReport ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A stated boundary on what the assessment establishes: a configuration not exercised, a degenerate input condition, or an attack class not attempted. One literal per limitation. Required reading for compliance audiences, for whom the untested surface matters as much as the findings."@en .
+
+#################################################################
+# Rendition properties
+#
+# A rendition is a projection of the canonical fact model for one audience.
+# These properties describe the projection itself — which profile produced it,
+# what it disclosed, and what it left out — so that the rendition can be
+# validated and reconciled against the assessment it came from without
+# re-reading the facts.
+#################################################################
+
+spa:renditionProfile
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "rendition profile"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The name of the audience profile that produced this rendition: technical, management, compliance, or external."@en .
+
+spa:renditionResolvedBy
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "rendition resolved by"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "How the profile was chosen — from the intent's actor role, an explicit reporting profile request, an API override, or the default. Recorded because a rendition's detail level is only defensible if the basis for choosing it is visible."@en .
+
+spa:disclosureClass
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "disclosure class"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range spa:DisclosureClass ;
+    rdfs:comment "How far this rendition may travel. The effective content of a rendition is the intersection of what its audience needs and what its disclosure class permits, so the class is a property of the artifact rather than of the reader."@en .
+
+spa:numericDisclosure
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "numeric disclosure"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Whether measured values appear exactly, in bands, or not at all: exact, banded, or verdictOnly. Stated so a reader knows whether an absent figure was suppressed or never measured."@en .
+
+spa:canonicalWorstSeverity
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "canonical worst severity"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The worst severity in the fact model this rendition was projected from, carried even when the rendition suppresses the findings that produced it. This is what makes a reduced rendition reconcilable against the assessment: a management view showing two findings and a canonical count of nine is transparently a selection, not a complete list."@en .
+
+spa:canonicalFindingCount
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "canonical finding count"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "How many findings the underlying fact model held, irrespective of how many this rendition shows."@en .
+
+spa:findingsOmitted
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "findings omitted"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range xsd:integer ;
+    rdfs:comment "How many findings this rendition dropped, through a severity floor or a per-report cap. Reported rather than silently applied: an omission a reader cannot see is indistinguishable from an absence."@en .
+
+spa:renditionReleased
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "rendition released"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether an external statement was produced. False means every gate was evaluated and at least one was not satisfied; the reasons are carried in spa:withheldBecause. The honest external output for an assessment that found a problem is nothing, and this records that nothing was produced rather than leaving the absence unexplained."@en .
+
+spa:withheldBecause
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "withheld because"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:string ;
+    rdfs:comment "One reason an external statement was not produced, in prose. One literal per unsatisfied gate."@en .
+
+spa:externalScopeStatement
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "external scope statement"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A boundary on the assessment, phrased for a reader outside the organisation. Distinct from spa:scopeLimitation, which names the paths, parameter values and identifiers that make a limitation checkable internally and must not leave. Written by the normalizer rather than derived from the internal wording: a normalizer opts in by supplying text it is willing to have quoted to a customer."@en .
+
+#################################################################
+# Validity and approval of a released statement
+#
+# An external statement makes a claim about a component at a moment. The
+# component then keeps changing, so the claim decays while the artifact does
+# not: a PDF from eighteen months ago reads exactly like one from this morning.
+# These properties bound the claim in time and record who agreed to make it.
+#
+# spa:evidenceValidityUntil is deliberately not reused here. Its rdfs:domain is
+# spa:Evidence, so asserting it on a statement would type the statement as
+# evidence for itself — the artifact is a claim derived from evidence, not an
+# item of it, and a reasoner stronger than the one this repository runs would
+# draw exactly that unwanted conclusion.
+#################################################################
+
+spa:assessedOn
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "assessed on"@en ;
+    rdfs:domain spa:ReportRendition ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When the assessment this rendition reports on was performed. Required before an external statement may be released, because a validity period has to be measured from somewhere: an undated statement cannot be shown to have expired and so never does."@en .
+
+spa:statementValidUntil
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "statement valid until"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "The moment after which this statement no longer stands and must be re-established by a fresh assessment. Derived from spa:assessedOn plus spa:statementValidityPeriod rather than chosen per statement, so that the expiry of two statements can be compared."@en .
+
+spa:statementValidityPeriod
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "statement validity period"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:duration ;
+    rdfs:comment "How long a released statement stands before it must be re-established. Carried on the artifact rather than left in the code that produced it, so a reader can see the rule that produced the expiry date and not only the date."@en .
+
+spa:requiresApprovalBeforeRelease
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "requires approval before release"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:boolean ;
+    rdfs:comment "Whether a human must agree before this statement leaves the organisation. Stating the requirement is not the same as meeting it: see spa:approvalState, which records whether it was actually met. A requirement advertised without a corresponding state reads as a control while being none."@en .
+
+spa:approvalState
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "approval state"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:string ;
+    rdfs:comment "Whether release has been approved: pending or approved. There is no rejected state — a refused release is simply not released, and the reason belongs in spa:withheldBecause where every other unmet condition is recorded."@en .
+
+spa:approvedBy
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "approved by"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The person or role that approved release. Named rather than implied, because an approval nobody is attached to cannot be questioned afterwards."@en .
+
+spa:approvalRecordedAt
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "approval recorded at"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:dateTime ;
+    rdfs:comment "When the approval was given. Distinct from spa:assessedOn: an approval given long after the assessment was performed was given against a stale picture, and the gap is only visible if both are recorded."@en .
+
+spa:approvalReference
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "approval reference"@en ;
+    rdfs:domain spa:ExternalStatement ;
+    rdfs:range xsd:string ;
+    rdfs:comment "An external record of the approval decision — a ticket, change request, or minute. Optional, and the one part of the approval that InTrust cannot check."@en .
+
+spa:DisclosureClass
+    rdf:type owl:Class ;
+    rdfs:label "Disclosure Class"@en ;
+    rdfs:comment "How far an artifact may travel: within the assessing team, within the organisation, or outside it."@en .
+
+spa:DisclosureInternal
+    rdf:type owl:NamedIndividual , spa:DisclosureClass ;
+    rdfs:label "Internal disclosure"@en ;
+    rdfs:comment "May carry evidence, file paths, and raw tool output. For the readers who will act on the finding."@en .
+
+spa:DisclosureConfidential
+    rdf:type owl:NamedIndividual , spa:DisclosureClass ;
+    rdfs:label "Confidential disclosure"@en ;
+    rdfs:comment "May carry measured figures and findings, but not the evidence snippets or raw output that would reproduce them."@en .
+
+spa:DisclosureExternal
+    rdf:type owl:NamedIndividual , spa:DisclosureClass ;
+    rdfs:label "External disclosure"@en ;
+    rdfs:comment "May leave the organisation. Built by allowlist, gated on release conditions, and carrying no target identifiers, paths, or measurements."@en .
+
+spa:criterionKey
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "criterion key"@en ;
+    rdfs:domain spa:RegulatorySource ;
+    rdfs:range xsd:string ;
+    rdfs:comment "A short token by which an intent may name this regulatory source in its criteria list, such as \"gdpr\". Declared so that criterion resolution is a lookup against the ontology rather than string matching in code."@en .
+
+spa:evaluatedBySkill
+    rdf:type owl:DatatypeProperty ;
+    rdfs:label "evaluated by skill"@en ;
+    rdfs:domain spa:Requirement ;
+    rdfs:range xsd:string ;
+    rdfs:comment "The name of an InTrust skill able to produce evidence bearing on this requirement. A requirement with no such skill is one the framework cannot currently evaluate, which is what makes an honest coverage statement possible: naming a criterion in an intent does not mean the criterion was assessed."@en .
+
+spa:addressesPrivacyThreatCategory
+    rdf:type owl:ObjectProperty ;
+    rdfs:label "addresses privacy threat category"@en ;
+    rdfs:domain spa:Requirement ;
+    rdfs:range spa:PrivacyThreatCategory ;
+    rdfs:comment "Links a requirement to the privacy threat category it guards against. Distinct from spa:hasPrivacyThreatCategory, which classifies a threat itself: a requirement is not a threat, so the two must not share a property."@en .
 
 #################################################################
 # SKOS concept schemes for mappings
@@ -1355,6 +1656,346 @@ spa:IntentRetired
     rdfs:label "Intent retired"@en .
 
 #################################################################
+# Metric definitions and severity thresholds per assessment skill
+#
+# Thresholds are declared here rather than inferred during report
+# authoring, so that the severity of a metric observation is a derived
+# and reviewable property.  A normalizer reads spa:metricIdentifier to
+# bind a raw tool output column to its definition, then classifies each
+# observation by the first matching threshold in descending order.
+#################################################################
+
+spa:MembershipInferenceAdvantageMetric
+    rdf:type owl:NamedIndividual , spa:MetricDefinition ;
+    rdfs:label "Membership inference attack advantage"@en ;
+    spa:metricIdentifier "membershipInferenceAdvantage" ;
+    spa:metricDefinitionText "The advantage of a membership inference adversary over random guessing, reported by the MIA service as the 'adv' column. Zero indicates no advantage; magnitude indicates how reliably training-set membership can be inferred. Sign is taken to indicate the direction of the adversary's bias rather than a measure of severity, so classification uses the absolute value; that reading is not itself confirmed — see spa:metricSemanticsProvisionalReason." ;
+    spa:metricUnit "advantage" ;
+    spa:higherIsWorse true ;
+    spa:aggregationFunction "maximum" ;
+    spa:metricSemanticsProvisional true ;
+    spa:metricSemanticsProvisionalReason "Whether the sign of the 'adv' column is directional — the way the adversary's bias runs — or is measurement noise around zero has not been confirmed with the team that owns the MIA attack implementation. Classification uses the absolute value, which is the conservative reading: it treats a negative advantage as a leak of the same size as its positive counterpart. If the sign turns out to be noise, findings resting on a negative value are overstated; the magnitudes themselves are the tool's and are unaffected." ;
+    spa:hasThreshold spa:MIAAdvantageHighThreshold ,
+                     spa:MIAAdvantageMediumThreshold ,
+                     spa:MIAAdvantageLowThreshold .
+
+spa:MembershipInferenceAttackAccuracyMetric
+    rdf:type owl:NamedIndividual , spa:MetricDefinition ;
+    rdfs:label "Membership inference attack accuracy score"@en ;
+    spa:metricIdentifier "membershipInferenceScore" ;
+    spa:metricDefinitionText "The MIA service 'score' column. In the observed MIA output this is an exact algebraic restatement of the attack advantage, not an independent measurement, and it moves inversely: it falls away from 0.5 as the advantage grows. It is retained for traceability to the raw tool output and must not be presented as corroborating evidence alongside the advantage." ;
+    spa:metricUnit "accuracy" ;
+    spa:higherIsWorse false ;
+    spa:derivedFromMetric spa:MembershipInferenceAdvantageMetric ;
+    spa:derivationExpression "(1 - abs(adv)) / 2" .
+
+spa:MIAAdvantageHighThreshold
+    rdf:type owl:NamedIndividual , spa:Threshold ;
+    rdfs:label "High membership inference advantage"@en ;
+    spa:thresholdValue "0.10"^^xsd:decimal ;
+    spa:comparisonOperator "greater-than-or-equal" ;
+    spa:impliesSeverity spa:SeverityHigh ;
+    rdfs:comment "An advantage at or above 0.10 means the adversary is right about training-set membership in roughly 55 of 100 attempts against a 50 baseline, which is a reportable privacy leak. Confirmed with the team that owns the MIA attack implementation."@en .
+
+spa:MIAAdvantageMediumThreshold
+    rdf:type owl:NamedIndividual , spa:Threshold ;
+    rdfs:label "Medium membership inference advantage"@en ;
+    spa:thresholdValue "0.05"^^xsd:decimal ;
+    spa:comparisonOperator "greater-than-or-equal" ;
+    spa:impliesSeverity spa:SeverityMedium ;
+    rdfs:comment "An advantage in the 0.05 to 0.10 band is a measurable but limited leak. Confirmed with the team that owns the MIA attack implementation."@en .
+
+spa:MIAAdvantageLowThreshold
+    rdf:type owl:NamedIndividual , spa:Threshold ;
+    rdfs:label "Low membership inference advantage"@en ;
+    spa:thresholdValue "0.02"^^xsd:decimal ;
+    spa:comparisonOperator "greater-than-or-equal" ;
+    spa:impliesSeverity spa:SeverityLow ;
+    rdfs:comment "An advantage in the 0.02 to 0.05 band is at or near measurement noise for a sweep of this size, recorded for completeness rather than as an actionable leak. Confirmed with the team that owns the MIA attack implementation."@en .
+
+#################################################################
+# Compliance requirement individuals
+#
+# These bind a regulatory source to the specific obligation an InTrust
+# skill can produce evidence for, via spa:evaluatedBySkill.  A criterion
+# named in an intent is only "covered" when at least one of its
+# requirements is evaluable by the skill that ran; otherwise the report
+# must say the criterion was named but not assessed.  Declaring the link
+# here keeps that distinction reviewable instead of implied.
+#################################################################
+
+spa:GDPRSecurityOfProcessing
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Security of processing (GDPR Art. 32)"@en ;
+    spa:identifier "GDPR-Art32" ;
+    spa:description "Controllers and processors shall implement measures appropriate to the risk, including measures to ensure the ongoing confidentiality of personal data being processed." ;
+    spa:sourceReference "Regulation (EU) 2016/679, Article 32" ;
+    spa:derivedFromSource spa:GDPR ;
+    spa:evaluatedBySkill "mia-privacy" ;
+    spa:addressesPrivacyThreatCategory spa:DisclosureOfInformation .
+
+spa:GDPRDataProtectionByDesign
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Data protection by design and by default (GDPR Art. 25)"@en ;
+    spa:identifier "GDPR-Art25" ;
+    spa:description "Technical and organisational measures shall be implemented, at the time of determining the means of processing, to give effect to the data protection principles." ;
+    spa:sourceReference "Regulation (EU) 2016/679, Article 25" ;
+    spa:derivedFromSource spa:GDPR ;
+    spa:evaluatedBySkill "mia-privacy" ;
+    spa:addressesPrivacyThreatCategory spa:Identifiability .
+
+spa:GDPRDataSubjectRights
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Data subject rights (GDPR Ch. III)"@en ;
+    spa:identifier "GDPR-ChIII" ;
+    spa:description "Data subjects have rights of access, rectification, erasure, restriction, portability and objection, which a controller must be able to give effect to." ;
+    spa:sourceReference "Regulation (EU) 2016/679, Chapter III" ;
+    spa:derivedFromSource spa:GDPR ;
+    spa:addressesPrivacyThreatCategory spa:Unawareness .
+
+spa:GDPRLawfulnessOfProcessing
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Lawfulness of processing (GDPR Art. 6)"@en ;
+    spa:identifier "GDPR-Art6" ;
+    spa:description "Processing is lawful only if and to the extent that at least one legal basis applies." ;
+    spa:sourceReference "Regulation (EU) 2016/679, Article 6" ;
+    spa:derivedFromSource spa:GDPR ;
+    spa:addressesPrivacyThreatCategory spa:NonCompliance .
+
+spa:GDPRTestingOfSecurityMeasures
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Testing and evaluating the effectiveness of security measures (GDPR Art. 32(1)(d))"@en ;
+    spa:identifier "GDPR-Art32-1d" ;
+    spa:description "A process for regularly testing, assessing and evaluating the effectiveness of technical and organisational measures for ensuring the security of processing." ;
+    spa:sourceReference "Regulation (EU) 2016/679, Article 32(1)(d)" ;
+    spa:derivedFromSource spa:GDPR ;
+    spa:evaluatedBySkill "bandit-static-code" ;
+    spa:evaluatedBySkill "trivy-filesystem" ;
+    spa:evaluatedBySkill "trivy-docker-image" ;
+    spa:evaluatedBySkill "trivy-kubernetes" ;
+    spa:evaluatedBySkill "mia-privacy" ;
+    rdfs:comment "Declared separately from spa:GDPRSecurityOfProcessing rather than folded into it. Article 32(1) requires measures appropriate to the risk; 32(1)(d) requires that they be tested. A scan evidences the testing obligation — it ran, and it says what it looked for — but it does not establish that the measures a controller chose are appropriate, which is a judgement no tool in this framework makes. Keeping the two apart is what stops a passing scan from reading as compliance with Article 32 as a whole."@en .
+
+#################################################################
+# Security requirement individuals
+#
+# Distinct from the privacy requirements above in what evidences them: a
+# scanner reports the presence of a known weakness in an artifact, whereas
+# the MIA sweep measures a property of a trained model.  Both are declared
+# here so that criterion resolution stays a lookup, but the skill lists are
+# deliberately narrow — a requirement is only listed as evaluable by a skill
+# whose output bears on that specific obligation.  Where the obligation is
+# organisational (a policy must exist, a process must be followed), no skill
+# is named, and coverage resolution will say so.
+#################################################################
+
+spa:NIS2VulnerabilityHandling
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Vulnerability handling and disclosure (NIS2 Art. 21(2)(e))"@en ;
+    spa:identifier "NIS2-Art21-2e" ;
+    spa:description "Security in network and information systems acquisition, development and maintenance, including vulnerability handling and disclosure." ;
+    spa:sourceReference "Directive (EU) 2022/2555, Article 21(2)(e)" ;
+    spa:derivedFromSource spa:NIS2 ;
+    spa:evaluatedBySkill "bandit-static-code" ;
+    spa:evaluatedBySkill "trivy-filesystem" ;
+    spa:evaluatedBySkill "trivy-docker-image" ;
+    spa:evaluatedBySkill "trivy-kubernetes" .
+
+spa:NIS2RiskAnalysisPolicies
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Risk analysis and information system security policies (NIS2 Art. 21(2)(a))"@en ;
+    spa:identifier "NIS2-Art21-2a" ;
+    spa:description "Policies on risk analysis and information system security." ;
+    spa:sourceReference "Directive (EU) 2022/2555, Article 21(2)(a)" ;
+    spa:derivedFromSource spa:NIS2 ;
+    rdfs:comment "No skill is named: whether a policy exists and is adequate is not something a scan can show. An assessment result may be evidence used within such a policy, but it does not evidence the policy."@en .
+
+spa:NIS2SupplyChainSecurity
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Supply chain security (NIS2 Art. 21(2)(d))"@en ;
+    spa:identifier "NIS2-Art21-2d" ;
+    spa:description "Supply chain security, including security-related aspects of the relationships between each entity and its direct suppliers or service providers." ;
+    spa:sourceReference "Directive (EU) 2022/2555, Article 21(2)(d)" ;
+    spa:derivedFromSource spa:NIS2 ;
+    spa:evaluatedBySkill "trivy-filesystem" ;
+    spa:evaluatedBySkill "trivy-docker-image" ;
+    rdfs:comment "Named for the Trivy skills only, and only in part: they enumerate third-party components and report published vulnerabilities in them, which bears on the technical half of this obligation. The supplier relationship itself is outside anything the framework observes. Bandit is not named — it analyses first-party source and does not inspect dependencies."@en .
+
+spa:NIS2CryptographyPolicy
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Policies on the use of cryptography (NIS2 Art. 21(2)(h))"@en ;
+    spa:identifier "NIS2-Art21-2h" ;
+    spa:description "Policies and procedures regarding the use of cryptography and, where appropriate, encryption." ;
+    spa:sourceReference "Directive (EU) 2022/2555, Article 21(2)(h)" ;
+    spa:derivedFromSource spa:NIS2 ;
+    spa:evaluatedBySkill "bandit-static-code" ;
+    rdfs:comment "Bandit detects use of broken hash functions and insecure cipher modes, which is evidence about cryptographic practice in the code scanned. It says nothing about key management, transport configuration, or whether a policy exists."@en .
+
+spa:ISO27001SecureCoding
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Secure coding (ISO/IEC 27001 A.8.28)"@en ;
+    spa:identifier "ISO27001-A.8.28" ;
+    spa:description "Secure coding principles shall be applied to software development." ;
+    spa:sourceReference "ISO/IEC 27001:2022, Annex A control 8.28" ;
+    spa:derivedFromSource spa:ISO27001 ;
+    spa:evaluatedBySkill "bandit-static-code" .
+
+spa:ISO27001TechnicalVulnerabilityManagement
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Management of technical vulnerabilities (ISO/IEC 27001 A.8.8)"@en ;
+    spa:identifier "ISO27001-A.8.8" ;
+    spa:description "Information about technical vulnerabilities of information systems in use shall be obtained, the exposure to such vulnerabilities evaluated, and appropriate measures taken." ;
+    spa:sourceReference "ISO/IEC 27001:2022, Annex A control 8.8" ;
+    spa:derivedFromSource spa:ISO27001 ;
+    spa:evaluatedBySkill "trivy-filesystem" ;
+    spa:evaluatedBySkill "trivy-docker-image" ;
+    spa:evaluatedBySkill "trivy-kubernetes" ;
+    spa:evaluatedBySkill "bandit-static-code" .
+
+spa:ISO27001AuthenticationInformation
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Authentication information (ISO/IEC 27001 A.5.17)"@en ;
+    spa:identifier "ISO27001-A.5.17" ;
+    spa:description "Allocation and management of authentication information shall be controlled, including by requiring users to maintain the confidentiality of such information." ;
+    spa:sourceReference "ISO/IEC 27001:2022, Annex A control 5.17" ;
+    spa:derivedFromSource spa:ISO27001 ;
+    spa:evaluatedBySkill "bandit-static-code" ;
+    spa:evaluatedBySkill "trivy-filesystem" ;
+    rdfs:comment "Both skills detect credentials committed to source, which is a specific failure of this control. An absence of such findings is not evidence that authentication information is well managed elsewhere — only that none was found where these skills looked."@en .
+
+spa:ISO27001SecureSystemArchitecture
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Secure system architecture and engineering principles (ISO/IEC 27001 A.8.27)"@en ;
+    spa:identifier "ISO27001-A.8.27" ;
+    spa:description "Principles for engineering secure systems shall be established, documented, maintained and applied to information system development activities." ;
+    spa:sourceReference "ISO/IEC 27001:2022, Annex A control 8.27" ;
+    spa:derivedFromSource spa:ISO27001 ;
+    spa:evaluatedBySkill "trivy-kubernetes" ;
+    rdfs:comment "Named for the Kubernetes skill because its misconfiguration checks test deployment-time hardening decisions — privilege, capabilities, network exposure — which is where engineering principles become observable. Whether the principles are documented is not assessed."@en .
+
+spa:ISO27001ConfigurationManagement
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Configuration management (ISO/IEC 27001 A.8.9)"@en ;
+    spa:identifier "ISO27001-A.8.9" ;
+    spa:description "Configurations, including security configurations, of hardware, software, services and networks shall be established, documented, implemented, monitored and reviewed." ;
+    spa:sourceReference "ISO/IEC 27001:2022, Annex A control 8.9" ;
+    spa:derivedFromSource spa:ISO27001 ;
+    spa:evaluatedBySkill "trivy-kubernetes" ;
+    spa:evaluatedBySkill "trivy-docker-image" ;
+    spa:evaluatedBySkill "trivy-filesystem" .
+
+spa:NISTCSFVulnerabilityIdentification
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Vulnerabilities in assets are identified and recorded (NIST CSF ID.RA-01)"@en ;
+    spa:identifier "NIST-CSF-ID.RA-01" ;
+    spa:description "Vulnerabilities in assets are identified, validated and recorded." ;
+    spa:sourceReference "NIST Cybersecurity Framework 2.0, subcategory ID.RA-01" ;
+    spa:derivedFromSource spa:NISTCSF ;
+    spa:evaluatedBySkill "bandit-static-code" ;
+    spa:evaluatedBySkill "trivy-filesystem" ;
+    spa:evaluatedBySkill "trivy-docker-image" ;
+    spa:evaluatedBySkill "trivy-kubernetes" ;
+    spa:evaluatedBySkill "mia-privacy" .
+
+spa:NISTCSFSecureDevelopment
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Secure software development practices are integrated (NIST CSF PR.PS-06)"@en ;
+    spa:identifier "NIST-CSF-PR.PS-06" ;
+    spa:description "Secure software development practices are integrated, and their performance is monitored throughout the software development life cycle." ;
+    spa:sourceReference "NIST Cybersecurity Framework 2.0, subcategory PR.PS-06" ;
+    spa:derivedFromSource spa:NISTCSF ;
+    spa:evaluatedBySkill "bandit-static-code" .
+
+spa:DORAICTVulnerabilityDetection
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Identification and assessment of ICT vulnerabilities (DORA Art. 10)"@en ;
+    spa:identifier "DORA-Art10" ;
+    spa:description "Financial entities shall have mechanisms to promptly detect anomalous activities and ICT vulnerabilities affecting ICT systems supporting critical or important functions." ;
+    spa:sourceReference "Regulation (EU) 2022/2554, Article 10" ;
+    spa:derivedFromSource spa:DORA ;
+    spa:evaluatedBySkill "trivy-filesystem" ;
+    spa:evaluatedBySkill "trivy-docker-image" ;
+    spa:evaluatedBySkill "trivy-kubernetes" ;
+    spa:evaluatedBySkill "bandit-static-code" ;
+    rdfs:comment "Whether the systems scanned support a critical or important function is a determination the entity makes, not one this framework observes. A result under this requirement evidences that a detection mechanism ran against the artifact given to it."@en .
+
+#################################################################
+# Requirements no skill in this framework can evidence
+#
+# Declared deliberately, and with no spa:evaluatedBySkill.  Criterion
+# resolution reports a source as fully covered when every requirement under
+# it is evaluable, so a source represented here by only the one obligation a
+# scanner happens to satisfy would resolve as complete coverage of a
+# regulation — DORA read as met because a vulnerability scan ran.  These
+# individuals make the remainder of each source visible, so the coverage
+# statement carries "evidence bearing on 1 of 4 requirements" rather than
+# silence.  They are the honest half of the mapping above.
+#################################################################
+
+spa:DORAICTRiskManagementFramework
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "ICT risk management framework (DORA Art. 6)"@en ;
+    spa:identifier "DORA-Art6" ;
+    spa:description "Financial entities shall have a sound, comprehensive and well-documented ICT risk management framework, subject to internal audit, as part of their overall risk management system." ;
+    spa:sourceReference "Regulation (EU) 2022/2554, Article 6" ;
+    spa:derivedFromSource spa:DORA ;
+    rdfs:comment "Governance and documentation. Nothing in an automated assessment result bears on whether such a framework exists or is audited."@en .
+
+spa:DORAThreatLedPenetrationTesting
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Advanced testing based on threat-led penetration testing (DORA Art. 26)"@en ;
+    spa:identifier "DORA-Art26" ;
+    spa:description "Financial entities identified as significant shall carry out advanced testing by means of threat-led penetration testing at least every three years." ;
+    spa:sourceReference "Regulation (EU) 2022/2554, Article 26" ;
+    spa:derivedFromSource spa:DORA ;
+    rdfs:comment "Explicitly not satisfied by the scanning skills, and worth stating rather than omitting. Threat-led penetration testing is adversarial and human-led; a static or database-driven scan is the baseline testing of Article 25, not this."@en .
+
+spa:DORAIncidentReporting
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Reporting of major ICT-related incidents (DORA Art. 19)"@en ;
+    spa:identifier "DORA-Art19" ;
+    spa:description "Financial entities shall report major ICT-related incidents to the relevant competent authority within the specified time limits." ;
+    spa:sourceReference "Regulation (EU) 2022/2554, Article 19" ;
+    spa:derivedFromSource spa:DORA ;
+    rdfs:comment "An operational reporting obligation. A finding is not an incident, and this framework observes nothing about reporting."@en .
+
+spa:NISTCSFRiskManagementObjectives
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Risk management objectives are established and agreed (NIST CSF GV.RM-01)"@en ;
+    spa:identifier "NIST-CSF-GV.RM-01" ;
+    spa:description "Risk management objectives are established and agreed to by organizational stakeholders." ;
+    spa:sourceReference "NIST Cybersecurity Framework 2.0, subcategory GV.RM-01" ;
+    spa:derivedFromSource spa:NISTCSF ;
+    rdfs:comment "Governance. An assessment can inform these objectives but cannot evidence that they were established or agreed."@en .
+
+spa:NISTCSFVulnerabilityRemediation
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Vulnerabilities are remediated (NIST CSF ID.RA-06)"@en ;
+    spa:identifier "NIST-CSF-ID.RA-06" ;
+    spa:description "Risk responses are chosen, prioritized, planned, tracked and communicated." ;
+    spa:sourceReference "NIST Cybersecurity Framework 2.0, subcategory ID.RA-06" ;
+    spa:derivedFromSource spa:NISTCSF ;
+    rdfs:comment "The framework identifies and it recommends, but it does not observe whether a response was chosen or carried out. Naming a skill here would let a report that lists unfixed HIGH findings simultaneously claim the remediation subcategory as assessed."@en .
+
+spa:ISO27001InformationSecurityPolicies
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Policies for information security (ISO/IEC 27001 A.5.1)"@en ;
+    spa:identifier "ISO27001-A.5.1" ;
+    spa:description "Information security policy and topic-specific policies shall be defined, approved by management, published, communicated to and acknowledged by relevant personnel." ;
+    spa:sourceReference "ISO/IEC 27001:2022, Annex A control 5.1" ;
+    spa:derivedFromSource spa:ISO27001 ;
+    rdfs:comment "Organisational. No scan result bears on whether a policy is defined, approved or communicated."@en .
+
+spa:NIS2IncidentHandling
+    rdf:type owl:NamedIndividual , spa:ComplianceRequirement ;
+    rdfs:label "Incident handling (NIS2 Art. 21(2)(b))"@en ;
+    spa:identifier "NIS2-Art21-2b" ;
+    spa:description "Incident handling." ;
+    spa:sourceReference "Directive (EU) 2022/2555, Article 21(2)(b)" ;
+    spa:derivedFromSource spa:NIS2 ;
+    rdfs:comment "A process obligation, unobservable from an assessment result."@en .
+
+#################################################################
 # Regulatory and standard source individuals
 #################################################################
 
@@ -1362,42 +2003,49 @@ spa:GDPR
     rdf:type owl:NamedIndividual , spa:Regulation ;
     rdfs:label "General Data Protection Regulation"@en ;
     spa:identifier "GDPR" ;
+    spa:criterionKey "gdpr" ;
     spa:sourceReference "Regulation (EU) 2016/679" .
 
 spa:NIS2
     rdf:type owl:NamedIndividual , spa:Regulation ;
     rdfs:label "NIS2 Directive"@en ;
     spa:identifier "NIS2" ;
+    spa:criterionKey "nis2" ;
     spa:sourceReference "Directive (EU) 2022/2555" .
 
 spa:DORA
     rdf:type owl:NamedIndividual , spa:Regulation ;
     rdfs:label "Digital Operational Resilience Act"@en ;
     spa:identifier "DORA" ;
+    spa:criterionKey "dora" ;
     spa:sourceReference "Regulation (EU) 2022/2554" .
 
 spa:ISO27001
     rdf:type owl:NamedIndividual , spa:Standard ;
     rdfs:label "ISO/IEC 27001"@en ;
     spa:identifier "ISO/IEC 27001" ;
+    spa:criterionKey "iso27001" ;
     spa:sourceReference "ISO/IEC 27001 information security management systems" .
 
 spa:NISTCSF
     rdf:type owl:NamedIndividual , spa:Standard ;
     rdfs:label "NIST Cybersecurity Framework"@en ;
     spa:identifier "NIST CSF" ;
+    spa:criterionKey "nistcsf" ;
     spa:sourceReference "NIST Cybersecurity Framework" .
 
 spa:TMForumTR2921
     rdf:type owl:NamedIndividual , spa:Standard ;
     rdfs:label "TM Forum TR 2921"@en ;
     spa:identifier "TMF TR2921" ;
+    spa:criterionKey "tmf-tr2921" ;
     spa:sourceReference "TM Forum TR 2921 security-related technical report" .
 
 spa:LINDDUNFramework
     rdf:type owl:NamedIndividual , spa:Standard ;
     rdfs:label "LINDDUN Privacy Threat Modeling Framework"@en ;
     spa:identifier "LINDDUN" ;
+    spa:criterionKey "linddun" ;
     spa:sourceReference "LINDDUN privacy threat modeling framework" .
 
 #################################################################
@@ -1506,6 +2154,70 @@ spa:EvidenceShape
         sh:maxCount 1 ;
     ] .
 
+spa:ThresholdShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Threshold shape"@en ;
+    sh:targetClass spa:Threshold ;
+    sh:property [
+        sh:path spa:thresholdValue ;
+        sh:datatype xsd:decimal ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:comparisonOperator ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "less-than" "less-than-or-equal" "greater-than"
+                "greater-than-or-equal" "equal" "not-equal" ) ;
+    ] ;
+    sh:property [
+        sh:path spa:impliesSeverity ;
+        sh:class spa:Severity ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:thresholdProvisional ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+    ] ;
+    # A threshold flagged provisional must say what is outstanding: the reason is
+    # carried into the report, so a bare flag would tell a reader that the
+    # severity is unconfirmed without telling them what would confirm it.
+    sh:property [
+        sh:path spa:thresholdProvisionalReason ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:sparql [
+        sh:message "A threshold with spa:thresholdProvisional true must also carry spa:thresholdProvisionalReason." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:thresholdProvisional true .
+                FILTER NOT EXISTS { $this spa:thresholdProvisionalReason ?reason }
+            }
+        """ ;
+    ] .
+
+spa:SweepDimensionShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Sweep dimension shape"@en ;
+    sh:targetClass spa:SweepDimension ;
+    sh:property [
+        sh:path spa:dimensionName ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:dimensionValue ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] .
+
 spa:MetricShape
     rdf:type sh:NodeShape ;
     rdfs:label "Metric shape"@en ;
@@ -1548,6 +2260,30 @@ spa:MetricDefinitionShape
         sh:path spa:aggregationFunction ;
         sh:datatype xsd:string ;
         sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:metricSemanticsProvisional ;
+        sh:datatype xsd:boolean ;
+        sh:maxCount 1 ;
+    ] ;
+    # Same requirement as ThresholdShape makes of a provisional boundary, for
+    # the same reason: the reason text is carried into the report, and a bare
+    # flag tells a reader the metric is open to interpretation without telling
+    # them which reading was used or what would settle it.
+    sh:property [
+        sh:path spa:metricSemanticsProvisionalReason ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:sparql [
+        sh:message "A metric definition with spa:metricSemanticsProvisional true must also carry spa:metricSemanticsProvisionalReason." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:metricSemanticsProvisional true .
+                FILTER NOT EXISTS { $this spa:metricSemanticsProvisionalReason ?reason }
+            }
+        """ ;
     ] .
 
 spa:IntentShape
@@ -1635,6 +2371,10 @@ spa:AssessmentReportShape
         sh:datatype xsd:string ;
     ] ;
     sh:property [
+        sh:path spa:scopeLimitation ;
+        sh:datatype xsd:string ;
+    ] ;
+    sh:property [
         sh:path spa:findings ;
         sh:nodeKind sh:BlankNodeOrIRI ;
     ] ;
@@ -1642,4 +2382,270 @@ spa:AssessmentReportShape
         sh:path spa:provenance ;
         sh:nodeKind sh:BlankNodeOrIRI ;
         sh:maxCount 1 ;
+    ] .
+
+spa:ReportRenditionShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "Report rendition shape"@en ;
+    sh:targetClass spa:ReportRendition ;
+    # The profile and the basis for choosing it are both required.  A rendition
+    # is a defensible artifact only if a reader can see which audience it was
+    # built for and why that audience was inferred; a detail level with no
+    # recorded basis cannot be checked against the intent that asked for it.
+    sh:property [
+        sh:path spa:renditionProfile ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+        sh:in ( "technical" "management" "compliance" "external" ) ;
+    ] ;
+    sh:property [
+        sh:path spa:renditionResolvedBy ;
+        sh:datatype xsd:string ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:disclosureClass ;
+        sh:class spa:DisclosureClass ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:numericDisclosure ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "exact" "banded" "verdictOnly" ) ;
+    ] ;
+    # Reconciliation figures.  Constrained in shape but not required here: an
+    # external statement must not carry them at all (see
+    # spa:ExternalStatementShape), so the requirement is stated below for the
+    # renditions it applies to rather than as a blanket minimum that the
+    # external case would have to violate.
+    sh:property [
+        sh:path spa:canonicalWorstSeverity ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "NONE" "LOW" "MEDIUM" "HIGH" "CRITICAL" ) ;
+    ] ;
+    sh:property [
+        sh:path spa:canonicalFindingCount ;
+        sh:datatype xsd:integer ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0 ;
+    ] ;
+    # An internal or confidential rendition reduces the fact model — by a
+    # severity floor, a finding cap, or a sweep aggregation — so it must carry
+    # the figures that make the reduction visible.  A management view showing
+    # two findings against a canonical count of nine is transparently a
+    # selection; the same view without the count reads as a complete list.
+    sh:sparql [
+        sh:message "A rendition that is not an external statement must carry spa:canonicalWorstSeverity and spa:canonicalFindingCount so the reduction it applied can be reconciled against the assessment." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:disclosureClass ?class .
+                FILTER (?class != spa:DisclosureExternal)
+                FILTER (
+                    NOT EXISTS { $this spa:canonicalWorstSeverity ?severity }
+                    || NOT EXISTS { $this spa:canonicalFindingCount ?count }
+                )
+            }
+        """ ;
+    ] ;
+    sh:property [
+        sh:path spa:findingsOmitted ;
+        sh:datatype xsd:integer ;
+        sh:maxCount 1 ;
+        sh:minInclusive 0 ;
+    ] ;
+    # A rendition that omits findings cannot claim the canonical count as its
+    # own: the two together are what make the omission visible.
+    sh:sparql [
+        sh:message "A rendition cannot omit more findings than the fact model contained (spa:findingsOmitted exceeds spa:canonicalFindingCount)." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:findingsOmitted ?omitted .
+                $this spa:canonicalFindingCount ?total .
+                FILTER (?omitted > ?total)
+            }
+        """ ;
+    ] .
+
+spa:ExternalStatementShape
+    rdf:type sh:NodeShape ;
+    rdfs:label "External statement shape"@en ;
+    sh:targetClass spa:ExternalStatement ;
+    sh:property [
+        sh:path spa:renditionReleased ;
+        sh:datatype xsd:boolean ;
+        sh:minCount 1 ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:withheldBecause ;
+        sh:datatype xsd:string ;
+    ] ;
+    sh:property [
+        sh:path spa:externalScopeStatement ;
+        sh:datatype xsd:string ;
+    ] ;
+    # A released statement must carry its scope.  "No findings" is a property of
+    # a search, not of a target: released without the bounds of that search, a
+    # clean verdict reads as a broader claim than the assessment made.  This is
+    # the release gate restated as a shape, so an artifact that reached storage
+    # by some path other than project_external is still caught.
+    sh:sparql [
+        sh:message "A released external statement must carry at least one spa:externalScopeStatement; a clean verdict is only releasable alongside the bounds of the search that produced it." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:renditionReleased true .
+                FILTER NOT EXISTS { $this spa:externalScopeStatement ?scope }
+            }
+        """ ;
+    ] ;
+    # A withheld statement must say why.  An unexplained absence is
+    # indistinguishable from an assessment that was never run.
+    sh:sparql [
+        sh:message "A withheld external statement must carry at least one spa:withheldBecause reason." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:renditionReleased false .
+                FILTER NOT EXISTS { $this spa:withheldBecause ?reason }
+            }
+        """ ;
+    ] ;
+    # An external statement carries no reconciliation figures.  Elsewhere they
+    # are required, because they make a reduction visible; here they would be a
+    # disclosure in their own right — a finding count is a measurement of the
+    # target, and "9 findings, none released" tells an outside reader exactly
+    # what the allowlist exists to withhold.  This is the one place where the
+    # transparency that serves an internal reader works against the artifact.
+    sh:sparql [
+        sh:message "An external statement must not carry spa:canonicalWorstSeverity or spa:canonicalFindingCount; a count of what was found is itself a disclosure about the target." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                { $this spa:canonicalWorstSeverity ?severity }
+                UNION
+                { $this spa:canonicalFindingCount ?count }
+            }
+        """ ;
+    ] ;
+    # The verdict gate, restated for the case where a figure is present anyway:
+    # a released statement asserts that nothing was found, so a canonical
+    # severity above NONE contradicts the release itself.  Redundant against the
+    # constraint above by construction, and kept because the two fail for
+    # different reasons — one is a leak, the other is a false claim.
+    sh:sparql [
+        sh:message "An external statement must not be released for an assessment whose canonical worst severity is above NONE." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:renditionReleased true .
+                $this spa:canonicalWorstSeverity ?severity .
+                FILTER (?severity != "NONE")
+            }
+        """ ;
+    ] ;
+    # An external artifact carries no measurements, so an exact or banded
+    # numeric disclosure on one is a contradiction in terms.
+    sh:sparql [
+        sh:message "An external statement must declare spa:numericDisclosure as verdictOnly." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:numericDisclosure ?disclosure .
+                FILTER (?disclosure != "verdictOnly")
+            }
+        """ ;
+    ] ;
+    sh:property [
+        sh:path spa:assessedOn ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:statementValidUntil ;
+        sh:datatype xsd:dateTime ;
+        sh:maxCount 1 ;
+    ] ;
+    sh:property [
+        sh:path spa:approvalState ;
+        sh:datatype xsd:string ;
+        sh:maxCount 1 ;
+        sh:in ( "pending" "approved" ) ;
+        sh:message "An external statement's spa:approvalState must be pending or approved; a refused release is not released at all." ;
+    ] ;
+    # A released statement must be dated and must expire.  Without a date no
+    # expiry can be computed, and an unexpiring statement is the failure this
+    # constraint exists for: the assessed component keeps changing while the
+    # artifact does not, so a claim with no end reads as a current one forever.
+    sh:sparql [
+        sh:message "A released external statement must carry both spa:assessedOn and spa:statementValidUntil; an undated statement cannot be shown to have expired, and so never does." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:renditionReleased true .
+                FILTER (
+                    NOT EXISTS { $this spa:assessedOn ?date }
+                    || NOT EXISTS { $this spa:statementValidUntil ?until }
+                )
+            }
+        """ ;
+    ] ;
+    # Expiry runs forward from the assessment, never backward.  Catches a
+    # negative validity period and a validity date copied from the wrong field.
+    sh:sparql [
+        sh:message "An external statement's spa:statementValidUntil must be later than its spa:assessedOn." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:assessedOn ?date .
+                $this spa:statementValidUntil ?until .
+                FILTER (?until <= ?date)
+            }
+        """ ;
+    ] ;
+    # The approval requirement and the approval itself, checked against each
+    # other.  A statement that advertises the requirement and is released
+    # unapproved is the exact case the flag was supposed to prevent, and before
+    # this constraint existed the flag was set on every released statement while
+    # nothing consumed it.
+    sh:sparql [
+        sh:message "A released external statement that requires approval must record spa:approvalState as approved together with spa:approvedBy; advertising an approval requirement while releasing unapproved makes the flag a description rather than a control." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                $this spa:renditionReleased true .
+                $this spa:requiresApprovalBeforeRelease true .
+                FILTER (
+                    NOT EXISTS { $this spa:approvalState "approved" }
+                    || NOT EXISTS { $this spa:approvedBy ?approver }
+                )
+            }
+        """ ;
+    ] ;
+    # An approval must say who gave it, whichever direction the pair is
+    # incomplete in: an approver with no approval, or an approval with no
+    # approver, are both unaccountable.
+    sh:sparql [
+        sh:message "An external statement recording spa:approvalState as approved must also record spa:approvedBy, and vice versa." ;
+        sh:prefixes spa: ;
+        sh:select """
+            SELECT $this WHERE {
+                {
+                    $this spa:approvalState "approved" .
+                    FILTER NOT EXISTS { $this spa:approvedBy ?approver }
+                }
+                UNION
+                {
+                    $this spa:approvedBy ?approver .
+                    FILTER NOT EXISTS { $this spa:approvalState "approved" }
+                }
+            }
+        """ ;
     ] .

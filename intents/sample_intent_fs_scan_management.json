@@ -1,0 +1,31 @@
+{
+  "intentId": "intent-fs-scan-003",
+  "name": "Filesystem Security and Compliance Scan (management rendition)",
+  "description": "Run a Trivy scan on the local file system to detect vulnerabilities, secrets, and misconfigurations. Reported as a release decision.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "CISO",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "."
+  },
+  "parameters": {
+    "fsPath": "."
+  },
+  "criteria": [
+    "nis2",
+    "iso27001",
+    "linddun",
+    "internal_supplychain_policy:v1"
+  ],
+  "reporting": {
+    "profile": "management",
+    "expectedOutput": "Release verdict and the highest-severity issues, without the full issue list",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/fs-scans/"
+  },
+  "notes": "This intent is functional. trivy_fs_skill.py normalises its output via tools/trivy_normalizer.py. The management profile resolves from actor.role CISO. Findings reduce by selection (severity floor, top-N) rather than by the aggregation used for the MIA parameter sweep. One of four siblings (technical, management, compliance, external) sharing this intentId, target, parameters and criteria, so all four project from the same canonical facts. At the time of writing the scan found 2 findings, both at or above the MEDIUM floor, so findingsOmitted is 0 here — this family shows the profile mechanism without exercising omission."
+}

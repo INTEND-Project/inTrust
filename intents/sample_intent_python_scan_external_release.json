@@ -1,0 +1,33 @@
+{
+  "intentId": "intent-sec-analysis-003",
+  "name": "Python Static Security Analysis (external statement, releasable)",
+  "description": "Run Bandit static security analysis over the InTrust skill layer, for a customer-facing assurance statement.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeSecurityAnalysis",
+  "actor": {
+    "role": "AccountManager",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "intrust-skills"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "tool": "bandit",
+    "codeReference": {
+      "path": "./skills",
+      "language": "python"
+    }
+  },
+  "criteria": [
+    "iso27001"
+  ],
+  "reporting": {
+    "profile": "external",
+    "expectedOutput": "Allowlisted assurance statement, dated and expiring, released once approved",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/static-analysis/"
+  },
+  "notes": "The only sample intent that can produce a released external statement, and the reason it exists: every other external sample demonstrates the gate closing, which leaves the released shape untested from the outside. Bandit finds nothing in ./skills (10 files, 667 lines), so worstSeverity is NONE and verdictMustBeClean is satisfied.\n\nSubmitting this is not enough on its own. The rendition stored at assessment time is still withheld, for two of the five gates: the job is not yet complete so there is no assessment date, and nobody has approved the release. Both are supplied on re-projection, so the sequence is:\n\n  PUT  /result/<job-id>/releaseApproval   {\"approvedBy\": \"Release Board\", \"reference\": \"CR-1234\"}\n  GET  /result/<job-id>?profile=external\n\nThe released statement then carries verdict, assessmentType, assessedOn, validUntil (assessedOn plus P90D), the statement prose, criteriaAssessed and scopeStatement — and nothing else, because EXTERNAL_ALLOWLIST is built rather than stripped. Note what is absent: no path, no file or line count, no test ids, not even a finding count of zero. 'Zero findings' is still a measurement of the target.\n\nThe scopeStatement is the part worth reading. It says the assessment looked at Python source only and that a result with no findings means no checked pattern matched — without it, a customer reading 'no findings' supplies a scope of their own, invariably broader than the scan."
+}

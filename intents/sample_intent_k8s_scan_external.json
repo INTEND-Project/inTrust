@@ -1,0 +1,28 @@
+{
+  "intentId": "intent-k8s-scan-002",
+  "name": "Kubernetes Cluster Security Scan (external statement)",
+  "description": "Run a Trivy scan on a Kubernetes cluster, for a customer-facing assurance statement.",
+  "category": "trustworthinessAssessment",
+  "intentType": "kubernetesSecurityScan",
+  "actor": {
+    "role": "Customer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "KubernetesCluster",
+    "name": "staging-cluster"
+  },
+  "parameters": {
+    "clusterName": "staging-cluster"
+  },
+  "criteria": [
+    "iso27001"
+  ],
+  "reporting": {
+    "profile": "external",
+    "expectedOutput": "Allowlisted assurance statement, released only for a clean assessment",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/k8s-scans/"
+  },
+  "notes": "Sibling of sample_intent_k8s_scan_technical.json with the same target and parameters, but narrowed criteria (iso27001 only, deliberately mirroring sample_intent_image_scan_external.json). The external profile is allowlist-built with five gates: if the cluster returns any HIGH or CRITICAL finding, the external statement is withheld; if it returns none, the remaining gates (date, approval) still apply. The honest external output for an assessment that found something is nothing rather than a softened version — project_external returns {\"released\": false} with the unmet condition named in withheldBecause, carrying no figures, no check identifiers and no cluster name. This is also the sibling that shows a gate other than the verdict doing the work: submitting this intent against a clean cluster still yields a withheld statement, because at assessment time the job has no completion date and nobody has approved release. Both are supplied on re-projection (PUT /result/<job-id>/releaseApproval, then GET /result/<job-id>?profile=external), so a clean scan is a necessary and not a sufficient condition. With criteria [\"iso27001\"] alone, regulatoryCoverage.complete is true and byStatus is {assessed: 1}. Read that flag carefully: complete means every criterion the intent named was resolvable, not that ISO 27001 is covered — evidence still bears on only 3 of its 6 recorded requirements (A.8.8, A.8.27, A.8.9). The four-criteria siblings make the distinction visible by resolving to false. This family is unverified: no scan was run, so the outcome depends on the cluster."
+}

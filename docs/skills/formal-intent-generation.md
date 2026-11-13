@@ -1,4 +1,6 @@
 ---
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 name: formal-intent-generation
 description: Generates a formal TM Forum intent JSON from a natural-language description, grounded in the InTrust ontology.
 ---

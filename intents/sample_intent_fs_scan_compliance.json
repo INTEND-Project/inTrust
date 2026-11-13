@@ -1,0 +1,31 @@
+{
+  "intentId": "intent-fs-scan-003",
+  "name": "Filesystem Security and Compliance Scan (compliance rendition)",
+  "description": "Run a Trivy scan on the local file system to detect vulnerabilities, secrets, and misconfigurations. Reported for regulatory traceability.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "."
+  },
+  "parameters": {
+    "fsPath": "."
+  },
+  "criteria": [
+    "nis2",
+    "iso27001",
+    "linddun",
+    "internal_supplychain_policy:v1"
+  ],
+  "reporting": {
+    "profile": "compliance",
+    "expectedOutput": "Obligations this run evidenced, obligations it did not, the tool version and severity filter applied, and every stated limit on scope",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/fs-scans/"
+  },
+  "notes": "Sibling of sample_intent_fs_scan_management.json with identical target, parameters and criteria. Four criteria exercise all three coverage statuses: nis2 and iso27001 resolve to assessed (the trivy-filesystem skill carries evidence bearing on 2 and 3 of their requirements respectively); linddun resolves to declaredNotAssessed (no requirement recorded under it is evaluable by a filesystem scanner); internal_supplychain_policy:v1 resolves to unrecognised (not in the ontology). regulatoryCoverage.complete is therefore false, with byStatus {assessed: 2, declaredNotAssessed: 1, unrecognised: 1}. Note that 'assessed' means evidence bears on the listed requirements, not that the regulation is met."
+}

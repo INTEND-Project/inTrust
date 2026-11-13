@@ -1,0 +1,33 @@
+{
+  "intentId": "intent-docker-scan-002",
+  "name": "Scan Docker Image for Vulnerabilities (compliance rendition)",
+  "description": "Perform a Trivy-based security scan on a specified Docker image to identify high and critical vulnerabilities. Reported for regulatory traceability.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dockerImageSecurityScan",
+  "actor": {
+    "role": "Auditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "DockerImage",
+    "name": "python:3.11-slim"
+  },
+  "parameters": {
+    "dockerImage": "python:3.11-slim",
+    "severityLevels": ["HIGH", "CRITICAL"],
+    "timeout": "10m"
+  },
+  "criteria": [
+    "iso27001",
+    "dora",
+    "linddun",
+    "internal_baseimage_policy:v4"
+  ],
+  "reporting": {
+    "profile": "compliance",
+    "expectedOutput": "Obligations this run evidenced, obligations it did not, the method and thresholds applied, and every stated limit on scope",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/docker-scans/"
+  },
+  "notes": "Sibling of sample_intent_image_scan_technical.json with the same target, parameters and criteria. The compliance profile carries all 25 findings (findingsOmitted = 0) and documents criterion resolution: iso27001 resolves to assessed (evidence bearing on 2 of 6 recorded requirements); dora resolves to assessed (1 of 4); linddun resolves to declaredNotAssessed, since no requirement under it is evaluable by an image scanner; internal_baseimage_policy:v4 resolves to unrecognised. regulatoryCoverage.complete is therefore false, with byStatus {assessed: 2, declaredNotAssessed: 1, unrecognised: 1}. Note that 'assessed' means evidence bears on the listed requirements, not that the regulation is met. The scope limitation is recorded: Trivy always runs with severity filter HIGH,CRITICAL only; lower severities are never collected."
+}

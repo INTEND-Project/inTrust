@@ -1,0 +1,35 @@
+{
+  "intentId": "fill",
+  "name": "Membership Inference Privacy Assessment (external statement)",
+  "description": "Evaluate a machine learning model's resilience to membership inference attacks, for a customer-facing assurance statement.",
+  "category": "trustworthinessAssessment",
+  "intentType": "membershipInferencePrivacyAssessment",
+  "actor": {
+    "role": "Sales",
+    "organization": "Fill GmbH"
+  },
+  "target": {
+    "type": "mlModel",
+    "name": "predictive_maint_v2"
+  },
+  "parameters": {
+    "model": {
+      "type": "classification model",
+      "path": "s3://models/fill/predictive_maint_v2.pt"
+    },
+    "shadowData": {
+      "type": "synthetic",
+      "path": "s3://datasets/fill/synthetic_vib_v1.zip"
+    }
+  },
+  "criteria": [
+    "gdpr"
+  ],
+  "reporting": {
+    "profile": "external",
+    "expectedOutput": "Allowlisted assurance statement, released only for a clean assessment",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/mia-assessments/"
+  },
+  "notes": "Sibling of sample_intent_mia_technical.json with the same target and parameters. Expect this one to produce no artifact: on the observed MIA sweep the worst advantage is 0.1357, above the high-severity threshold, so project_external returns {\"released\": false, \"withheldBecause\": [...]} carrying no figures, no configurations and no model identifiers. That is the intended outcome, not a failure — the honest external output for an assessment that found something is nothing rather than a softened version. The gate opens only for a clean SUCCESS, and a released statement is built from EXTERNAL_ALLOWLIST and still requires approval before release."
+}

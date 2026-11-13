@@ -1,0 +1,33 @@
+{
+  "intentId": "intent-docker-scan-002",
+  "name": "Scan Docker Image for Vulnerabilities (management rendition)",
+  "description": "Perform a Trivy-based security scan on a specified Docker image to identify high and critical vulnerabilities. Reported as a release decision.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dockerImageSecurityScan",
+  "actor": {
+    "role": "CISO",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "DockerImage",
+    "name": "python:3.11-slim"
+  },
+  "parameters": {
+    "dockerImage": "python:3.11-slim",
+    "severityLevels": ["HIGH", "CRITICAL"],
+    "timeout": "10m"
+  },
+  "criteria": [
+    "iso27001",
+    "dora",
+    "linddun",
+    "internal_baseimage_policy:v4"
+  ],
+  "reporting": {
+    "profile": "management",
+    "expectedOutput": "Release verdict, worst-severity findings, and the compliance headline, without the full issue list",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/docker-scans/"
+  },
+  "notes": "Sibling of sample_intent_image_scan_technical.json with the same target, parameters and criteria. This is the best example in the whole sample set of the max_findings cap: 25 canonical findings, 5 shown, 20 counted in reportProfile.findingsOmitted. A top-5 list that did not carry the omission count would read as the complete vulnerability set of the image; the count exists to prevent that misread. Findings reduce by selection (severity floor, top-N), not by aggregation. The management profile reports the verdict, the five highest-priority items, and the compliance headline, but not all 25 findings. Note that the 25 findings are in the base image's OS packages and Python dependencies — third-party components — which is why the obligations that resolve to assessed are the ones about detecting published vulnerabilities (ISO 27001 A.8.8, DORA Art. 10) rather than the supply-chain control itself: NIS2 Art. 21(2)(d) is the requirement about supplier relationships, and it is not among the criteria named here. Twenty-five findings in an unmodified official base image is a normal result, not an alarming one; it is what a public image looks like against a HIGH/CRITICAL filter."
+}

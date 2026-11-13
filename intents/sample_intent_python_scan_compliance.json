@@ -1,0 +1,36 @@
+{
+  "intentId": "intent-sec-analysis-002",
+  "name": "Python Static Security Analysis (compliance rendition)",
+  "description": "Run Bandit static security analysis over the InTrust tool layer to identify insecure coding patterns before release. Reported for regulatory traceability.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeSecurityAnalysis",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "intrust-tools"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "tool": "bandit",
+    "codeReference": {
+      "path": "./tools",
+      "language": "python"
+    }
+  },
+  "criteria": [
+    "iso27001",
+    "nis2",
+    "linddun",
+    "internal_secure_coding_policy:v3"
+  ],
+  "reporting": {
+    "profile": "compliance",
+    "expectedOutput": "Obligations this run evidenced, obligations it did not, the method and thresholds applied, and every stated limit on scope",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/static-analysis/"
+  },
+  "notes": "Sibling of sample_intent_python_scan_technical.json with the same target and parameters. The four criteria exercise all three coverage statuses against the bandit-static-code skill: 'iso27001' resolves to assessed (evidence bearing on 3 of its 6 recorded requirements), 'nis2' to assessed (2 of 5), 'linddun' to declaredNotAssessed since no requirement recorded under it is evaluable by a static code scanner, and 'internal_secure_coding_policy:v3' to unrecognised since it is not in the ontology. regulatoryCoverage.complete is therefore false. The assessed/unassessed split is the point: 3 of 6 is what this run evidenced, and reporting only the 3 would read as coverage of the standard."
+}

@@ -1,0 +1,31 @@
+{
+  "intentId": "intent-k8s-scan-002",
+  "name": "Kubernetes Cluster Security Scan (compliance rendition)",
+  "description": "Run a Trivy scan on a Kubernetes cluster to detect security misconfigurations and vulnerabilities. Reported for regulatory traceability.",
+  "category": "trustworthinessAssessment",
+  "intentType": "kubernetesSecurityScan",
+  "actor": {
+    "role": "Auditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "KubernetesCluster",
+    "name": "staging-cluster"
+  },
+  "parameters": {
+    "clusterName": "staging-cluster"
+  },
+  "criteria": [
+    "iso27001",
+    "nis2",
+    "linddun",
+    "internal_cluster_hardening:v2"
+  ],
+  "reporting": {
+    "profile": "compliance",
+    "expectedOutput": "Obligations this run evidenced, obligations it did not, the method and thresholds applied, and every stated limit on scope",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/k8s-scans/"
+  },
+  "notes": "Sibling of sample_intent_k8s_scan_technical.json with the same target, parameters and criteria. The compliance profile carries all findings (findingsOmitted = 0) and documents criterion resolution: iso27001 resolves to assessed (evidence bearing on 3 of 6 recorded requirements — A.8.8, A.8.27, A.8.9); nis2 resolves to assessed (1 of 5 — Art. 21(2)(e)); linddun resolves to declaredNotAssessed; internal_cluster_hardening:v2 resolves to unrecognised. regulatoryCoverage.complete is therefore false, with byStatus {assessed: 2, declaredNotAssessed: 1, unrecognised: 1}. Note that 'assessed' means evidence bears on the listed requirements, not that the regulation is met. Of particular interest: A.8.27 (secure system architecture and engineering principles) is named for trivy-kubernetes alone among all skills, because its misconfiguration checks test deployment-time hardening decisions — privilege, capabilities, network exposure — which is where engineering principles become observable. Whether those principles are documented is not assessed. The scope limitation is recorded: Trivy always runs with severity filter HIGH,CRITICAL only; lower severities are never collected. This family is unverified: no scan was run, so the outcome depends on the cluster."
+}

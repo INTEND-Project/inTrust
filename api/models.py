@@ -1,3 +1,8 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: TMF921-aligned intent and intent-report resources, release-
+#     approval and report-profile models.
+# SPDX-License-Identifier: MIT
 from datetime import datetime
 from enum import Enum
 from typing import Any, Dict, List, Optional
@@ -127,8 +132,57 @@ class IntentReportResource(BaseModel):
     error: Optional[str] = None
 
 
+class ReleaseApprovalRequest(BaseModel):
+    """
+    A request to clear one assessment result for release outside the company.
+
+    ``approvedBy`` is required and unvalidated.  InTrust has no identity system,
+    so this records an unverified name that an audit can question afterwards;
+    checking it against nothing would only look like verification.  Whatever
+    fronts this endpoint is what should establish who is calling.
+    """
+
+    approvedBy: str
+    reference: Optional[str] = None
+    note: Optional[str] = None
+
+
+class ReleaseApprovalResponse(BaseModel):
+    """The recorded approval, or its absence."""
+
+    jobId: str
+    approved: bool
+    approvedBy: Optional[str] = None
+    recordedAt: Optional[datetime] = None
+    reference: Optional[str] = None
+    note: Optional[str] = None
+
+
 class SkillResponse(BaseModel):
     name: str
     description: str
     accepted_parameters: List[str]
     supported_assessment_types: List[str]
+
+
+class ReportProfileResponse(BaseModel):
+    """
+    One audience's report profile, as advertised by ``GET /reportProfiles``.
+
+    Exposed so a caller can tell what a rendition contains *and* what it
+    leaves out before requesting it — a reduced report is only trustworthy if
+    its reductions are discoverable.
+    """
+
+    name: str
+    description: str
+    roles: List[str]
+    sections: List[str]
+    # Named ``languageRegister`` rather than ``register``, which shadows a
+    # pydantic BaseModel attribute.
+    languageRegister: str
+    numericDisclosure: str
+    # ``None`` where the profile carries no findings or no observations.
+    severityFloor: Optional[str]
+    sweepProjection: Optional[str]
+    disclosureClass: str

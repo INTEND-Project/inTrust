@@ -1,0 +1,36 @@
+{
+  "intentId": "fill",
+  "name": "Membership Inference Privacy Assessment (engineer rendition)",
+  "description": "Evaluate a machine learning model's resilience to membership inference attacks before deployment to a remote edge node. Reported for the engineer who will act on the result.",
+  "category": "trustworthinessAssessment",
+  "intentType": "membershipInferencePrivacyAssessment",
+  "actor": {
+    "role": "MLOpsEngineer",
+    "organization": "Fill GmbH"
+  },
+  "target": {
+    "type": "mlModel",
+    "name": "predictive_maint_v2"
+  },
+  "parameters": {
+    "model": {
+      "type": "classification model",
+      "path": "s3://models/fill/predictive_maint_v2.pt"
+    },
+    "shadowData": {
+      "type": "synthetic",
+      "path": "s3://datasets/fill/synthetic_vib_v1.zip"
+    }
+  },
+  "criteria": [
+    "gdpr",
+    "internal_privacy_policy:v2"
+  ],
+  "reporting": {
+    "profile": "technical",
+    "expectedOutput": "Membership inference privacy metrics and vulnerability verdict",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/mia-assessments/"
+  },
+  "notes": "One of four sibling intents (technical, management, compliance, external) that differ only in actor.role and reporting.profile. Target, parameters and criteria are identical, so all four produce the same canonical facts and differ only in rendition. The technical profile keeps every observation, per-finding technical detail, evidence and remediation steps. intentId is 'fill' because the MIA service is queried by intent id and holds the sweep under that id."
+}

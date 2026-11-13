@@ -1,3 +1,8 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: keeps Bandit's full output under raw, tolerates results
+#     missing a severity field.
+# SPDX-License-Identifier: MIT
 """
 Bandit tool wrapper.
 
@@ -49,7 +54,8 @@ def run_bandit_assessment(
     -------
     dict
         On success: a report with ``status="SUCCESS"``, severity counts,
-        assessment verdict, explanation, and recommendations.
+        assessment verdict, explanation, recommendations, and Bandit's full
+        parsed JSON output under ``raw``.
         On failure: ``{"status": "FAILED", "error": "<message>"}``.
     """
     try:
@@ -93,9 +99,12 @@ def run_bandit_assessment(
         results = bandit_output.get("results", [])
 
         issue_count = len(results)
-        high_severity = sum(1 for r in results if r["issue_severity"] == "HIGH")
-        medium_severity = sum(1 for r in results if r["issue_severity"] == "MEDIUM")
-        low_severity = sum(1 for r in results if r["issue_severity"] == "LOW")
+        # ``.get()`` rather than ``[...]``: a single result missing the key must
+        # not lose the whole assessment.  Such a row is counted in the total and
+        # is still carried in ``raw`` for the normalizer to report on.
+        high_severity = sum(1 for r in results if r.get("issue_severity") == "HIGH")
+        medium_severity = sum(1 for r in results if r.get("issue_severity") == "MEDIUM")
+        low_severity = sum(1 for r in results if r.get("issue_severity") == "LOW")
 
         # Determine the overall security verdict.
         # The threshold (>2 MEDIUM issues) is intentionally lenient to reduce
@@ -122,6 +131,14 @@ def run_bandit_assessment(
                 "low": low_severity,
             },
             "assessment": assessment,
+            # Bandit's full parsed output, retained rather than reduced to the
+            # counts above.  ``issue_summary`` answers "how many"; a report that
+            # has to name the file, the line and the remediation needs the
+            # individual results, and the normalizer derives the canonical
+            # findings from here.  ``metrics`` also carries the lines analysed,
+            # the ``# nosec`` suppressions and the skipped tests, which is what
+            # lets the normalizer state the scan's coverage rather than imply it.
+            "raw": bandit_output,
             "explanation": explanation,
             "recommendations": (
                 "Review high and medium severity issues. "

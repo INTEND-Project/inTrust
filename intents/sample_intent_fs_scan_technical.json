@@ -1,0 +1,31 @@
+{
+  "intentId": "intent-fs-scan-003",
+  "name": "Filesystem Security and Compliance Scan (technical rendition)",
+  "description": "Run a Trivy scan on the local file system to detect vulnerabilities, secrets, and misconfigurations. Reported for the engineer who will investigate the findings.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "SecurityAuditor",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "."
+  },
+  "parameters": {
+    "fsPath": "."
+  },
+  "criteria": [
+    "nis2",
+    "iso27001",
+    "linddun",
+    "internal_supplychain_policy:v1"
+  ],
+  "reporting": {
+    "profile": "technical",
+    "expectedOutput": "Complete finding list with vulnerability identifiers, severity, affected paths, and remediation guidance",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/fs-scans/"
+  },
+  "notes": "Sibling of sample_intent_fs_scan_management.json with identical target, parameters and criteria. The technical profile keeps every finding at HIGH/CRITICAL (Trivy's constant severity filter), without the top-N truncation applied by management, and adds the per-finding technical detail, evidence and remediation steps the other profiles drop. At the time of writing, the scan found 2 findings (1 HIGH, 1 CRITICAL), so canonicalFindingCount is 2 and findingsOmitted is 0 for both technical and management — this family does not demonstrate omission. For that, read sample_intent_python_scan_management.json, where all four findings sit below the MEDIUM floor, or sample_intent_image_scan_management.json, where 25 findings meet a top-5 cap. Criterion resolution: nis2 assessed (evidence on 2 of 5 requirements, Art. 21(2)(e) and (2)(d)), iso27001 assessed (3 of 6, A.8.8, A.5.17 and A.8.9), linddun declaredNotAssessed since no requirement recorded under it is evaluable by a filesystem scanner, internal_supplychain_policy:v1 unrecognised."
+}

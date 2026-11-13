@@ -1,0 +1,24 @@
+{
+  "intentId": "intent-k8s-scan-001",
+  "name": "Kubernetes Cluster Security Scan",
+  "description": "Run a Trivy scan on a Kubernetes cluster to detect security misconfigurations and vulnerabilities.",
+  "category": "trustworthinessAssessment",
+  "intentType": "kubernetesSecurityScan",
+  "actor": {
+    "role": "DevOpsEngineer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "KubernetesCluster",
+    "name": "staging-cluster"
+  },
+  "parameters": {
+    "clusterName": "staging-cluster"
+  },
+  "reporting": {
+    "expectedOutput": "Consolidated JSON report of detected security findings and severity levels",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/k8s-scans/"
+  },
+  "notes": "This intent requires a reachable Kubernetes cluster and a kubeconfig context matching the name given in parameters.clusterName. Unlike the filesystem and Bandit samples, this is not self-contained: execution will fail if the context does not exist or the cluster is unreachable. Trivy is invoked with --report all so findings are returned per resource (namespace, deployment, pod) rather than as a summary. The scan primarily detects deployment-time hardening issues — privilege escalation, capabilities, service exposure, resource limits — against the cluster's declared configuration. The severity filter is HIGH,CRITICAL only, so an empty result establishes that no HIGH or CRITICAL finding was detected, not that the cluster is clean. This is the plain sibling: no criteria, no reporting.profile, actor role DevOpsEngineer. Four profile-bearing siblings exist (technical, management, compliance, external) that differ only in actor.role, reporting.profile, expectedOutput, and notes; their parameters, target, and criteria are identical. This family is unverified: no scan was run against a real cluster, so unlike the image-scan or python-scan samples, no finding counts or severity distributions are stated — any such figure would be an estimate and therefore dishonest."
+}

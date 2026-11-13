@@ -1,0 +1,31 @@
+{
+  "intentId": "intent-k8s-scan-002",
+  "name": "Kubernetes Cluster Security Scan (management rendition)",
+  "description": "Run a Trivy scan on a Kubernetes cluster to detect security misconfigurations and vulnerabilities. Reported as a release decision.",
+  "category": "trustworthinessAssessment",
+  "intentType": "kubernetesSecurityScan",
+  "actor": {
+    "role": "SystemOwner",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "KubernetesCluster",
+    "name": "staging-cluster"
+  },
+  "parameters": {
+    "clusterName": "staging-cluster"
+  },
+  "criteria": [
+    "iso27001",
+    "nis2",
+    "linddun",
+    "internal_cluster_hardening:v2"
+  ],
+  "reporting": {
+    "profile": "management",
+    "expectedOutput": "Release verdict, worst-severity findings, and the compliance headline, without the full issue list",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/k8s-scans/"
+  },
+  "notes": "Sibling of sample_intent_k8s_scan_technical.json with the same target, parameters and criteria. The management profile applies a severity floor of MEDIUM and a max_findings cap of 5, and only the cap can bite here: Trivy collects HIGH and CRITICAL severities only, so every finding a cluster scan produces is already above a MEDIUM floor. Whichever of the two reductions applies, the omission is counted in reportProfile.findingsOmitted rather than dropped silently. Findings reduce by selection (severity floor, then highest severity first up to the cap), not by the aggregation used for the MIA parameter sweep. Against the trivy-kubernetes skill: iso27001 resolves to assessed (3 of 6 requirements), nis2 resolves to assessed (1 of 5), linddun resolves to declaredNotAssessed, internal_cluster_hardening:v2 resolves to unrecognised. regulatoryCoverage.complete is therefore false. This family is unverified: no scan was run, so the outcome depends on the cluster. If the cluster returns findings exceeding the cap, the omission count prevents misreading the top-5 list as the complete vulnerability set."
+}

@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 """Tool backing the `formal-intent-generation` skill.
 
 Loads the InTrust ontology (Turtle) once and returns the classes / properties

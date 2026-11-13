@@ -1,3 +1,9 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: formal report composition and validation, deterministic
+#     backfill of report fields (intent id, status, timestamp, provenance),
+#     model configured via MODEL.
+# SPDX-License-Identifier: MIT
 """
 InTrust Runtime Orchestrator — powered by Google ADK.
 
@@ -28,8 +34,10 @@ structured tool call result, then wraps it in a TM Forum-aligned report
 envelope via ``_standardize_report()``.
 """
 
+import os
 import asyncio
 import json
+from datetime import datetime, timezone
 from typing import Any, Dict, Optional
 
 from google.adk.agents import LlmAgent
@@ -37,10 +45,11 @@ from google.adk.runners import Runner
 from google.adk.sessions import InMemorySessionService
 from google import genai
 from google.genai import types as genai_types
+from dotenv import load_dotenv
 
 from .skill_loader import AssessmentSkill, SkillRegistry, load_skills
 
-# Deterministic post-processing tools invoked from _standardize_report.
+# Deterministic post-processing tools invoked from _standardize_report (see below).
 from tools.formal_report_generation import build_formal_report
 from tools.formal_report_validation import validate_formal_report
 
@@ -48,7 +57,40 @@ from tools.formal_report_validation import validate_formal_report
 AGENT_NAME = "InTrustRuntimeOrchestrator"
 
 # Statuses returned by skill tools that indicate a successful run.
+# Compared case-insensitively (see _standardize_report) because tools differ in
+# casing — Bandit/Trivy return "SUCCESS" while the MIA service returns
+# "success".
 _SUCCESS_STATUSES = {"SUCCESS", "COMPLETED"}
+
+# Ontology namespace.  The composing LLM is told to prefer ontology IRIs over
+# free strings, so it may emit ``provenance`` under either the bare property
+# name or the expanded IRI; the backfill has to find it under both.
+_SPA = "https://intend-project.eu/ontology/spa#"
+
+
+def _now_iso() -> str:
+    """
+    The execution timestamp, as UTC ISO 8601.
+
+    Read once here rather than left to the composing LLM.  A required timestamp
+    that no input supplies is a field the model fills with a plausible constant
+    from its training data — every report composed before this was dated
+    2023-10-27T10:00:00Z — and a report that misstates when it was produced
+    cannot be shown to have expired, which is the whole point of dating it.
+    """
+    return datetime.now(timezone.utc).isoformat()
+
+
+# The LLM used by the ADK agent and by the standalone calls that bypass the
+# agent loop (formal-report composition below, audience summaries in
+# orchestrator/rendition_summary.py).  Configured only through ``MODEL`` in
+# .env, so this is the single place a model is chosen.  ADK and google-genai
+# read their credentials from the environment as well (GOOGLE_API_KEY, or
+# GOOGLE_GENAI_USE_VERTEXAI with the Vertex AI project settings).
+load_dotenv()
+MODEL = os.getenv("MODEL")
+if not MODEL:
+    raise ValueError("MODEL must be set in .env (e.g. MODEL=gemini-3.5-flash)")
 
 # System instruction given to the LLM agent.
 # It explains what InTrust does and how the agent should behave.
@@ -91,7 +133,7 @@ def _build_root_agent() -> LlmAgent:
     tools = registry.to_adk_tools(intent_id="interactive", logger=None)
     return LlmAgent(
         name=AGENT_NAME,
-        model="gemini-3.5-flash",
+        model=MODEL,
         instruction=_AGENT_INSTRUCTION,
         description=(
             "InTrust assessment orchestrator — interprets TM Forum intents and "
@@ -168,7 +210,7 @@ class RuntimeOrchestrator:
         # contacted when Runner.run_async() is called.
         job_agent = LlmAgent(
             name=self.agent_name,
-            model="gemini-3.5-flash",
+            model=MODEL,
             instruction=_AGENT_INSTRUCTION,
             tools=tools,
         )
@@ -294,7 +336,7 @@ class RuntimeOrchestrator:
         The ``agent_summary`` field contains the LLM's natural-language
         interpretation of the result, useful for human-readable reporting.
 
-         As a deterministic post-processing step, every report is also run
+        As a deterministic post-processing step, every report is also run
         through formal report *composition* (LLM-authored tmfIntentReport.v1)
         and SHACL *validation*.  This is wired in here — rather than as a
         chained skill — because the ADK event loop only captures the first
@@ -320,19 +362,45 @@ class RuntimeOrchestrator:
         lifecycle_status = (
             "completed" if raw_status.upper() in _SUCCESS_STATUSES else "failed"
         )
-        
+
+        # Skills that normalise their raw tool output supply a ``facts`` object
+        # (see orchestrator/fact_model.py).  It is the deterministically derived
+        # result — observations, threshold-derived severities, scope
+        # limitations — and is what audience-specific renditions will be
+        # projected from.  Lifted to the top of the envelope so a consumer does
+        # not have to reach into ``result`` to find the verdict.
+        facts = result.get("facts") if isinstance(result, dict) else None
+
+        # One clock read for the whole envelope, so the timestamp the formal
+        # report carries is the same one the envelope's provenance records
+        # rather than a second reading taken after composition.
+        executed_at = _now_iso()
+
         report = {
             "intentId": intent_id,
             "lifecycleStatus": lifecycle_status,
             "assessmentType": result.get("assessment_type") or assessment_type,
             "skill": skill.name if skill else "unknown",
             "parameters": parameters,
-            "metrics": result.get("metrics") or result.get("issue_summary") or {},
+            "facts": facts,
+            "worstSeverity": (facts or {}).get("worstSeverity"),
+            "scopeLimitations": (facts or {}).get("scopeLimitations") or [],
+            # Which criteria the intent named and which the skill that ran can
+            # actually evidence.  Derived from the ontology, so a report cannot
+            # claim coverage the framework does not have.
+            "regulatoryCoverage": (facts or {}).get("regulatoryCoverage") or {},
+            "metrics": (
+                result.get("metrics")
+                or result.get("issue_summary")
+                or (facts or {}).get("metricSummaries")
+                or {}
+            ),
             "provenance": {
                 "agent": self.agent_name,
                 "skill": skill.name if skill else "unknown",
                 "tool": result.get("tool"),
                 "toolVersion": result.get("version"),
+                "executionTimestamp": executed_at,
             },
             "result": result,
             "explanation": result.get("explanation"),
@@ -342,11 +410,109 @@ class RuntimeOrchestrator:
             "recommendations": result.get("recommendations"),
         }
 
+        # Audience-specific rendition for the profile this intent resolves to.
+        # Projection is deterministic and cheap, so the API can re-project any
+        # profile from ``facts`` on demand (see api/routes.py); what is stored
+        # here is the issuer's own view plus the record of how it was chosen.
+        #
+        # No ``assessed_on`` and no ``approval`` are passed, and that is correct
+        # rather than an omission.  This runs before the job is marked complete
+        # and before anyone could have approved a release, so an external profile
+        # resolved here withholds its statement and says approval is outstanding.
+        # The API supplies both when re-projecting, once they exist.
+        if facts:
+            # Bound up front: the summary step below needs the profile, and
+            # resolution is inside the try, so a resolution failure must leave a
+            # defined value rather than an unbound name.
+            profile = None
+            try:
+                from orchestrator.report_profile import project, resolve_profile
+
+                profile, resolved_by = resolve_profile(intent)
+                report["rendition"] = project(
+                    facts,
+                    profile,
+                    resolved_by=resolved_by,
+                    regulatory_mapping=report["regulatoryCoverage"] or None,
+                    provenance=report["provenance"],
+                )
+            except Exception as error:  # noqa: BLE001
+                # A projection problem must not cost the assessment: the
+                # canonical facts are already in the envelope, and every
+                # rendition is recoverable from them.
+                report["rendition"] = {"error": str(error)}
+                if logger:
+                    logger.warning(
+                        "orchestrator.report",
+                        f"[Rendition] projection failed: {error}",
+                    )
+
+            # SHACL-validate the rendition.  The rendition is what a reader
+            # actually receives, so validating only the composed formal report
+            # left the delivered artifact unchecked.  Attached rather than
+            # enforced: a non-conforming rendition is evidence of a projection
+            # bug and discarding it would destroy what is needed to diagnose
+            # that, so the verdict travels beside the artifact.
+            try:
+                from tools.rendition_validation import validate_rendition
+
+                validation = validate_rendition(report["rendition"])
+                report["renditionValidation"] = validation
+                if logger and validation.get("conforms") is False:
+                    logger.warning(
+                        "orchestrator.report",
+                        "[Rendition] SHACL validation reported "
+                        f"{validation.get('violation_count')} violation(s) for "
+                        f"the {validation.get('renditionProfile')} profile",
+                    )
+            except Exception as error:  # noqa: BLE001
+                validation = {"status": "FAILED", "error": str(error)}
+                report["renditionValidation"] = validation
+
+            # Prose summary for the issuer's own rendition, composed from that
+            # rendition rather than from ``facts`` so it cannot state what the
+            # profile withheld.  Generated here so the common read — the issuer
+            # fetching their own report — finds it already cached.
+            #
+            # Only this one profile is warmed.  The other three are composed
+            # lazily on first read, which is not merely an optimisation for
+            # ``external``: this runs before the job completes and before anyone
+            # could have approved a release, so an external rendition resolved
+            # here is withheld and has nothing to summarise.  Its prose only
+            # exists once the gate has passed.
+            try:
+                from orchestrator.rendition_summary import summarise_rendition
+
+                if profile is None:
+                    raise ValueError(
+                        "the profile could not be resolved, so there is no "
+                        "audience to summarise for"
+                    )
+                warnings = None
+                if validation.get("conforms") is False:
+                    warnings = [
+                        f"the rendition this summary describes violates "
+                        f"{validation.get('violation_count')} SHACL shape "
+                        f"constraint(s); read it as evidence of a projection "
+                        f"problem, not as an assessment finding"
+                    ]
+                report["renditionSummary"] = await summarise_rendition(
+                    report["rendition"], profile, warnings=warnings
+                )
+            except Exception as error:  # noqa: BLE001
+                # Same reasoning as the projection above: a summarisation problem
+                # must not cost the assessment.  The rendition is already in the
+                # envelope and the prose is recoverable on the next read.
+                report["renditionSummary"] = {
+                    "status": "FAILED",
+                    "error": str(error),
+                }
+
         # Deterministic post-processing: compose a formal TMF report from the
         # raw result and validate it against the InTrust SHACL shapes.  Never
         # raises — failures are attached to the report envelope instead.
         composed, validation = await self._compose_and_validate_report(
-            intent, skill, result, logger
+            intent, skill, result, logger, executed_at=executed_at
         )
         report["formalReport"] = composed
         report["formalReportValidation"] = validation
@@ -359,6 +525,7 @@ class RuntimeOrchestrator:
         skill: Optional[AssessmentSkill],
         result: Dict[str, Any],
         logger: Any = None,
+        executed_at: Optional[str] = None,
     ) -> tuple[Optional[Dict[str, Any]], Optional[Dict[str, Any]]]:
         """
         Compose a tmfIntentReport.v1 report and validate it via SHACL.
@@ -371,6 +538,11 @@ class RuntimeOrchestrator:
            scaffold as the authoritative vocabulary.
         3. ``validate_formal_report`` — SHACL conformance check of the composed
            report against the InTrust shapes.
+
+        ``executed_at`` is injected rather than read from the clock here, so the
+        formal report's execution timestamp is the same value the envelope's
+        provenance carries.  Defaults to a fresh reading only so a direct caller
+        cannot end up with the model's invented date.
 
         Returns
         -------
@@ -386,7 +558,13 @@ class RuntimeOrchestrator:
 
         # Stage 1 — deterministic scaffold.
         try:
-            scaffold = build_formal_report({"intent": intent, "raw_result": result})
+            scaffold = build_formal_report(
+                {
+                    "intent": intent,
+                    "raw_result": result,
+                    "executed_at": executed_at or _now_iso(),
+                }
+            )
         except Exception as exc:  # noqa: BLE001
             _log_error(f"formal report scaffold error: {exc}")
             return {"status": "FAILED", "error": f"scaffold error: {exc}"}, None
@@ -407,7 +585,7 @@ class RuntimeOrchestrator:
         try:
             client = genai.Client()
             response = await client.aio.models.generate_content(
-                model="gemini-3.5-flash",
+                model=MODEL,
                 contents=prompt,
             )
             raw_text = response.text
@@ -425,9 +603,12 @@ class RuntimeOrchestrator:
             }, None
 
         # Deterministic backfill: the fields we already know authoritatively
-        # (intentId, status, reportType) are not left to the LLM, which tends
-        # to emit placeholders like "fill" or omit required fields entirely.
-        composed = self._backfill_required_fields(composed, intent, skill, result)
+        # (intentId, status, reportType, execution timestamp) are not left to the
+        # LLM, which tends to emit placeholders like "fill", invent a date, or
+        # omit required fields entirely.
+        composed = self._backfill_required_fields(
+            composed, intent, skill, result, executed_at or _now_iso()
+        )
 
         # Stage 3 — SHACL validation of the composed report.
         try:
@@ -444,6 +625,7 @@ class RuntimeOrchestrator:
         intent: Any,
         skill: Optional[AssessmentSkill],
         result: Dict[str, Any],
+        executed_at: str,
     ) -> Dict[str, Any]:
         """
         Overwrite the SHACL-required fields we know authoritatively.
@@ -458,10 +640,20 @@ class RuntimeOrchestrator:
           (``SUCCESS`` / ``FAILED`` / ``INCONCLUSIVE``).
         - ``reportType``— from the skill name, defaulting to a valid label when
           the model left it blank.
+        - ``provenance.executionTimestamp`` — the run's own clock reading.  The
+          scaffold names the property but supplies no value, so the model was
+          inventing one; it emitted the same 2023 constant in every report.
+        - ``provenance.toolVersion`` — from the skill's result envelope.  The
+          same failure as the timestamp: the property is named, no value was
+          supplied, and the model invented a plausible tool version.  Set from
+          ``result["version"]`` when the tool reports or pins one, and *removed*
+          otherwise — an absent version is accurate, an invented one is a
+          traceability claim the assessment cannot support.
 
-        These always overwrite the model's values for ``intentId`` and
-        ``status`` (we are the source of truth); ``reportType`` is only filled
-        when missing/blank so a sensible model-provided type is preserved.
+        These always overwrite the model's values for ``intentId``, ``status``,
+        the execution timestamp and the tool version (we are the source of
+        truth); ``reportType`` is only filled when missing/blank so a sensible
+        model-provided type is preserved.
         """
         if not isinstance(composed, dict):
             return composed
@@ -492,6 +684,40 @@ class RuntimeOrchestrator:
                 composed["reportType"] = f"{camel}AssessmentReport"
             else:
                 composed["reportType"] = "AssessmentReport"
+
+        # provenance.executionTimestamp — authoritative, always overwrite.
+        #
+        # The model writes provenance under either the bare name or the expanded
+        # ontology IRI, and names the timestamp either ``executionTimestamp``
+        # (per the ontology comment) or ``executedAt`` (per the skill doc).  Fix
+        # every provenance block found and normalise the key, so no invented
+        # date survives under a spelling we did not look for.
+        #
+        # ``toolVersion`` is corrected in the same pass and for the same reason.
+        # It is set when the envelope carries a version and deleted when it does
+        # not, rather than left alone: leaving it would preserve exactly the
+        # invented value this is here to remove.
+        tool_version = result.get("version") if isinstance(result, dict) else None
+        stamped = False
+        for key in ("provenance", f"{_SPA}provenance"):
+            block = composed.get(key)
+            if isinstance(block, dict):
+                block.pop("executedAt", None)
+                block["executionTimestamp"] = executed_at
+                if tool_version:
+                    block["toolVersion"] = tool_version
+                else:
+                    block.pop("toolVersion", None)
+                stamped = True
+        if not stamped:
+            # No provenance block at all, or one the model emitted as something
+            # other than an object.  Either way the report would carry no date,
+            # so supply the fields here we can state authoritatively rather
+            # than overwrite a non-object and lose what it held.
+            fresh: Dict[str, Any] = {"executionTimestamp": executed_at}
+            if tool_version:
+                fresh["toolVersion"] = tool_version
+            composed.setdefault("provenance", fresh)
 
         return composed
 
@@ -524,4 +750,3 @@ class RuntimeOrchestrator:
             except json.JSONDecodeError:
                 return None
         return parsed if isinstance(parsed, dict) else None
-

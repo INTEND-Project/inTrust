@@ -1,0 +1,37 @@
+{
+  "intentId": "fill",
+  "name": "Membership Inference Privacy Assessment (compliance rendition)",
+  "description": "Evaluate a machine learning model's resilience to membership inference attacks before deployment to a remote edge node. Reported for regulatory traceability.",
+  "category": "trustworthinessAssessment",
+  "intentType": "membershipInferencePrivacyAssessment",
+  "actor": {
+    "role": "ComplianceOfficer",
+    "organization": "Fill GmbH"
+  },
+  "target": {
+    "type": "mlModel",
+    "name": "predictive_maint_v2"
+  },
+  "parameters": {
+    "model": {
+      "type": "classification model",
+      "path": "s3://models/fill/predictive_maint_v2.pt"
+    },
+    "shadowData": {
+      "type": "synthetic",
+      "path": "s3://datasets/fill/synthetic_vib_v1.zip"
+    }
+  },
+  "criteria": [
+    "gdpr",
+    "iso27001",
+    "internal_privacy_policy:v2"
+  ],
+  "reporting": {
+    "profile": "compliance",
+    "expectedOutput": "Obligations this run evidenced, obligations it did not, the method and thresholds applied, and every stated limit on scope",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/mia-assessments/"
+  },
+  "notes": "Sibling of sample_intent_mia_technical.json with the same target and parameters, but three criteria rather than two, to exercise all three coverage statuses. Against the mia-privacy skill: 'gdpr' resolves to assessed (two GDPR requirements carry spa:evaluatedBySkill \"mia-privacy\", two others do not and are listed as unassessed); 'iso27001' resolves to declaredNotAssessed, since no requirement recorded under it is evaluable by this skill; 'internal_privacy_policy:v2' resolves to unrecognised, since it is not in the ontology. regulatoryCoverage.complete is therefore false. Note that 'assessed' means evidence bears on the listed requirements, not that the regulation is met."
+}

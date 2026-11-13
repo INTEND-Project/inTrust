@@ -1,0 +1,36 @@
+{
+  "intentId": "intent-sec-analysis-002",
+  "name": "Python Static Security Analysis (management rendition)",
+  "description": "Run Bandit static security analysis over the InTrust tool layer to identify insecure coding patterns before release. Reported as a release decision.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeSecurityAnalysis",
+  "actor": {
+    "role": "CISO",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "intrust-tools"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "tool": "bandit",
+    "codeReference": {
+      "path": "./tools",
+      "language": "python"
+    }
+  },
+  "criteria": [
+    "iso27001",
+    "nis2",
+    "linddun",
+    "internal_secure_coding_policy:v3"
+  ],
+  "reporting": {
+    "profile": "management",
+    "expectedOutput": "Release verdict and the highest-severity issues, without the full issue list",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/static-analysis/"
+  },
+  "notes": "Sibling of sample_intent_python_scan_technical.json with the same target, parameters and criteria. This is the clearest case in the sample set for why reportProfile.findingsOmitted exists: all four findings against ./tools are LOW and the management floor is MEDIUM, so the rendition's findings list is empty while canonicalFindingCount is 4 and findingsOmitted is 4. An empty list with the count beside it reads as 'nothing at decision level'; the same empty list without it would read as 'nothing at all'."
+}

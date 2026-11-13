@@ -1,3 +1,5 @@
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 """
 Formal TM Forum report generation skill.
 

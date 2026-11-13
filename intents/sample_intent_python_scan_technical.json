@@ -1,0 +1,36 @@
+{
+  "intentId": "intent-sec-analysis-002",
+  "name": "Python Static Security Analysis (engineer rendition)",
+  "description": "Run Bandit static security analysis over the InTrust tool layer to identify insecure coding patterns before release. Reported for the engineer who will act on the result.",
+  "category": "trustworthinessAssessment",
+  "intentType": "staticCodeSecurityAnalysis",
+  "actor": {
+    "role": "Developer",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "SoftwareComponent",
+    "name": "intrust-tools"
+  },
+  "parameters": {
+    "assessmentType": "static_code_analysis",
+    "tool": "bandit",
+    "codeReference": {
+      "path": "./tools",
+      "language": "python"
+    }
+  },
+  "criteria": [
+    "iso27001",
+    "nis2",
+    "linddun",
+    "internal_secure_coding_policy:v3"
+  ],
+  "reporting": {
+    "profile": "technical",
+    "expectedOutput": "Every Bandit finding with its test id, location, evidence and remediation step",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/static-analysis/"
+  },
+  "notes": "One of four sibling intents (technical, management, compliance, external) that differ only in actor.role and reporting.profile. Target, parameters and criteria are identical, so all four produce the same canonical facts and differ only in rendition. Against ./tools at the time of writing Bandit reports 4 findings, all LOW, over 12 files and 3160 lines. The technical profile keeps all four with per-finding technical detail, evidence and remediation steps, and its severity floor is LOW so nothing is omitted."
+}

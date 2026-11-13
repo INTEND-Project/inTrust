@@ -1,4 +1,6 @@
 ---
+# Copyright (c) 2026 Ericsson AB
+# SPDX-License-Identifier: MIT
 name: formal-intent-validation
 description: Validates a TM Forum intent against the InTrust SHACL shapes and returns conformance violations.
 ---

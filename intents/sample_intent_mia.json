@@ -1,0 +1,30 @@
+{
+  "intentId": "fill",
+  "name": "Membership Inference Privacy Assessment",
+  "description": "Evaluate a machine learning model's resilience to membership inference attacks before deployment to a remote edge node.",
+  "category": "trustworthinessAssessment",
+  "intentType": "membershipInferencePrivacyAssessment",
+  "actor": {
+    "role": "MLOpsEngineer",
+    "organization": "Fill GmbH"
+  },
+  "target": {
+    "type": "mlModel",
+    "name": "predictive_maint_v2"
+  },
+  "parameters": {
+    "model": {
+      "type": "classification model",
+      "path": "s3://models/fill/predictive_maint_v2.pt"
+    },
+    "shadowData": {
+      "type": "synthetic",
+      "path": "s3://datasets/fill/synthetic_vib_v1.zip"
+    }
+  },
+  "reporting": {
+    "expectedOutput": "Membership inference privacy metrics and vulnerability verdict",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/mia-assessments/"
+  }
+}

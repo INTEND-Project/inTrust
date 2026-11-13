@@ -1,0 +1,30 @@
+{
+  "intentId": "intent-docker-scan-002",
+  "name": "Scan Docker Image for Vulnerabilities (external statement)",
+  "description": "Perform a Trivy-based security scan on a specified Docker image, for a customer-facing assurance statement.",
+  "category": "trustworthinessAssessment",
+  "intentType": "dockerImageSecurityScan",
+  "actor": {
+    "role": "AccountManager",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "DockerImage",
+    "name": "python:3.11-slim"
+  },
+  "parameters": {
+    "dockerImage": "python:3.11-slim",
+    "severityLevels": ["HIGH", "CRITICAL"],
+    "timeout": "10m"
+  },
+  "criteria": [
+    "iso27001"
+  ],
+  "reporting": {
+    "profile": "external",
+    "expectedOutput": "Allowlisted assurance statement, released only for a clean assessment",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/docker-scans/"
+  },
+  "notes": "Sibling of sample_intent_image_scan_technical.json with the same target and parameters, but narrowed criteria (iso27001 only, deliberately mirroring sample_intent_mia_external.json). Expect this one to produce no artifact: the assessment found 4 CRITICAL-severity findings, so project_external returns {\"released\": false, \"withheldBecause\": [\"assessment found a CRITICAL-severity result; an external statement is only produced for a clean assessment\"]} carrying no figures, no CVE identifiers and no image digest. That is the intended outcome, not a failure — the honest external output for an assessment that found CRITICAL issues is nothing rather than a softened version. The gate opens only for a clean SUCCESS, and even then approval and a date are required — see sample_intent_python_scan_external_release.json for the one sample that can get through. With criteria [\"iso27001\"] alone, regulatoryCoverage.complete is true and byStatus is {assessed: 1}. Read that flag carefully: complete means every criterion the intent named was resolvable, not that ISO 27001 is covered — evidence still bears on only 2 of its 6 recorded requirements. The four-criteria siblings make the distinction visible by resolving to false."
+}

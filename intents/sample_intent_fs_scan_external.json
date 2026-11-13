@@ -1,0 +1,28 @@
+{
+  "intentId": "intent-fs-scan-003",
+  "name": "Filesystem Security and Compliance Scan (external statement)",
+  "description": "Run a Trivy scan on the local file system to detect vulnerabilities, secrets, and misconfigurations, for a customer-facing assurance statement.",
+  "category": "trustworthinessAssessment",
+  "intentType": "filesystemSecurityScan",
+  "actor": {
+    "role": "Sales",
+    "organization": "SINTEF"
+  },
+  "target": {
+    "type": "Filesystem",
+    "path": "."
+  },
+  "parameters": {
+    "fsPath": "."
+  },
+  "criteria": [
+    "nis2"
+  ],
+  "reporting": {
+    "profile": "external",
+    "expectedOutput": "Allowlisted assurance statement, released only for a clean assessment",
+    "format": "application/json",
+    "delivery": "https://intendproject.eu/reports/fs-scans/"
+  },
+  "notes": "Sibling of sample_intent_fs_scan_management.json with the same target and parameters, but criteria narrowed to nis2 alone. Expect this one to produce no artifact: on the observed scan the worstSeverity is CRITICAL, so project_external returns {\"released\": false, \"withheldBecause\": [\"assessment found a CRITICAL-severity result; an external statement is only produced for a clean assessment\"], ...} carrying no findings, no paths and no package identifiers. That is the intended outcome, not a failure — the honest external output for an assessment that found something is nothing rather than a softened version. A 'clean' result means nothing found at HIGH or CRITICAL (Trivy's constant severity filter), which is why a released statement must carry the scope that qualifies it — 'no findings' without that bound reads as a broader claim than the scan made. For the case where the gate opens, see sample_intent_python_scan_external_release.json."
+}

@@ -1,3 +1,8 @@
+# Copyright (c) 2025-2026 SINTEF Digital
+# Copyright (c) 2026 Ericsson AB
+#   Ericsson AB: normalises Trivy output into canonical facts before it leaves
+#     the skill.
+# SPDX-License-Identifier: MIT
 """
 Trivy filesystem scanning skill.
 
@@ -17,6 +22,8 @@ See also: docs/skills/trivy-filesystem.md
 from typing import Any, Dict
 
 from orchestrator.skill_loader import AssessmentSkill
+from orchestrator.skill_result import normalised_result
+from tools.trivy_normalizer import normalize
 from tools.trivy_scan import scan_fs
 
 
@@ -34,9 +41,9 @@ def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
     Returns
     -------
     dict
-        Assessment result with counts of vulnerabilities, secrets, and
-        misconfigurations, along with verdict, explanation, and
-        recommendations.
+        ``{status, assessment_type, tool, facts, raw}`` — the canonical facts
+        every audience rendition is projected from, beside the unmodified Trivy
+        output they were derived from.
     """
     target = intent.get("parameters", {}).get("fsPath")
     logger.info(
@@ -50,10 +57,25 @@ def execute(intent: Dict[str, Any], logger: Any) -> Dict[str, Any]:
 
     if result.get("status") == "FAILED":
         logger.error("skill.trivy_fs", result.get("error", "Trivy filesystem scan failed"))
-    else:
-        logger.info("skill.trivy_fs", result.get("explanation", "Trivy filesystem scan completed"))
+        return result
 
-    return result
+    logger.info("skill.trivy_fs", result.get("explanation", "Trivy filesystem scan completed"))
+
+    # Normalise before the result leaves the skill.  Deriving the findings here
+    # rather than leaving Trivy's raw output for the report-composing model to
+    # read is what keeps every audience rendition traceable to the same findings
+    # — and it is where the scan's severity filter (HIGH,CRITICAL only) is
+    # recorded as a stated scope limitation, so a clean result is never reported
+    # as an unqualified all-clear.
+    facts = normalize(result, intent=intent)
+    return normalised_result(
+        facts,
+        raw_result=result,
+        assessment_type="filesystem_security",
+        tool="Trivy",
+        logger=logger,
+        component="skill.trivy_fs",
+    )
 
 
 SKILL = AssessmentSkill(
